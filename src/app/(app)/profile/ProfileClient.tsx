@@ -337,7 +337,7 @@ export default function ProfileClient({ user, profile }: Props) {
                     key={g}
                     onClick={() => openGoalConfirm(g)}
                     style={{
-                      border: active ? `1.5px solid ${cfg.accentColor}` : '1px solid #1a1a1a',
+                      border: active ? `1px solid ${cfg.accentColor}` : '1px solid #1a1a1a',
                       borderRadius: 12,
                       padding: '12px 8px',
                       textAlign: 'center',
@@ -410,18 +410,8 @@ export default function ProfileClient({ user, profile }: Props) {
         border: `1px solid ${activeGoal.cardBorder}`,
         animation: pulsing ? 'pulseGreen 0.8s ease-out' : 'none',
       }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div style={{ marginBottom: 4 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: activeGoal.accentColor, letterSpacing: '0.8px' }}>{activeGoal.tagline}</div>
-          <button
-            onClick={async () => {
-              if (!hasSufficientData) return
-              const m = calcMacros(goal, weightKg, heightCm, age, sex, activityLevel)
-              animateKcal(displayKcal, m.kcal)
-              const { error } = await supabase.from('profiles').update({ target_calories: m.kcal, target_protein: m.protein, target_carbs: m.carbs, target_fat: m.fat }).eq('id', user.id)
-              if (error) console.error('Recalculate failed:', error.message)
-            }}
-            style={{ fontSize: 11, fontWeight: 600, color: activeGoal.accentColor, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7 }}
-          >Recalculate</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 4 }}>
           <span style={{ fontSize: 38, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-1.5px', lineHeight: 1 }}>{displayKcal.toLocaleString()}</span>
@@ -457,7 +447,7 @@ export default function ProfileClient({ user, profile }: Props) {
       </div>
 
       {/* Body section */}
-      <div style={{ padding: '24px 20px 4px' }}>
+      <div style={{ padding: '14px 20px 4px' }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: '#848484', letterSpacing: '1px' }}>BODY</span>
       </div>
       <div style={{ margin: '8px 16px', background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden' }}>
@@ -515,7 +505,7 @@ export default function ProfileClient({ user, profile }: Props) {
           </div>
           <div style={{ margin: '0 16px 12px', display: 'flex', gap: 4 }}>
             {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} style={{ flex: 1, height: 3, background: i <= activitySegments(activityLevel) ? '#3ecf8e' : '#1a1a1a', borderRadius: 2 }} />
+              <div key={i} style={{ flex: 1, height: 4, background: i <= activitySegments(activityLevel) ? '#3ecf8e' : '#1a1a1a', borderRadius: 2 }} />
             ))}
           </div>
         </div>
@@ -549,7 +539,7 @@ export default function ProfileClient({ user, profile }: Props) {
       </div>
 
       {/* Account section */}
-      <div style={{ padding: '24px 20px 4px' }}>
+      <div style={{ padding: '14px 20px 4px' }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: '#848484', letterSpacing: '1px' }}>ACCOUNT</span>
       </div>
       <div style={{ margin: '8px 16px', background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden' }}>
