@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LazyFit — Food</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --accent:    #3ecf8e;
+  --accent-bg: #091510;
+  --accent-bd: #183525;
+  --bg:        #090909;
+  --card:      #121212;
+  --card-2:    #181818;
+  --card-3:    #1e1e1e;
+  --border:    #1c1c1c;
+  --border-2:  #242424;
+  --text:      #f0f0f0;
+  --text-2:    #848484;
+  --text-3:    #444;
+  --text-4:    #282828;
+  --red:       #ff3b5c;
+  --amber:     #f5a623;
+  --blue:      #4a9eff;
+  --purple:    #b66dff;
+  --font:      -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font); min-height: 100vh;
+  max-width: 430px; margin: 0 auto;
+  overflow-x: hidden; -webkit-font-smoothing: antialiased;
+}
+
+/* ══════════════════════════════════════
+   HEADER
+══════════════════════════════════════ */
+.hdr {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(9,9,9,0.96);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px 11px;
+  display: flex; align-items: center; justify-content: center;
+}
+.hdr-nav { display: flex; align-items: center; gap: 14px; }
+.hdr-btn {
+  width: 32px; height: 32px;
+  background: var(--card-2); border: 1px solid var(--border-2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.12s; flex-shrink: 0;
+}
+.hdr-btn:active { background: var(--card-3); }
+.hdr-btn svg { width:13px; height:13px; stroke:var(--text-2); stroke-width:2.2; fill:none; }
+.hdr-center { text-align: center; min-width: 140px; }
+.hdr-date {
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.3px; color: var(--text); line-height: 1.1;
+}
+/* Badge — only shown on Today, hidden otherwise */
+.hdr-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--accent);
+  background: var(--accent-bg); border: 1px solid var(--accent-bd);
+  border-radius: 10px; padding: 2px 7px; margin-top: 3px;
+}
+
+/* ══════════════════════════════════════
+   SUMMARY CARD
+══════════════════════════════════════ */
+.summary {
+  margin: 14px 16px 0;
+  background: var(--card); border: 1px solid var(--border-2);
+  border-radius: 22px; overflow: hidden;
+}
+.sum-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.sum-tab {
+  flex: 1; padding: 11px 0 10px;
+  background: none; border: none; font-family: var(--font);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--text-3); cursor: pointer;
+  position: relative; transition: color 0.15s;
+}
+.sum-tab.active { color: var(--accent); }
+.sum-tab.active::after {
+  content:''; position: absolute; bottom:-1px; left:22%; right:22%;
+  height:2px; background:var(--accent); border-radius:2px 2px 0 0;
+}
+.sum-body { padding: 20px 18px 16px; display: flex; align-items: center; gap: 18px; }
+
+/* Ring */
+.ring-wrap { position: relative; width: 112px; height: 112px; flex-shrink: 0; }
+.ring-wrap svg { transform: rotate(-90deg); }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+}
+.ring-num { font-size: 28px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; color: var(--text); }
+.ring-unit { font-size: 9px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; color: var(--text-3); }
+.ring-ctx  { font-size: 10px; color: var(--text-3); letter-spacing: -0.2px; }
+
+/* Macro bars */
+.macro-col { flex: 1; display: flex; flex-direction: column; gap: 11px; }
+.macro-row { display: flex; align-items: center; gap: 8px; }
+.macro-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.macro-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-3); width: 28px; flex-shrink: 0; }
+.macro-track { flex: 1; height: 5px; background: var(--card-3); border-radius: 3px; overflow: hidden; }
+.macro-fill { height: 100%; border-radius: 3px; transition: width 0.35s cubic-bezier(.4,0,.2,1); }
+.macro-fill.over { background: var(--red) !important; }
+.macro-nums { min-width: 54px; text-align: right; flex-shrink: 0; }
+.macro-eaten { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; line-height: 1.1; }
+.macro-goal  { font-size: 10px; color: var(--text-3); font-weight: 400; }
+
+/* Context-aware footer */
+.sum-foot {
+  border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr;
+  padding: 11px 0 10px;
+}
+.sum-stat { text-align: center; padding: 0 4px; }
+.sum-val { font-size: 14px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+.sum-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: var(--text-3); margin-top: 3px; }
+.sum-div { background: var(--border); margin: 3px 0; }
+
+/* ══════════════════════════════════════
+   MEALS
+══════════════════════════════════════ */
+.meals { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+
+.meal-card {
+  background: var(--card); border: 1px solid var(--border-2);
+  border-radius: 20px; overflow: hidden;
+  border-top-width: 2px; /* coloured accent — set inline */
+}
+
+/* Meal header */
+.meal-hd { display: flex; align-items: center; padding: 14px 16px 12px; gap: 12px; }
+.meal-hd-info { flex: 1; min-width: 0; }
+.meal-hd-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+.meal-hd-sub { margin-top: 3px; display: flex; align-items: baseline; gap: 6px; font-size: 12px; }
+.meal-hd-kcal { font-size: 13px; font-weight: 700; color: var(--text-2); letter-spacing: -0.3px; }
+.meal-hd-macros { display: flex; gap: 5px; }
+.m-tag { font-size: 11px; font-weight: 600; letter-spacing: -0.1px; }
+
+/* Budget bar — replaced: 3px, full opacity, with % label */
+.meal-prog-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px 10px;
+}
+.meal-prog-track {
+  flex: 1; height: 3px; background: var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.meal-prog-fill { height: 100%; border-radius: 2px; }
+.meal-prog-pct {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.4px;
+  color: var(--text-3); white-space: nowrap; flex-shrink: 0;
+}
+
+/* ADD btn */
+.meal-add {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid var(--border-2); border-radius: 9px;
+  padding: 7px 12px; color: var(--text-3);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  cursor: pointer; font-family: var(--font); transition: all 0.15s; flex-shrink: 0;
+}
+.meal-add svg { width:10px; height:10px; stroke:currentColor; stroke-width:2.5; fill:none; }
+.meal-add:hover { background:var(--accent-bg); border-color:var(--accent-bd); color:var(--accent); }
+
+/* Food rows — more generous padding for mobile */
+.food-list { padding: 2px 0 0; }
+.food-row {
+  display: flex; align-items: center;
+  padding: 13px 16px; gap: 12px; /* increased from 11px */
+  border-top: 1px solid #0f0f0f;
+  min-height: 58px; cursor: pointer; /* increased from 54px */
+  transition: background 0.1s;
+}
+.food-row:hover { background: #141414; }
+.food-row-body { flex: 1; min-width: 0; }
+.food-row-name { font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: -0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.food-row-detail { display: flex; gap: 8px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
+.food-qty  { font-size: 11px; font-weight: 700; color: var(--text-2); letter-spacing: -0.1px; }
+.food-sep  { font-size: 10px; color: var(--text-4); }
+.food-chip { font-size: 11px; color: var(--text-3); font-weight: 500; }
+.food-chip b { font-weight: 700; }
+.food-row-cal { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; flex-shrink: 0; white-space: nowrap; }
+.food-row-cal small { font-size: 10px; font-weight: 400; color: var(--text-3); }
+.food-more {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--card-2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background 0.1s;
+}
+.food-more svg { width:3px; height:11px; }
+.food-more circle { fill: var(--text-4); }
+.food-row:hover .food-more { background: var(--card-3); }
+
+/* Meal totals */
+.meal-foot {
+  display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr;
+  border-top: 1px solid #0f0f0f; padding: 10px 0 8px; margin-top: 2px;
+}
+.mf-stat { text-align: center; padding: 0 4px; }
+.mf-val { font-size: 13px; font-weight: 700; letter-spacing: -0.3px; line-height: 1; }
+.mf-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-3); margin-top: 3px; }
+.mf-div { background: #111; margin: 2px 0; }
+
+/* Empty meal — full opacity, only content is muted */
+.meal-empty { padding: 8px 16px 14px; border-top: 1px solid #0d0d0d; }
+.meal-empty-tap {
+  border: 1px dashed var(--border-2); border-radius: 12px;
+  padding: 13px 16px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: all 0.15s;
+}
+.meal-empty-tap:hover { border-color: var(--accent-bd); background: var(--accent-bg); }
+.meal-empty-tap:hover .meal-empty-lbl { color: var(--accent); }
+.meal-empty-ico {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--card-2);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.meal-empty-ico svg { width:9px; height:9px; stroke:var(--text-3); stroke-width:2.5; fill:none; }
+.meal-empty-lbl { font-size: 13px; font-weight: 500; color: var(--text-3); transition: color 0.15s; }
+
+/* ══════════════════════════════════════
+   SECTION BREAK + DAY NOTE
+══════════════════════════════════════ */
+.section-break {
+  display: flex; align-items: center; gap: 12px; margin: 16px 20px 0;
+}
+.section-break-line { flex: 1; height: 1px; background: var(--border); }
+.section-break-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.day-note {
+  margin: 10px 16px 0;
+  background: var(--card); border: 1px solid var(--border-2);
+  border-radius: 20px; padding: 14px 16px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.day-note-icon {
+  width: 28px; height: 28px; background: var(--card-2); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+}
+.day-note-icon svg { width:13px; height:13px; stroke:var(--text-3); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.day-note-body { flex: 1; }
+.day-note-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+.day-note-ta {
+  background: none; border: none; color: var(--text-2); font-size: 13px;
+  font-family: var(--font); width: 100%; outline: none; resize: none;
+  line-height: 1.6; caret-color: var(--accent);
+}
+.day-note-ta::placeholder { color: var(--text-4); }
+
+/* ══════════════════════════════════════
+   NAV
+══════════════════════════════════════ */
+.spacer { height: 88px; }
+.nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: rgba(9,9,9,0.97); border-top: 1px solid var(--border);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  display: flex; align-items: flex-end; justify-content: space-around;
+  padding: 8px 0 22px; z-index: 50;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 14px; cursor: pointer; }
+.nav-icon { width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+.nav-icon svg { width:22px; height:22px; stroke:var(--text-4); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.nav-lbl { font-size:9px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-4); }
+.nav-item.active .nav-icon svg { stroke:var(--accent); }
+.nav-item.active .nav-lbl { color:var(--accent); }
+.nav-fab-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; margin-bottom:2px; }
+.fab {
+  width: 52px; height: 52px; background: var(--accent); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; margin-top: -20px;
+  box-shadow: 0 0 0 5px var(--bg), 0 4px 20px rgba(62,207,142,0.28);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.fab:hover  { transform:scale(1.06); box-shadow:0 0 0 5px var(--bg), 0 4px 28px rgba(62,207,142,0.42); }
+.fab:active { transform:scale(0.97); }
+.fab svg { width:20px; height:20px; stroke:#000; stroke-width:2.8; fill:none; stroke-linecap:round; }
+.fab-lbl { font-size:9px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:var(--accent); }
+
+/* ══════════════════════════════════════
+   MODAL — flex column, scrollable body,
+   CTA pinned, scroll fade hint
+══════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity 0.22s ease;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal-sheet {
+  width: 100%; max-width: 430px; margin: 0 auto;
+  background: #111; border: 1px solid var(--border-2);
+  border-radius: 26px 26px 0 0;
+  max-height: 86vh;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(.32,.72,0,1);
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+.modal-handle { width:36px; height:4px; background:var(--border-2); border-radius:2px; margin:12px auto 0; flex-shrink:0; }
+
+.modal-hdr {
+  padding: 14px 20px 0;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.modal-title { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; color: var(--text); }
+.modal-close {
+  width:28px; height:28px; background:var(--card-2); border:1px solid var(--border-2);
+  border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.modal-close svg { width:11px; height:11px; stroke:var(--text-2); fill:none; stroke-width:2.5; stroke-linecap:round; }
+
+.meal-chips {
+  display: flex; gap: 6px; padding: 14px 20px 0;
+  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+}
+.meal-chips::-webkit-scrollbar { display:none; }
+.m-chip {
+  display: flex; align-items: center; gap: 6px; padding: 6px 13px;
+  border: 1px solid var(--border-2); border-radius: 20px;
+  font-size: 12px; font-weight: 600; color: var(--text-3);
+  cursor: pointer; white-space: nowrap;
+  background: none; font-family: var(--font); transition: all 0.15s; flex-shrink: 0;
+}
+.m-chip-dot { width:6px; height:6px; border-radius:50%; }
+.m-chip.active { background:var(--accent-bg); border-color:var(--accent-bd); color:var(--accent); }
+
+.method-tabs {
+  display: flex; padding: 14px 20px 0;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.method-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 6px 4px 11px; cursor: pointer; border: none; background: none;
+  font-family: var(--font); position: relative; transition: all 0.15s;
+}
+.method-tab svg { width:20px; height:20px; stroke:var(--text-3); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.15s; }
+.method-tab-lbl { font-size:9px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-3); transition:color 0.15s; }
+.method-tab.active svg { stroke:var(--accent); }
+.method-tab.active .method-tab-lbl { color:var(--accent); }
+.method-tab.active::after { content:''; position:absolute; bottom:-1px; left:18%; right:18%; height:2px; background:var(--accent); border-radius:2px 2px 0 0; }
+
+/* Scrollable body with top fade hint */
+.modal-body-wrap { flex: 1; position: relative; overflow: hidden; }
+.modal-body-wrap::before {
+  content:''; pointer-events:none;
+  position:absolute; top:0; left:0; right:0; height:28px; z-index:2;
+  background: linear-gradient(to bottom, #111 0%, transparent 100%);
+}
+.modal-body {
+  height: 100%; overflow-y: auto; padding: 0 20px;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
+.modal-body::-webkit-scrollbar { display:none; }
+
+.method-panel { display:none; padding: 16px 0 12px; }
+.method-panel.active { display:block; }
+
+/* ── PHOTO ── */
+.photo-zone {
+  background: var(--card); border: 1.5px dashed var(--border-2); border-radius: 16px;
+  height: 148px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; transition: all 0.15s; overflow: hidden;
+}
+.photo-zone:hover { border-color:var(--accent-bd); background:var(--accent-bg); }
+.photo-zone-ico { width:40px; height:40px; background:var(--card-2); border-radius:12px; display:flex; align-items:center; justify-content:center; }
+.photo-zone-ico svg { width:20px; height:20px; stroke:var(--text-2); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.photo-zone-lbl { font-size:13px; font-weight:500; color:var(--text-3); }
+.photo-zone-sub { font-size:11px; color:var(--text-4); }
+.photo-fields { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.field-card {
+  background: var(--card); border: 1px solid var(--border-2); border-radius: 14px;
+  padding: 11px 14px; display: flex; align-items: center; gap: 10px;
+}
+.field-card.top-align { align-items: flex-start; }
+.field-ico { width:28px; height:28px; background:var(--card-2); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.field-ico svg { width:13px; height:13px; stroke:var(--text-3); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.field-body { flex:1; min-width:0; }
+.field-lbl { font-size:9px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text-3); margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+.field-acc { font-size:9px; font-weight:600; color:var(--accent); letter-spacing:0.3px; text-transform:none; }
+.field-inp { background:none; border:none; color:var(--text); font-size:14px; font-weight:500; font-family:var(--font); width:100%; outline:none; caret-color:var(--accent); }
+.field-inp::placeholder { color:var(--text-4); font-weight:400; }
+.field-inp.ta { resize:none; line-height:1.5; }
+.field-unit { font-size:12px; color:var(--text-3); font-weight:600; flex-shrink:0; }
+.mic-btn { width:32px; height:32px; background:var(--card-2); border:1px solid var(--border-2); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.15s; }
+.mic-btn svg { width:13px; height:13px; stroke:var(--text-2); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.mic-btn:hover { background:var(--accent-bg); border-color:var(--accent-bd); }
+.mic-btn:hover svg { stroke:var(--accent); }
+
+/* ── VOICE ── */
+.voice-card { background:var(--card); border:1px solid var(--border-2); border-radius:16px; padding:14px; }
+.voice-top { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; }
+.voice-ta { flex:1; background:none; border:none; color:var(--text); font-size:15px; font-family:var(--font); outline:none; resize:none; line-height:1.55; caret-color:var(--accent); min-height:70px; }
+.voice-ta::placeholder { color:var(--text-4); }
+.voice-mic { width:38px; height:38px; background:var(--card-3); border:1px solid var(--border-2); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.15s; }
+.voice-mic svg { width:16px; height:16px; stroke:var(--text-2); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.voice-mic:hover { background:var(--accent-bg); border-color:var(--accent-bd); }
+.voice-mic:hover svg { stroke:var(--accent); }
+/* Tappable example that populates the textarea */
+.voice-example-lbl { font-size:9px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text-3); margin-bottom:6px; }
+.voice-example {
+  font-size:12px; color:var(--text-3); line-height:1.55;
+  background:var(--card-2); border:1px solid var(--border-2); border-radius:10px;
+  padding:10px 12px; cursor:pointer; transition:all 0.12s;
+  font-style: italic;
+}
+.voice-example:hover { color:var(--accent); border-color:var(--accent-bd); background:var(--accent-bg); }
+.voice-example-hint { font-size:10px; color:var(--text-4); margin-top:5px; font-style:normal; }
+
+/* ── SEARCH ── */
+.search-bar { background:var(--card); border:1px solid var(--border-2); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.search-bar svg { width:15px; height:15px; stroke:var(--text-3); fill:none; stroke-width:2; flex-shrink:0; }
+.search-inp { flex:1; background:none; border:none; color:var(--text); font-size:15px; font-family:var(--font); outline:none; caret-color:var(--accent); }
+.search-inp::placeholder { color:var(--text-4); }
+.search-list { background:var(--card); border:1px solid var(--border-2); border-radius:14px; overflow:hidden; }
+.sr {
+  display:flex; align-items:center; padding:11px 14px; gap:12px;
+  border-bottom:1px solid #0e0e0e; cursor:pointer; transition:all 0.1s;
+}
+.sr:last-child { border-bottom:none; }
+.sr:hover { background:#161616; }
+/* Selected state */
+.sr.selected { background:var(--accent-bg); border-color:var(--accent-bd); }
+.sr.selected .sr-name { color:var(--accent); }
+.sr-ico { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:12px; font-weight:800; }
+.sr-body { flex:1; min-width:0; }
+.sr-name { font-size:14px; font-weight:500; color:var(--text); letter-spacing:-0.1px; }
+.sr-sub { font-size:11px; color:var(--text-3); margin-top:2px; }
+.sr-right { text-align:right; flex-shrink:0; }
+.sr-cal { font-size:13px; font-weight:700; color:var(--text-2); }
+.sr-unit { font-size:10px; color:var(--text-3); }
+/* Inline quantity row — appears when a result is selected */
+.sr-qty-row {
+  display:none; padding:8px 14px 12px;
+  border-bottom:1px solid #0e0e0e; background:var(--accent-bg);
+  align-items:center; gap:10px;
+}
+.sr-qty-row.visible { display:flex; }
+.sr-qty-input {
+  flex:1; background:var(--card-2); border:1px solid var(--accent-bd);
+  border-radius:10px; padding:9px 12px;
+  color:var(--text); font-size:15px; font-weight:600;
+  font-family:var(--font); outline:none; caret-color:var(--accent);
+}
+.sr-qty-unit { font-size:12px; color:var(--accent); font-weight:700; flex-shrink:0; }
+
+/* ── BARCODE ── */
+.scanner-box { background:var(--card); border:1px solid var(--border-2); border-radius:16px; height:178px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; cursor:pointer; position:relative; overflow:hidden; }
+.scanner-beam { position:absolute; left:18%; right:18%; height:1.5px; background:var(--accent); opacity:0.7; box-shadow:0 0 10px var(--accent); animation:beam 2s ease-in-out infinite; }
+@keyframes beam { 0%,100%{top:35%;opacity:0.5} 50%{top:65%;opacity:0.9} }
+.scanner-corners { position:absolute; inset:24px; }
+.sc { position:absolute; width:20px; height:20px; border-style:solid; border-color:var(--accent); opacity:0.7; }
+.sc-tl{top:0;left:0;border-width:2px 0 0 2px;border-radius:3px 0 0 0}
+.sc-tr{top:0;right:0;border-width:2px 2px 0 0;border-radius:0 3px 0 0}
+.sc-bl{bottom:0;left:0;border-width:0 0 2px 2px;border-radius:0 0 0 3px}
+.sc-br{bottom:0;right:0;border-width:0 2px 2px 0;border-radius:0 0 3px 0}
+.scanner-lbl { font-size:13px; font-weight:500; color:var(--text-3); position:relative; z-index:1; }
+.scanner-sub { font-size:11px; color:var(--text-4); position:relative; z-index:1; }
+
+/* ── PINNED FOOTER CTA ── */
+.modal-footer {
+  padding: 12px 20px 20px; flex-shrink: 0;
+  background: #111; border-top: 1px solid var(--border);
+}
+.modal-cta {
+  width:100%; padding:16px;
+  background:var(--accent); border:none; border-radius:14px;
+  font-family:var(--font); font-size:15px; font-weight:800;
+  letter-spacing:0.2px; color:#000; cursor:pointer;
+  transition:opacity 0.15s, transform 0.15s; display:block;
+}
+.modal-cta:hover  { opacity:0.91; }
+.modal-cta:active { transform:scale(0.99); opacity:0.87; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header class="hdr">
+  <div class="hdr-nav">
+    <div class="hdr-btn" onclick="shiftDay(-1)">
+      <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-date" id="hdr-date">Sun 12 Apr</div>
+      <div class="hdr-badge" id="hdr-badge">Today</div>
+    </div>
+    <div class="hdr-btn" onclick="shiftDay(1)">
+      <svg viewBox="0 0 14 14"><polyline points="5,2 10,7 5,12"/></svg>
+    </div>
+  </div>
+</header>
+
+
+<!-- ══ SUMMARY ══ -->
+<div class="summary">
+  <div class="sum-tabs">
+    <button class="sum-tab active" onclick="setMode('logged')">Logged</button>
+    <button class="sum-tab"        onclick="setMode('remaining')">Remaining</button>
+  </div>
+
+  <div class="sum-body">
+    <div class="ring-wrap">
+      <svg width="112" height="112" viewBox="0 0 112 112">
+        <circle cx="56" cy="56" r="47" fill="none" stroke="#1a1a1a" stroke-width="7"/>
+        <circle cx="56" cy="56" r="47" fill="none" stroke="#3ecf8e" stroke-width="7"
+          stroke-linecap="round" stroke-dasharray="237.2 295.2" id="ring-arc"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-num"  id="ring-num">1840</div>
+        <div class="ring-unit" id="ring-unit">logged</div>
+        <div class="ring-ctx"  id="ring-ctx">of 2292</div>
+      </div>
+    </div>
+
+    <div class="macro-col">
+      <div class="macro-row">
+        <div class="macro-dot" style="background:#4a9eff"></div>
+        <div class="macro-lbl">Prot</div>
+        <div class="macro-track"><div class="macro-fill" id="bar-p" style="width:75%;background:#4a9eff"></div></div>
+        <div class="macro-nums">
+          <div class="macro-eaten" id="val-p">128g</div>
+          <div class="macro-goal"  id="goal-p">/ 171g</div>
+        </div>
+      </div>
+      <div class="macro-row">
+        <div class="macro-dot" style="background:#3ecf8e"></div>
+        <div class="macro-lbl">Carbs</div>
+        <div class="macro-track"><div class="macro-fill" id="bar-c" style="width:61%;background:#3ecf8e"></div></div>
+        <div class="macro-nums">
+          <div class="macro-eaten" id="val-c">134g</div>
+          <div class="macro-goal"  id="goal-c">/ 220g</div>
+        </div>
+      </div>
+      <div class="macro-row">
+        <div class="macro-dot" id="dot-f" style="background:var(--red)"></div>
+        <div class="macro-lbl" id="lbl-f" style="color:var(--red)">Fat</div>
+        <div class="macro-track"><div class="macro-fill over" id="bar-f" style="width:100%"></div></div>
+        <div class="macro-nums">
+          <div class="macro-eaten" id="val-f" style="color:var(--red)">71g</div>
+          <div class="macro-goal"  id="goal-f">/ 66g</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sum-foot" id="sum-foot">
+    <div class="sum-stat"><div class="sum-val">2292</div><div class="sum-lbl">Target</div></div>
+    <div class="sum-div"></div>
+    <div class="sum-stat"><div class="sum-val">1840</div><div class="sum-lbl">Eaten</div></div>
+    <div class="sum-div"></div>
+    <div class="sum-stat"><div class="sum-val" style="color:var(--accent)">452</div><div class="sum-lbl">Left</div></div>
+    <div class="sum-div"></div>
+    <div class="sum-stat"><div class="sum-val" style="color:var(--text-2)">18g</div><div class="sum-lbl">Fiber</div></div>
+  </div>
+</div>
+
+
+<!-- ══ MEALS ══ -->
+<div class="meals">
+
+  <!-- BREAKFAST -->
+  <div class="meal-card" style="border-top-color:#4a9eff">
+    <div class="meal-hd">
+      <div class="meal-hd-info">
+        <div class="meal-hd-name">Breakfast</div>
+        <div class="meal-hd-sub">
+          <span class="meal-hd-kcal">620</span>
+          <span style="color:var(--text-3);font-size:12px">kcal</span>
+          <span style="color:var(--text-4)">·</span>
+          <div class="meal-hd-macros">
+            <span class="m-tag" style="color:#4a9eff">43P</span>
+            <span style="color:var(--text-4);font-size:10px">·</span>
+            <span class="m-tag" style="color:#3ecf8e">63C</span>
+            <span style="color:var(--text-4);font-size:10px">·</span>
+            <span class="m-tag" style="color:#f5a623">20F</span>
+          </div>
+        </div>
+      </div>
+      <button class="meal-add" onclick="openModal('breakfast')">
+        <svg viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>ADD
+      </button>
+    </div>
+    <div class="meal-prog-row">
+      <div class="meal-prog-track"><div class="meal-prog-fill" style="width:27%;background:#4a9eff"></div></div>
+      <div class="meal-prog-pct">27% of day</div>
+    </div>
+    <div class="food-list">
+      <div class="food-row">
+        <div class="food-row-body">
+          <div class="food-row-name">Greek Yogurt</div>
+          <div class="food-row-detail">
+            <span class="food-qty">200g</span><span class="food-sep">·</span>
+            <span class="food-chip"><b style="color:#4a9eff">20g</b> P</span>
+            <span class="food-chip"><b>8g</b> C</span>
+            <span class="food-chip"><b>5g</b> F</span>
+          </div>
+        </div>
+        <div class="food-row-cal">156 <small>kcal</small></div>
+        <div class="food-more"><svg viewBox="0 0 4 14"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/></svg></div>
+      </div>
+      <div class="food-row">
+        <div class="food-row-body">
+          <div class="food-row-name">Oats with Milk</div>
+          <div class="food-row-detail">
+            <span class="food-qty">80g</span><span class="food-sep">·</span>
+            <span class="food-chip"><b style="color:#4a9eff">11g</b> P</span>
+            <span class="food-chip"><b>54g</b> C</span>
+            <span class="food-chip"><b>5g</b> F</span>
+          </div>
+        </div>
+        <div class="food-row-cal">306 <small>kcal</small></div>
+        <div class="food-more"><svg viewBox="0 0 4 14"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/></svg></div>
+      </div>
+      <div class="food-row">
+        <div class="food-row-body">
+          <div class="food-row-name">Whole Eggs</div>
+          <div class="food-row-detail">
+            <span class="food-qty">2 pcs</span><span class="food-sep">·</span>
+            <span class="food-chip"><b style="color:#4a9eff">12g</b> P</span>
+            <span class="food-chip"><b>1g</b> C</span>
+            <span class="food-chip"><b>10g</b> F</span>
+          </div>
+        </div>
+        <div class="food-row-cal">158 <small>kcal</small></div>
+        <div class="food-more"><svg viewBox="0 0 4 14"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/></svg></div>
+      </div>
+    </div>
+    <div class="meal-foot">
+      <div class="mf-stat"><div class="mf-val" style="color:#4a9eff">43g</div><div class="mf-lbl">Protein</div></div>
+      <div class="mf-div"></div>
+      <div class="mf-stat"><div class="mf-val" style="color:#3ecf8e">63g</div><div class="mf-lbl">Carbs</div></div>
+      <div class="mf-div"></div>
+      <div class="mf-stat"><div class="mf-val" style="color:#f5a623">20g</div><div class="mf-lbl">Fat</div></div>
+      <div class="mf-div"></div>
+      <div class="mf-stat"><div class="mf-val">620</div><div class="mf-lbl">kcal</div></div>
+    </div>
+  </div>
+
+  <!-- LUNCH -->
+  <div class="meal-card" style="border-top-color:#3ecf8e">
+    <div class="meal-hd">
+      <div class="meal-hd-info">
+        <div class="meal-hd-name">Lunch</div>
+        <div class="meal-hd-sub">
+          <span class="meal-hd-kcal">700</span>
+          <span style="color:var(--text-3);font-size:12px">kcal</span>
+          <span style="color:var(--text-4)">·</span>
+          <div class="meal-hd-macros">
+            <span class="m-tag" style="color:#4a9eff">51P</span>
+            <span style="color:var(--text-4);font-size:10px">·</span>
+            <span class="m-tag" style="color:#3ecf8e">57C</span>
+            <span style="color:var(--text-4);font-size:10px">·</span>
+            <span class="m-tag" style="color:#f5a623">21F</span>
+          </div>
+        </div>
+      </div>
+      <button class="meal-add" onclick="openModal('lunch')">
+        <svg viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>ADD
+      </button>
+    </div>
+    <div class="meal-prog-row">
+      <div class="meal-prog-track"><div class="meal-prog-fill" style="width:30.5%;background:#3ecf8e"></div></div>
+      <div class="meal-prog-pct">30% of day</div>
+    </div>
+    <div class="food-list">
+      <div class="food-row">
+        <div class="food-row-body">
+          <div class="food-row-name">Chicken Breast</div>
+          <div class="food-row-detail">
+            <span class="food-qty">200g</span><span class="food-sep">·</span>
+            <span class="food-chip"><b style="color:#4a9eff">46g</b> P</span>
+            <span class="food-chip"><b>0g</b> C</span>
+            <span class="food-chip"><b>5g</b> F</span>
+          </div>
+        </div>
+        <div class="food-row-cal">240 <small>kcal</small></div>
+        <div class="food-more"><svg viewBox="0 0 4 14"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/></svg></div>
+      </div>
+      <div class="food-row">
+        <div class="food-row-body">
+          <div class="food-row-name">White Rice, cooked</div>
+          <div class="food-row-detail">
+            <span class="food-qty">250g</span><span class="food-sep">·</span>
+            <span class="food-chip"><b style="color:#4a9eff">5g</b> P</span>
+            <span class="food-chip"><b>57g</b> C</span>
+            <span class="food-chip"><b>1g</b> F</span>
+          </div>
+        </div>
+        <div class="food-row-cal">325 <small>kcal</small></div>
+        <div class="food-more"><svg viewBox="0 0 4 14"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/></svg></div>
+      </div>
+      <div class="food-row">
+        <div class="food-row-body">
+          <div class="food-row-name">Olive Oil</div>
+          <div class="food-row-detail">
+            <span class="food-qty">1 tbsp</span><span class="food-sep">·</span>
+            <span class="food-chip"><b style="color:#4a9eff">0g</b> P</span>
+            <span class="food-chip"><b>0g</b> C</span>
+            <span class="food-chip"><b>15g</b> F</span>
+          </div>
+        </div>
+        <div class="food-row-cal">135 <small>kcal</small></div>
+        <div class="food-more"><svg viewBox="0 0 4 14"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/></svg></div>
+      </div>
+    </div>
+    <div class="meal-foot">
+      <div class="mf-stat"><div class="mf-val" style="color:#4a9eff">51g</div><div class="mf-lbl">Protein</div></div>
+      <div class="mf-div"></div>
+      <div class="mf-stat"><div class="mf-val" style="color:#3ecf8e">57g</div><div class="mf-lbl">Carbs</div></div>
+      <div class="mf-div"></div>
+      <div class="mf-stat"><div class="mf-val" style="color:#f5a623">21g</div><div class="mf-lbl">Fat</div></div>
+      <div class="mf-div"></div>
+      <div class="mf-stat"><div class="mf-val">700</div><div class="mf-lbl">kcal</div></div>
+    </div>
+  </div>
+
+  <!-- DINNER — empty, full opacity card, only content is muted -->
+  <div class="meal-card" style="border-top-color:#f5a623">
+    <div class="meal-hd">
+      <div class="meal-hd-info">
+        <div class="meal-hd-name">Dinner</div>
+        <div class="meal-hd-sub" style="color:var(--text-3)">Not logged yet</div>
+      </div>
+      <button class="meal-add" onclick="openModal('dinner')">
+        <svg viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>ADD
+      </button>
+    </div>
+    <div class="meal-empty">
+      <div class="meal-empty-tap" onclick="openModal('dinner')">
+        <div class="meal-empty-ico"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div>
+        <div class="meal-empty-lbl">Log dinner</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNACK — empty -->
+  <div class="meal-card" style="border-top-color:#b66dff">
+    <div class="meal-hd">
+      <div class="meal-hd-info">
+        <div class="meal-hd-name">Snack</div>
+        <div class="meal-hd-sub" style="color:var(--text-3)">Not logged yet</div>
+      </div>
+      <button class="meal-add" onclick="openModal('snack')">
+        <svg viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>ADD
+      </button>
+    </div>
+    <div class="meal-empty">
+      <div class="meal-empty-tap" onclick="openModal('snack')">
+        <div class="meal-empty-ico"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div>
+        <div class="meal-empty-lbl">Log snack</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Section break + day note -->
+<div class="section-break">
+  <div class="section-break-line"></div>
+  <div class="section-break-lbl">Daily Reflection</div>
+  <div class="section-break-line"></div>
+</div>
+<div class="day-note">
+  <div class="day-note-icon">
+    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </div>
+  <div class="day-note-body">
+    <div class="day-note-lbl">Day Note</div>
+    <textarea class="day-note-ta" rows="2" placeholder="How did today go?"></textarea>
+  </div>
+</div>
+
+<div class="spacer"></div>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+  <div class="nav-item">
+    <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
+    <div class="nav-lbl">Home</div>
+  </div>
+  <div class="nav-item active">
+    <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h2v11h2V11h2a2 2 0 002-2V2h-2v5H7V2H5v5H3V2z"/><path d="M19 2c-1.66 0-3 1.79-3 4v5h2v9h2V2h-1z"/></svg></div>
+    <div class="nav-lbl">Food</div>
+  </div>
+  <div class="nav-fab-wrap">
+    <div class="fab" onclick="openModal('breakfast')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+    <div class="fab-lbl">Log</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 12h2M16 12h2M8 12V8M8 12v4M16 12V8M16 12v4M2 12h4M18 12h4"/></svg></div>
+    <div class="nav-lbl">Train</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="3,17 8,11 13,14 21,6"/><line x1="3" y1="20" x2="21" y2="20"/></svg></div>
+    <div class="nav-lbl">Progress</div>
+  </div>
+</nav>
+
+
+<!-- ══ LOG MODAL ══ -->
+<div class="modal-overlay" id="modal" onclick="handleOverlay(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Log Breakfast</div>
+      <div class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 12 12"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
+      </div>
+    </div>
+
+    <div class="meal-chips" id="meal-chips">
+      <button class="m-chip active" onclick="selectMeal(this,'breakfast')"><div class="m-chip-dot" style="background:#4a9eff"></div>Breakfast</button>
+      <button class="m-chip"        onclick="selectMeal(this,'lunch')">   <div class="m-chip-dot" style="background:#3ecf8e"></div>Lunch</button>
+      <button class="m-chip"        onclick="selectMeal(this,'dinner')">  <div class="m-chip-dot" style="background:#f5a623"></div>Dinner</button>
+      <button class="m-chip"        onclick="selectMeal(this,'snack')">   <div class="m-chip-dot" style="background:#b66dff"></div>Snack</button>
+    </div>
+
+    <div class="method-tabs">
+      <button class="method-tab active" onclick="switchMethod(this,'photo')">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <div class="method-tab-lbl">Photo</div>
+      </button>
+      <button class="method-tab" onclick="switchMethod(this,'voice')">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        <div class="method-tab-lbl">Voice</div>
+      </button>
+      <button class="method-tab" onclick="switchMethod(this,'search')">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div class="method-tab-lbl">Search</div>
+      </button>
+      <button class="method-tab" onclick="switchMethod(this,'barcode')">
+        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="3" height="16"/><rect x="6" y="4" width="1" height="16"/><rect x="9" y="4" width="2" height="16"/><rect x="13" y="4" width="1" height="16"/><rect x="16" y="4" width="3" height="16"/><rect x="21" y="4" width="2" height="16"/></svg>
+        <div class="method-tab-lbl">Barcode</div>
+      </button>
+    </div>
+
+    <!-- Scrollable body with top fade hint -->
+    <div class="modal-body-wrap">
+      <div class="modal-body">
+
+        <!-- PHOTO -->
+        <div class="method-panel active" id="panel-photo">
+          <div class="photo-zone">
+            <div class="photo-zone-ico"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+            <div class="photo-zone-lbl">Take a photo of your meal</div>
+            <div class="photo-zone-sub">Tap to open camera</div>
+          </div>
+          <div class="photo-fields">
+            <div class="field-card">
+              <div class="field-ico"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 014 4H8a4 4 0 014-4z"/><rect x="2" y="7" width="20" height="14" rx="2"/></svg></div>
+              <div class="field-body">
+                <div class="field-lbl">Total weight <span class="field-acc">↑ improves accuracy</span></div>
+                <input class="field-inp" type="number" placeholder="e.g. 350" inputmode="decimal"/>
+              </div>
+              <div class="field-unit">g</div>
+            </div>
+            <div class="field-card top-align">
+              <div class="field-ico" style="margin-top:2px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+              <div class="field-body">
+                <div class="field-lbl">Describe your meal <span class="field-acc">↑ improves accuracy</span></div>
+                <textarea class="field-inp ta" rows="2" placeholder="e.g. grilled in olive oil, extra dressing…"></textarea>
+              </div>
+              <div class="mic-btn"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VOICE -->
+        <div class="method-panel" id="panel-voice">
+          <div class="voice-card">
+            <div class="voice-top">
+              <textarea class="voice-ta" id="voice-ta" rows="3" placeholder="Describe your full meal…"></textarea>
+              <div class="voice-mic"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg></div>
+            </div>
+            <div class="voice-example-lbl">Tap to use as example</div>
+            <div class="voice-example" onclick="fillExample()">
+              "200g grilled chicken breast, 250g white rice cooked, 1 tablespoon olive oil, mixed salad with balsamic dressing"
+              <div class="voice-example-hint">Tap to copy into the field above ↑</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="method-panel" id="panel-search">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-inp" placeholder="Search USDA database…"/>
+          </div>
+          <div class="search-list" id="search-list">
+            <div class="sr" onclick="selectResult(this)">
+              <div class="sr-ico" style="background:#1a2a4a;color:#4a9eff">C</div>
+              <div class="sr-body">
+                <div class="sr-name">Chicken Breast, raw</div>
+                <div class="sr-sub">USDA · per 100g · 31g P · 0g C · 3.6g F</div>
+              </div>
+              <div class="sr-right"><div class="sr-cal">165</div><div class="sr-unit">kcal</div></div>
+            </div>
+            <!-- Quantity row — hidden until row is selected -->
+            <div class="sr-qty-row" id="qty-0">
+              <input class="sr-qty-input" type="number" placeholder="Enter weight…" inputmode="decimal" autofocus/>
+              <div class="sr-qty-unit">g</div>
+            </div>
+            <div class="sr" onclick="selectResult(this)">
+              <div class="sr-ico" style="background:#0a1a12;color:#3ecf8e">R</div>
+              <div class="sr-body">
+                <div class="sr-name">White Rice, cooked</div>
+                <div class="sr-sub">USDA · per 100g · 2.7g P · 28g C · 0.3g F</div>
+              </div>
+              <div class="sr-right"><div class="sr-cal">130</div><div class="sr-unit">kcal</div></div>
+            </div>
+            <div class="sr-qty-row" id="qty-1">
+              <input class="sr-qty-input" type="number" placeholder="Enter weight…" inputmode="decimal"/>
+              <div class="sr-qty-unit">g</div>
+            </div>
+            <div class="sr" onclick="selectResult(this)">
+              <div class="sr-ico" style="background:#1a1a0a;color:#f5a623">E</div>
+              <div class="sr-body">
+                <div class="sr-name">Egg, whole, raw</div>
+                <div class="sr-sub">USDA · per 100g · 13g P · 1.1g C · 11g F</div>
+              </div>
+              <div class="sr-right"><div class="sr-cal">143</div><div class="sr-unit">kcal</div></div>
+            </div>
+            <div class="sr-qty-row" id="qty-2">
+              <input class="sr-qty-input" type="number" placeholder="Enter weight…" inputmode="decimal"/>
+              <div class="sr-qty-unit">g</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARCODE -->
+        <div class="method-panel" id="panel-barcode">
+          <div class="scanner-box">
+            <div class="scanner-beam"></div>
+            <div class="scanner-corners">
+              <div class="sc sc-tl"></div><div class="sc sc-tr"></div>
+              <div class="sc sc-bl"></div><div class="sc sc-br"></div>
+            </div>
+            <div class="scanner-lbl">Point camera at barcode</div>
+            <div class="scanner-sub">Open Food Facts · USDA · 3M+ products</div>
+          </div>
+        </div>
+
+      </div><!-- end modal-body -->
+    </div><!-- end modal-body-wrap -->
+
+    <!-- Pinned CTA -->
+    <div class="modal-footer">
+      <button class="modal-cta" id="modal-cta">Analyse with AI →</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── Summary toggle ───────────────────────────────────────
+const MC = { p:'#4a9eff', c:'#3ecf8e', f:'#f5a623' };
+const MODES = {
+  logged: {
+    num:'1840', unit:'logged', ctx:'of 2292',
+    arc:'237.2 295.2', arcColor:'#3ecf8e',
+    bars:{
+      p:{w:'75%', v:'128g', over:false, goal:'/ 171g'},
+      c:{w:'61%', v:'134g', over:false, goal:'/ 220g'},
+      f:{w:'100%',v:'71g',  over:true,  goal:'/ 66g'}
+    },
+    foot:`
+      <div class="sum-stat"><div class="sum-val">2292</div><div class="sum-lbl">Target</div></div>
+      <div class="sum-div"></div>
+      <div class="sum-stat"><div class="sum-val">1840</div><div class="sum-lbl">Eaten</div></div>
+      <div class="sum-div"></div>
+      <div class="sum-stat"><div class="sum-val" style="color:var(--accent)">452</div><div class="sum-lbl">Left</div></div>
+      <div class="sum-div"></div>
+      <div class="sum-stat"><div class="sum-val" style="color:var(--text-2)">18g</div><div class="sum-lbl">Fiber</div></div>`
+  },
+  remaining: {
+    num:'452', unit:'remaining', ctx:'of 2292',
+    arc:'57.8 295.2', arcColor:'#f5a623',
+    bars:{
+      p:{w:'25%', v:'43g', over:false, goal:'/ 171g'},
+      c:{w:'39%', v:'86g', over:false, goal:'/ 220g'},
+      f:{w:'0%',  v:'0g',  over:false, goal:'/ 66g'}
+    },
+    foot:`
+      <div class="sum-stat"><div class="sum-val" style="color:var(--amber)">452</div><div class="sum-lbl">Calories</div></div>
+      <div class="sum-div"></div>
+      <div class="sum-stat"><div class="sum-val" style="color:#4a9eff">43g</div><div class="sum-lbl">Protein</div></div>
+      <div class="sum-div"></div>
+      <div class="sum-stat"><div class="sum-val" style="color:#3ecf8e">86g</div><div class="sum-lbl">Carbs</div></div>
+      <div class="sum-div"></div>
+      <div class="sum-stat"><div class="sum-val" style="color:var(--text-2)">0g</div><div class="sum-lbl">Fat</div></div>`
+  }
+};
+
+function setMode(m) {
+  const d = MODES[m];
+  document.getElementById('ring-num').textContent  = d.num;
+  document.getElementById('ring-unit').textContent = d.unit;
+  document.getElementById('ring-ctx').textContent  = d.ctx;
+  const arc = document.getElementById('ring-arc');
+  arc.setAttribute('stroke-dasharray', d.arc);
+  arc.setAttribute('stroke', d.arcColor);
+
+  ['p','c','f'].forEach(k => {
+    const over = d.bars[k].over;
+    document.getElementById('bar-'+k).style.width   = d.bars[k].w;
+    document.getElementById('bar-'+k).classList.toggle('over', over);
+    document.getElementById('val-'+k).textContent   = d.bars[k].v;
+    document.getElementById('val-'+k).style.color   = over ? 'var(--red)' : 'var(--text)';
+    document.getElementById('goal-'+k).textContent  = d.bars[k].goal;
+    const dot = document.getElementById('dot-'+k);
+    const lbl = document.getElementById('lbl-'+k);
+    if (dot) dot.style.background = over ? 'var(--red)' : MC[k];
+    if (lbl) lbl.style.color      = over ? 'var(--red)' : 'var(--text-3)';
+  });
+
+  document.getElementById('sum-foot').innerHTML = d.foot;
+  document.querySelectorAll('.sum-tab').forEach((t,i) =>
+    t.classList.toggle('active', (m==='logged'&&i===0)||(m==='remaining'&&i===1))
+  );
+}
+
+// ── Date nav ─────────────────────────────────────────────
+const TODAY = new Date(2026,3,12);
+let cur = new Date(TODAY);
+const DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function shiftDay(n) {
+  cur.setDate(cur.getDate() + n);
+  const isToday = cur.toDateString() === TODAY.toDateString();
+  document.getElementById('hdr-date').textContent = `${DN[cur.getDay()]} ${cur.getDate()} ${MN[cur.getMonth()]}`;
+  const badge = document.getElementById('hdr-badge');
+  // Badge only visible on Today — hidden on all other days
+  badge.style.display = isToday ? 'inline-block' : 'none';
+}
+
+// ── Modal ─────────────────────────────────────────────────
+const TITLES = { breakfast:'Log Breakfast', lunch:'Log Lunch', dinner:'Log Dinner', snack:'Log Snack' };
+const CTAS   = { photo:'Analyse with AI →', voice:'Analyse with AI →', search:'Add Selected Food', barcode:'Open Scanner' };
+
+function openModal(meal) {
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('modal-title').textContent = TITLES[meal] || 'Log Food';
+  document.querySelectorAll('.m-chip').forEach(c =>
+    c.classList.toggle('active', c.getAttribute('onclick').includes(`'${meal}'`))
+  );
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function handleOverlay(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+function selectMeal(el, meal) {
+  document.querySelectorAll('.m-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('modal-title').textContent = TITLES[meal];
+}
+
+let currentMethod = 'photo';
+function switchMethod(el, method) {
+  currentMethod = method;
+  document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+method).classList.add('active');
+  document.getElementById('modal-cta').textContent = CTAS[method];
+}
+
+// ── Voice example — tappable, populates textarea ─────────
+function fillExample() {
+  const ta = document.getElementById('voice-ta');
+  ta.value = '200g grilled chicken breast, 250g white rice cooked, 1 tablespoon olive oil, mixed salad with balsamic dressing';
+  ta.focus();
+}
+
+// ── Search result selection — shows qty row inline ───────
+let selectedRow = -1;
+function selectResult(el) {
+  // Find the index of this .sr among all .sr elements
+  const rows = document.querySelectorAll('#search-list .sr');
+  let idx = -1;
+  rows.forEach((r, i) => { if (r === el) idx = i; });
+  if (idx === -1) return;
+
+  // Deselect previous
+  if (selectedRow !== -1 && selectedRow !== idx) {
+    rows[selectedRow].classList.remove('selected');
+    const prev = document.getElementById('qty-'+selectedRow);
+    if (prev) prev.classList.remove('visible');
+  }
+
+  // Toggle current
+  const isAlreadySelected = el.classList.contains('selected');
+  el.classList.toggle('selected', !isAlreadySelected);
+  const qtyRow = document.getElementById('qty-'+idx);
+  if (qtyRow) {
+    qtyRow.classList.toggle('visible', !isAlreadySelected);
+    if (!isAlreadySelected) {
+      setTimeout(() => qtyRow.querySelector('input').focus(), 50);
+    }
+  }
+  selectedRow = isAlreadySelected ? -1 : idx;
+}
+</script>
+
+</body>
+</html>

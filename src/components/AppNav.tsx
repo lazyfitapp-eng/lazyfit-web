@@ -5,11 +5,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const NAV_ITEMS = [
-  { href: '/app/dashboard', label: 'HOME' },
-  { href: '/app/train', label: 'TRAIN' },
-  { href: '/app/food', label: 'FOOD' },
-  { href: '/app/progress', label: 'PROGRESS' },
-  { href: '/app/profile', label: 'PROFILE' },
+  { href: '/dashboard', label: 'HOME' },
+  { href: '/train', label: 'TRAIN' },
+  { href: '/food', label: 'FOOD' },
+  { href: '/progress', label: 'PROGRESS' },
+  { href: '/profile', label: 'PROFILE' },
 ]
 
 export default function AppNav({ userEmail }: { userEmail: string }) {
@@ -26,7 +26,7 @@ export default function AppNav({ userEmail }: { userEmail: string }) {
   return (
     <nav className="flex items-center gap-1">
       {NAV_ITEMS.map(({ href, label }) => {
-        const active = pathname === href || (href !== '/app/dashboard' && pathname.startsWith(href))
+        const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
         return (
           <Link
             key={href}

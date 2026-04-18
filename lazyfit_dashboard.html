@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LazyFit Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a1a; display: flex; justify-content: center; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; }
+.phone {
+  background: #0a0a0a;
+  border-radius: 28px;
+  overflow: hidden;
+  width: 390px;
+  min-height: 820px;
+  position: relative;
+  padding-bottom: 80px;
+}
+.hdr { padding: 18px 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+.hdr-date { font-size: 22px; font-weight: 700; color: #f0f0f0; letter-spacing: -0.5px; }
+.cal-strip { padding: 0 20px 12px; display: flex; gap: 3px; }
+.cd { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 0; border-radius: 7px; }
+.cd .dow { font-size: 9px; color: #383838; text-transform: uppercase; letter-spacing: 0.3px; }
+.cd .num { font-size: 13px; font-weight: 500; color: #555; line-height: 1; }
+.cd.today .dow { color: #3ecf8e; }
+.cd.today .num { color: #0a0a0a; background: #3ecf8e; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.dot-row { display: flex; gap: 2px; align-items: center; height: 5px; }
+.dot { width: 4px; height: 4px; border-radius: 50%; }
+.dot-train { background: #3ecf8e; }
+.dot-food { background: #2a6e50; }
+.tabs { padding: 0 20px; display: flex; border-bottom: 1px solid #1a1a1a; margin-bottom: 4px; }
+.tab { padding: 9px 0; margin-right: 24px; font-size: 14px; font-weight: 500; color: #3a3a3a; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.active { color: #f0f0f0; border-bottom-color: #3ecf8e; }
+.scroll { padding: 14px 20px 0; display: flex; flex-direction: column; gap: 8px; }
+.sec-label { font-size: 10px; font-weight: 700; color: #484848; text-transform: uppercase; letter-spacing: 1px; padding: 6px 0 2px; }
+
+/* Summary card */
+.summary-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 14px 16px; }
+.summary-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.summary-kcal-val { font-size: 32px; font-weight: 700; color: #f0f0f0; letter-spacing: -1px; line-height: 1; }
+.summary-kcal-val span { font-size: 14px; font-weight: 400; color: #444; margin-left: 2px; }
+.summary-kcal-sub { font-size: 11px; color: #444; margin-top: 3px; }
+.summary-right { text-align: right; }
+.summary-right .val { font-size: 13px; font-weight: 600; color: #3ecf8e; }
+.summary-right .lbl { font-size: 10px; color: #383838; margin-top: 1px; }
+.macro-track-row { display: flex; flex-direction: column; gap: 6px; }
+.macro-track { display: flex; align-items: center; gap: 8px; }
+.macro-track-lbl { font-size: 10px; color: #555; width: 44px; flex-shrink: 0; }
+.macro-track-bar { flex: 1; background: #1e1e1e; border-radius: 3px; height: 4px; overflow: hidden; }
+.macro-track-fill { height: 100%; border-radius: 3px; }
+.macro-track-val { font-size: 10px; color: #555; width: 42px; text-align: right; flex-shrink: 0; }
+
+/* Weight card */
+.weight-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 14px 16px; }
+.weight-row { display: flex; justify-content: space-between; align-items: center; }
+.weight-left .lbl { font-size: 11px; color: #555; margin-bottom: 6px; }
+.weight-val { font-size: 34px; font-weight: 700; color: #f0f0f0; letter-spacing: -1px; line-height: 1; }
+.weight-val span { font-size: 15px; font-weight: 400; color: #444; }
+.weight-trend { font-size: 11px; color: #444; margin-top: 4px; }
+.weight-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.update-btn { font-size: 11px; font-weight: 600; color: #3ecf8e; background: #0d2118; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+.delta-badge { font-size: 11px; font-weight: 500; color: #555; background: #1a1a1a; padding: 3px 8px; border-radius: 20px; }
+
+/* Meal cards */
+.meal-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; }
+.meal-hdr { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
+.meal-name { font-size: 15px; font-weight: 600; color: #f0f0f0; }
+.meal-time { font-size: 10px; color: #383838; margin-top: 1px; }
+.add-btn { font-size: 12px; font-weight: 600; color: #3ecf8e; background: none; border: none; cursor: pointer; }
+.macro-row { display: flex; border-top: 1px solid #1a1a1a; }
+.mi { flex: 1; padding: 8px 10px; border-right: 1px solid #1a1a1a; }
+.mi:last-child { border-right: none; }
+.mv { font-size: 14px; font-weight: 700; color: #f0f0f0; line-height: 1; }
+.mv.protein { color: #3ecf8e; }
+.ml { font-size: 9px; color: #383838; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+
+/* Empty meal rows */
+.meal-empty { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; }
+.meal-empty-left .name { font-size: 15px; font-weight: 600; color: #f0f0f0; }
+.meal-empty-left .time { font-size: 10px; color: #383838; margin-top: 1px; }
+.add-food-btn { font-size: 12px; font-weight: 600; color: #3ecf8e; background: #0d2118; border: none; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+
+/* Workout card */
+.workout-card { background: #0d1f17; border: 1px solid #1a3528; border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+.workout-left .wlbl { font-size: 10px; font-weight: 700; color: #3ecf8e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.workout-left .wname { font-size: 15px; font-weight: 700; color: #f0f0f0; }
+.workout-left .wsub { font-size: 11px; color: #3a5040; margin-top: 2px; }
+.start-btn { background: #3ecf8e; color: #0a0a0a; border: none; border-radius: 8px; padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+/* Bottom nav */
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #0d0d0d; border-top: 1px solid #1a1a1a; display: flex; align-items: center; padding: 8px 0 20px; }
+.ni { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ni-lbl { font-size: 9px; color: #2a2a2a; text-transform: uppercase; letter-spacing: 0.4px; }
+.ni-lbl.active { color: #3ecf8e; }
+.fab { width: 40px; height: 40px; background: #3ecf8e; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -14px; border: 3px solid #0d0d0d; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="hdr">
+    <div class="hdr-date">Thu 9 Apr ↓</div>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </div>
+
+  <div class="cal-strip">
+    <div class="cd"><div class="dow">T</div><div class="num">2</div><div class="dot-row"><div class="dot dot-train"></div><div class="dot dot-food"></div></div></div>
+    <div class="cd"><div class="dow">F</div><div class="num">3</div><div class="dot-row"><div class="dot dot-food"></div></div></div>
+    <div class="cd"><div class="dow">S</div><div class="num">4</div><div class="dot-row"><div class="dot dot-food"></div></div></div>
+    <div class="cd"><div class="dow">S</div><div class="num">5</div><div class="dot-row"></div></div>
+    <div class="cd"><div class="dow">M</div><div class="num">6</div><div class="dot-row"><div class="dot dot-train"></div><div class="dot dot-food"></div></div></div>
+    <div class="cd"><div class="dow">T</div><div class="num">7</div><div class="dot-row"><div class="dot dot-train"></div><div class="dot dot-food"></div></div></div>
+    <div class="cd"><div class="dow">W</div><div class="num">8</div><div class="dot-row"><div class="dot dot-food"></div></div></div>
+    <div class="cd today"><div class="dow">T</div><div class="num">9</div><div class="dot-row"></div></div>
+    <div class="cd"><div class="dow">F</div><div class="num">10</div><div class="dot-row"></div></div>
+    <div class="cd"><div class="dow">S</div><div class="num">11</div><div class="dot-row"></div></div>
+    <div class="cd"><div class="dow">S</div><div class="num">12</div><div class="dot-row"></div></div>
+    <div class="cd"><div class="dow">M</div><div class="num">13</div><div class="dot-row"></div></div>
+    <div class="cd"><div class="dow">T</div><div class="num">14</div><div class="dot-row"></div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">Daily log</div>
+    <div class="tab">Progress</div>
+  </div>
+
+  <div class="scroll">
+
+    <!-- SECTION: Today's summary -->
+    <div class="sec-label">Today's summary</div>
+    <div class="summary-card">
+      <div class="summary-top">
+        <div>
+          <div class="summary-kcal-val">1,528<span>kcal</span></div>
+          <div class="summary-kcal-sub">Target: 2,200 kcal — 672 remaining</div>
+        </div>
+        <div class="summary-right">
+          <div class="val">69%</div>
+          <div class="lbl">of target</div>
+        </div>
+      </div>
+      <div class="macro-track-row">
+        <div class="macro-track">
+          <div class="macro-track-lbl">Protein</div>
+          <div class="macro-track-bar"><div class="macro-track-fill" style="width:78%; background:#3ecf8e"></div></div>
+          <div class="macro-track-val" style="color:#3ecf8e">117 / 150g</div>
+        </div>
+        <div class="macro-track">
+          <div class="macro-track-lbl">Carbs</div>
+          <div class="macro-track-bar"><div class="macro-track-fill" style="width:62%; background:#2a6e50"></div></div>
+          <div class="macro-track-val">152 / 245g</div>
+        </div>
+        <div class="macro-track">
+          <div class="macro-track-lbl">Fat</div>
+          <div class="macro-track-bar"><div class="macro-track-fill" style="width:55%; background:#1a3d2c"></div></div>
+          <div class="macro-track-val">44 / 80g</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: Body -->
+    <div class="sec-label">Body</div>
+    <div class="weight-card">
+      <div class="weight-row">
+        <div class="weight-left">
+          <div class="lbl">Weight</div>
+          <div class="weight-val">81.7<span>kg</span></div>
+          <div class="weight-trend">Trend 81.8 kg</div>
+        </div>
+        <div class="weight-right">
+          <button class="update-btn">Update</button>
+          <div class="delta-badge">0.0 kg this week</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: Nutrition -->
+    <div class="sec-label">Nutrition</div>
+
+    <!-- Meal with data -->
+    <div class="meal-card">
+      <div class="meal-hdr">
+        <div><div class="meal-name">Breakfast</div><div class="meal-time">7:00</div></div>
+        <button class="add-btn">+ Add</button>
+      </div>
+      <div class="macro-row">
+        <div class="mi"><div class="mv">764</div><div class="ml">kcal</div></div>
+        <div class="mi"><div class="mv protein">57g</div><div class="ml">protein</div></div>
+        <div class="mi"><div class="mv">76g</div><div class="ml">carbs</div></div>
+        <div class="mi"><div class="mv">22g</div><div class="ml">fat</div></div>
+      </div>
+    </div>
+
+    <!-- Meal with data -->
+    <div class="meal-card">
+      <div class="meal-hdr">
+        <div><div class="meal-name">Lunch</div><div class="meal-time">13:00</div></div>
+        <button class="add-btn">+ Add</button>
+      </div>
+      <div class="macro-row">
+        <div class="mi"><div class="mv">764</div><div class="ml">kcal</div></div>
+        <div class="mi"><div class="mv protein">57g</div><div class="ml">protein</div></div>
+        <div class="mi"><div class="mv">76g</div><div class="ml">carbs</div></div>
+        <div class="mi"><div class="mv">22g</div><div class="ml">fat</div></div>
+      </div>
+    </div>
+
+    <!-- Empty meal — no food logged yet -->
+    <div class="meal-empty">
+      <div class="meal-empty-left">
+        <div class="name">Dinner</div>
+        <div class="time">19:00</div>
+      </div>
+      <button class="add-food-btn">+ Add food</button>
+    </div>
+
+    <!-- Empty meal — snacks -->
+    <div class="meal-empty">
+      <div class="meal-empty-left">
+        <div class="name">Snacks</div>
+        <div class="time">Anytime</div>
+      </div>
+      <button class="add-food-btn">+ Add food</button>
+    </div>
+
+    <!-- SECTION: Training -->
+    <div class="sec-label">Training</div>
+    <div class="workout-card">
+      <div class="workout-left">
+        <div class="wlbl">Today's session</div>
+        <div class="wname">Upper A — Push</div>
+        <div class="wsub">Last done: yesterday</div>
+      </div>
+      <button class="start-btn">Start</button>
+    </div>
+
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#3ecf8e"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <div class="ni-lbl active">Home</div>
+    </div>
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <div class="ni-lbl">Food</div>
+    </div>
+    <div class="ni">
+      <div class="fab">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </div>
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      <div class="ni-lbl">Train</div>
+    </div>
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div class="ni-lbl">Progress</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

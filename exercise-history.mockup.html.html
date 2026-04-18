@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=430px, initial-scale=1.0"/>
+<title>Barbell Bench Press — LazyFit</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #090909;
+  display: flex;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.device {
+  width: 430px;
+  min-height: 100vh;
+  background: #090909;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.scroll {
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-bottom: 80px;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(9,9,9,0.9);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-bottom: 1px solid #161616;
+}
+.nav-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: #141414;
+  border: 1px solid #1e1e1e;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.nav-center {
+  font-size: 14px; font-weight: 500;
+  color: #555555; letter-spacing: 0.1px;
+}
+
+/* ═══════════════════════════════════════════════
+   IDENTITY HERO — the cinematic opening
+═══════════════════════════════════════════════ */
+.hero-wrap {
+  position: relative;
+  padding: 30px 20px 0;
+  overflow: hidden;
+}
+
+/* Ambient glow — sets the emotional atmosphere */
+.hero-glow {
+  position: absolute;
+  top: -60px; left: -40px;
+  width: 340px; height: 340px;
+  background: radial-gradient(ellipse at 40% 40%,
+    rgba(62,207,142,0.07) 0%,
+    rgba(62,207,142,0.03) 40%,
+    transparent 70%);
+  pointer-events: none;
+}
+
+.hero-category {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: #3ecf8e; margin-bottom: 12px;
+  opacity: 0; animation: rise 0.6s ease 0.05s forwards;
+}
+
+.hero-name {
+  font-size: 42px; font-weight: 800;
+  color: #f0f0f0; letter-spacing: -2px;
+  line-height: 0.95; margin-bottom: 6px;
+  opacity: 0; animation: rise 0.6s ease 0.1s forwards;
+}
+
+/* The identity statement — this is the hook */
+.hero-identity {
+  font-size: 14px; font-weight: 400;
+  color: #555555; letter-spacing: -0.2px;
+  margin-bottom: 28px; line-height: 1.4;
+  opacity: 0; animation: rise 0.6s ease 0.15s forwards;
+}
+.hero-identity em {
+  font-style: normal;
+  color: #848484;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════
+   PR CARD — the trophy moment, full width, dominant
+═══════════════════════════════════════════════ */
+.pr-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  opacity: 0; animation: rise 0.6s ease 0.2s forwards;
+  cursor: pointer;
+}
+
+/* Dark green depth background */
+.pr-card-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(145deg,
+    #0a1f14 0%,
+    #071610 40%,
+    #050f0a 100%);
+}
+
+/* The signature glow that makes this feel alive */
+.pr-card-glow {
+  position: absolute;
+  top: -40px; right: -20px;
+  width: 260px; height: 260px;
+  background: radial-gradient(circle,
+    rgba(62,207,142,0.18) 0%,
+    rgba(62,207,142,0.06) 45%,
+    transparent 70%);
+  pointer-events: none;
+}
+
+/* Shimmer sweep animation */
+.pr-card-shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg,
+    transparent 30%,
+    rgba(62,207,142,0.04) 50%,
+    transparent 70%);
+  animation: shimmer 4s ease-in-out 2s infinite;
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.pr-card-border {
+  position: absolute; inset: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(62,207,142,0.2);
+  pointer-events: none;
+}
+
+.pr-card-inner {
+  position: relative;
+  padding: 22px 22px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.pr-card-left {}
+
+.pr-label-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.pr-crown-icon {
+  font-size: 15px; line-height: 1;
+  animation: crown-glow 3s ease-in-out infinite;
+}
+@keyframes crown-glow {
+  0%, 100% { filter: drop-shadow(0 0 0px rgba(62,207,142,0)); }
+  50%       { filter: drop-shadow(0 0 8px rgba(62,207,142,0.7)); }
+}
+.pr-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(62,207,142,0.6);
+}
+
+/* The number that matters most */
+.pr-number {
+  font-size: 64px; font-weight: 800;
+  color: #3ecf8e; letter-spacing: -3px;
+  line-height: 1; margin-bottom: 2px;
+}
+.pr-number-unit {
+  font-size: 28px; font-weight: 500;
+  color: rgba(62,207,142,0.5);
+  margin-left: 3px; letter-spacing: -1px;
+}
+.pr-subtitle {
+  font-size: 13px; font-weight: 500;
+  color: rgba(62,207,142,0.45);
+  letter-spacing: -0.2px; margin-bottom: 16px;
+}
+
+/* What actually happened that day */
+.pr-lift-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(62,207,142,0.08);
+  border: 1px solid rgba(62,207,142,0.18);
+  border-radius: 8px; padding: 6px 10px;
+}
+.pr-lift-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #3ecf8e; flex-shrink: 0;
+}
+.pr-lift-text {
+  font-size: 12px; font-weight: 600;
+  color: rgba(62,207,142,0.75); letter-spacing: -0.1px;
+}
+
+.pr-card-right {
+  display: flex; flex-direction: column;
+  align-items: flex-end; gap: 10px;
+  padding-top: 4px;
+}
+.pr-date-tag {
+  font-size: 11px; font-weight: 600;
+  color: rgba(62,207,142,0.5);
+  background: rgba(62,207,142,0.08);
+  border: 1px solid rgba(62,207,142,0.15);
+  border-radius: 7px; padding: 4px 9px;
+  letter-spacing: 0.2px;
+}
+
+/* Circular progress ring — how close to next milestone */
+.pr-ring-wrap {
+  position: relative; width: 72px; height: 72px;
+}
+.pr-ring-svg { width: 72px; height: 72px; transform: rotate(-90deg); }
+.pr-ring-track {
+  fill: none; stroke: rgba(62,207,142,0.1); stroke-width: 3;
+}
+.pr-ring-fill {
+  fill: none; stroke: #3ecf8e; stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 188;
+  stroke-dashoffset: 188;
+  animation: ring-fill 1.4s cubic-bezier(0.4,0,0.2,1) 0.8s forwards;
+}
+@keyframes ring-fill {
+  to { stroke-dashoffset: 49; } /* 74% of 188 = 139 filled → offset = 188-139 = 49 */
+}
+.pr-ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0px;
+}
+.pr-ring-pct {
+  font-size: 15px; font-weight: 800;
+  color: #3ecf8e; letter-spacing: -0.5px; line-height: 1;
+}
+.pr-ring-sub {
+  font-size: 8px; font-weight: 600;
+  color: rgba(62,207,142,0.45);
+  letter-spacing: 0.3px; text-transform: uppercase;
+  text-align: center; line-height: 1.2;
+}
+
+/* ═══════════════════════════════════════════════
+   STREAK + STATS ROW
+═══════════════════════════════════════════════ */
+.meta-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; margin-bottom: 24px;
+  opacity: 0; animation: rise 0.6s ease 0.25s forwards;
+}
+.meta-tile {
+  background: #111111;
+  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 14px 0 13px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+}
+.meta-tile-val {
+  font-size: 21px; font-weight: 700;
+  color: #f0f0f0; letter-spacing: -0.6px; line-height: 1;
+}
+.meta-tile-val.green { color: #3ecf8e; }
+.meta-tile-val.streak {
+  display: flex; align-items: center; gap: 4px;
+}
+.streak-flame { font-size: 16px; }
+.meta-tile-label {
+  font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: #3a3a3a;
+}
+
+/* ═══════════════════════════════════════════════
+   CHART — the portrait of progress
+═══════════════════════════════════════════════ */
+.chart-section {
+  padding: 0 20px 24px;
+  opacity: 0; animation: rise 0.6s ease 0.3s forwards;
+}
+
+.chart-header {
+  display: flex; align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.chart-header-left {}
+.chart-eyebrow {
+  font-size: 11px; font-weight: 500;
+  color: #555555; letter-spacing: 0.2px; margin-bottom: 2px;
+}
+.chart-big-num {
+  font-size: 38px; font-weight: 800;
+  color: #f0f0f0; letter-spacing: -1.8px; line-height: 1;
+}
+.chart-big-unit {
+  font-size: 20px; font-weight: 400; color: #555555; letter-spacing: -0.5px;
+}
+.chart-delta-badge {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+}
+.chart-delta-main {
+  display: flex; align-items: center; gap: 4px;
+  background: #091510;
+  border: 1px solid #1d3d28;
+  border-radius: 10px; padding: 6px 11px;
+}
+.arrow-up { font-size: 13px; color: #3ecf8e; font-weight: 700; }
+.delta-num { font-size: 14px; font-weight: 700; color: #3ecf8e; letter-spacing: -0.4px; }
+.delta-period { font-size: 11px; color: rgba(62,207,142,0.4); }
+.chart-delta-sub {
+  font-size: 11px; color: #3a3a3a; letter-spacing: -0.1px;
+}
+
+/* Chart card */
+.chart-card {
+  background: #0e0e0e;
+  border: 1px solid #1a1a1a;
+  border-radius: 22px;
+  overflow: hidden;
+}
+.chart-svg-wrap {
+  padding: 20px 18px 6px;
+}
+.chart-svg {
+  width: 100%; display: block;
+}
+
+/* Range tabs */
+.range-row {
+  display: flex; gap: 3px;
+  padding: 10px 14px 14px;
+  border-top: 1px solid #161616;
+}
+.rtab {
+  flex: 1; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; color: #3a3a3a; cursor: pointer;
+  transition: all 0.15s;
+}
+.rtab.on {
+  background: #1c1c1c; color: #e0e0e0; font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════
+   COACHING BLOCK — your personal voice
+═══════════════════════════════════════════════ */
+.coach-wrap {
+  padding: 0 20px 24px;
+  opacity: 0; animation: rise 0.6s ease 0.35s forwards;
+}
+.coach-card {
+  background: #0c1c12;
+  border: 1px solid rgba(62,207,142,0.12);
+  border-radius: 20px;
+  padding: 20px;
+  position: relative; overflow: hidden;
+}
+.coach-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  right: 0; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(62,207,142,0.3) 50%, transparent 100%);
+}
+
+.coach-quote-mark {
+  font-size: 48px; line-height: 0.6;
+  color: rgba(62,207,142,0.12);
+  font-family: Georgia, serif;
+  margin-bottom: 10px;
+  display: block;
+}
+.coach-text {
+  font-size: 15px; font-weight: 500;
+  color: #c8c8c8; line-height: 1.6;
+  letter-spacing: -0.3px; margin-bottom: 16px;
+}
+.coach-text strong { color: #f0f0f0; font-weight: 700; }
+.coach-text .highlight { color: #3ecf8e; font-weight: 700; }
+
+/* Milestone progress bar */
+.milestone-block {
+  background: rgba(9,21,16,0.7);
+  border: 1px solid rgba(62,207,142,0.1);
+  border-radius: 12px; padding: 12px 14px;
+}
+.milestone-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 9px;
+}
+.milestone-label {
+  font-size: 12px; font-weight: 600;
+  color: rgba(62,207,142,0.7); letter-spacing: -0.1px;
+}
+.milestone-eta {
+  font-size: 11px; font-weight: 500;
+  color: rgba(62,207,142,0.4);
+}
+.milestone-bar-bg {
+  height: 5px; background: rgba(62,207,142,0.1);
+  border-radius: 3px; overflow: hidden; position: relative;
+}
+.milestone-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #2aaa74, #3ecf8e, #5df5aa);
+  border-radius: 3px;
+  animation: bar-grow 1.2s cubic-bezier(0.4,0,0.2,1) 0.9s forwards;
+  position: relative;
+}
+.milestone-bar-fill::after {
+  content: '';
+  position: absolute; right: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #5df5aa;
+  box-shadow: 0 0 8px rgba(93,245,170,0.9);
+}
+@keyframes bar-grow { to { width: 74%; } }
+.milestone-pct-row {
+  display: flex; justify-content: space-between;
+  margin-top: 6px;
+}
+.milestone-pct-now {
+  font-size: 10px; font-weight: 600; color: #3ecf8e;
+}
+.milestone-pct-target {
+  font-size: 10px; font-weight: 600; color: rgba(62,207,142,0.35);
+}
+
+/* Coach attribution */
+.coach-attribution {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(62,207,142,0.08);
+}
+.coach-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, #1d3d28, #0c1c12);
+  border: 1px solid rgba(62,207,142,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+.coach-name {
+  font-size: 11px; font-weight: 600;
+  color: rgba(62,207,142,0.5); letter-spacing: 0.2px;
+}
+
+/* ═══════════════════════════════════════════════
+   SESSION CHRONICLE — the highlight reel
+═══════════════════════════════════════════════ */
+.chronicle-wrap {
+  padding: 0 20px;
+  opacity: 0; animation: rise 0.6s ease 0.4s forwards;
+}
+.chronicle-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.chronicle-title {
+  font-size: 13px; font-weight: 600;
+  color: #555555; letter-spacing: -0.1px;
+}
+.chronicle-sort {
+  font-size: 12px; font-weight: 500;
+  color: #3ecf8e; cursor: pointer;
+}
+
+.chronicle-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Session entry */
+.scard {
+  background: #0e0e0e;
+  border: 1px solid #1a1a1a;
+  border-radius: 18px; overflow: hidden;
+}
+
+/* PR session gets elevated treatment */
+.scard.is-pr {
+  background: linear-gradient(145deg, #0c1a11 0%, #0a1510 40%, #090f0c 100%);
+  border-color: rgba(62,207,142,0.22);
+  position: relative;
+}
+.scard.is-pr::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(62,207,142,0.4) 50%, transparent 100%);
+}
+
+.scard-head {
+  display: flex; align-items: center;
+  padding: 15px 15px 15px 17px;
+  cursor: pointer; gap: 12px;
+  user-select: none;
+}
+
+/* Timeline dot */
+.scard-dot-col {
+  display: flex; flex-direction: column;
+  align-items: center; flex-shrink: 0;
+}
+.scard-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #2a2a2a; border: 1.5px solid #333333;
+  flex-shrink: 0;
+}
+.scard.is-pr .scard-dot {
+  background: #3ecf8e;
+  border-color: #3ecf8e;
+  box-shadow: 0 0 8px rgba(62,207,142,0.5);
+}
+
+.scard-main { flex: 1; min-width: 0; }
+.scard-top-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 3px;
+}
+.scard-date {
+  font-size: 14px; font-weight: 600;
+  color: #e8e8e8; letter-spacing: -0.3px;
+}
+.scard-tag-today {
+  font-size: 10px; font-weight: 600;
+  color: #444444; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.scard-tag-pr {
+  font-size: 10px; font-weight: 700;
+  color: #3ecf8e;
+  background: rgba(62,207,142,0.1);
+  border: 1px solid rgba(62,207,142,0.22);
+  border-radius: 5px; padding: 2px 6px; letter-spacing: 0.4px;
+}
+.scard-best {
+  font-size: 12px; color: #3c3c3c; letter-spacing: -0.1px;
+}
+.scard-best strong { color: #6a6a6a; font-weight: 600; }
+
+.scard-right {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.scard-1rm { text-align: right; }
+.scard-1rm-val {
+  font-size: 19px; font-weight: 700;
+  color: #d8d8d8; letter-spacing: -0.7px; line-height: 1;
+}
+.scard.is-pr .scard-1rm-val { color: #3ecf8e; }
+.scard-1rm-lbl {
+  font-size: 10px; color: #383838; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.2px; margin-top: 2px;
+}
+.scard-chevron {
+  color: #252525;
+  transition: transform 0.22s ease, color 0.2s;
+}
+.scard.open .scard-chevron { transform: rotate(90deg); color: #555555; }
+
+/* Sets panel */
+.scard-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1);
+}
+.scard.open .scard-body { max-height: 320px; }
+.scard-body-inner {
+  padding: 0 16px 16px;
+  border-top: 1px solid #161616;
+}
+.sets-tbl {
+  width: 100%; border-collapse: collapse; margin-top: 2px;
+}
+.sets-tbl thead th {
+  font-size: 10px; font-weight: 600;
+  color: #383838; text-transform: uppercase;
+  letter-spacing: 0.9px; padding: 10px 0 7px; text-align: left;
+}
+.sets-tbl thead th:not(:first-child) { text-align: right; }
+.sets-tbl tbody td {
+  padding: 7px 0; font-size: 13px; color: #555555;
+  border-top: 1px solid #161616; vertical-align: middle;
+}
+.sets-tbl tbody td:not(:first-child) { text-align: right; }
+.sets-tbl tbody tr.ws td { color: #c0c0c0; }
+.sets-tbl tbody tr.ws td:first-child { color: #666666; }
+.snc { display: flex; align-items: center; gap: 7px; }
+.ws-pip {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #3ecf8e; flex-shrink: 0;
+}
+.dim-n { font-size: 11px; color: #333333; margin-left: 12px; }
+.wb { font-weight: 700; color: #f0f0f0; }
+
+/* ═══════════════════════════════════════════════
+   LOAD MORE
+═══════════════════════════════════════════════ */
+.load-more {
+  margin: 10px 0 0;
+  height: 48px;
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 500; color: #383838;
+  cursor: pointer; gap: 7px; letter-spacing: -0.2px;
+}
+
+/* ═══════════════════════════════════════════════
+   CHART ANIMATIONS
+═══════════════════════════════════════════════ */
+.line-path {
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: draw 1.8s cubic-bezier(0.4,0,0.2,1) 0.4s forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+.area-fill {
+  opacity: 0;
+  animation: fadein 0.6s ease 1.8s forwards;
+}
+@keyframes fadein { to { opacity: 1; } }
+
+.cdot, .ctext { opacity: 0; transform-origin: center; }
+.d1  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.7s  forwards; }
+.d2  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.84s forwards; }
+.d3  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 0.96s forwards; }
+.d4  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 1.06s forwards; }
+.d5  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 1.15s forwards; }
+.d6  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 1.23s forwards; }
+.d7  { animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 1.30s forwards; }
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.2); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* PR dot pulse ring */
+.pr-dot-ring {
+  opacity: 0;
+  animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1) 1.23s forwards,
+             pr-breathe 3s ease-in-out 2.5s infinite;
+}
+@keyframes pr-breathe {
+  0%, 100% { r: 8;  opacity: 0.25; }
+  50%       { r: 15; opacity: 0; }
+}
+
+/* Current tooltip */
+.tip-g { opacity: 0; animation: pop 0.2s ease 1.8s forwards; }
+
+/* ═══════════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+═══════════════════════════════════════════════ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="device">
+<div class="scroll">
+
+<!-- ── NAV ─────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-btn">
+    <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+      <path d="M10.5 3.5L6 8.5L10.5 13.5" stroke="#666" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <span class="nav-center">Your Progress</span>
+  <div class="nav-btn">
+    <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+      <circle cx="8.5" cy="4"   r="1.3" fill="#555"/>
+      <circle cx="8.5" cy="8.5" r="1.3" fill="#555"/>
+      <circle cx="8.5" cy="13" r="1.3" fill="#555"/>
+    </svg>
+  </div>
+</nav>
+
+<!-- ── IDENTITY HERO ──────────────────────── -->
+<div class="hero-wrap">
+  <div class="hero-glow"></div>
+  <div class="hero-category">Chest · Compound · RPT</div>
+  <div class="hero-name">Barbell<br>Bench Press</div>
+  <div class="hero-identity">
+    Training since <em>Dec 18, 2024</em> &nbsp;·&nbsp; <em>24 sessions logged</em>
+  </div>
+</div>
+
+<!-- ── PR CARD ─────────────────────────────── -->
+<div style="padding: 0 20px; opacity: 0; animation: rise 0.6s ease 0.2s forwards;">
+  <div class="pr-card">
+    <div class="pr-card-bg"></div>
+    <div class="pr-card-glow"></div>
+    <div class="pr-card-shimmer"></div>
+    <div class="pr-card-border"></div>
+    <div class="pr-card-inner">
+      <div class="pr-card-left">
+        <div class="pr-label-row">
+          <span class="pr-crown-icon">🏆</span>
+          <span class="pr-label">Personal Record</span>
+        </div>
+        <div class="pr-number">135.3<span class="pr-number-unit">kg</span></div>
+        <div class="pr-subtitle">Estimated one-rep max</div>
+        <div class="pr-lift-chip">
+          <div class="pr-lift-dot"></div>
+          <span class="pr-lift-text">97.5 kg × 5 reps &nbsp;·&nbsp; Mar 12</span>
+        </div>
+      </div>
+      <div class="pr-card-right">
+        <!-- Progress ring toward next milestone -->
+        <div class="pr-ring-wrap">
+          <svg class="pr-ring-svg" viewBox="0 0 72 72">
+            <circle class="pr-ring-track" cx="36" cy="36" r="30"/>
+            <circle class="pr-ring-fill" cx="36" cy="36" r="30"/>
+          </svg>
+          <div class="pr-ring-center">
+            <div class="pr-ring-pct">74%</div>
+            <div class="pr-ring-sub">to<br>140kg</div>
+          </div>
+        </div>
+        <div class="pr-date-tag">Set Mar 12</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STREAK + STATS ──────────────────────── -->
+<div style="padding: 12px 20px 0;">
+  <div class="meta-row">
+    <div class="meta-tile">
+      <div class="meta-tile-val streak">
+        <span class="streak-flame">🔥</span>
+        <span>6</span>
+      </div>
+      <div class="meta-tile-label">Week Streak</div>
+    </div>
+    <div class="meta-tile">
+      <div class="meta-tile-val green">+18.4</div>
+      <div class="meta-tile-label">kg gained</div>
+    </div>
+    <div class="meta-tile">
+      <div class="meta-tile-val">16</div>
+      <div class="meta-tile-label">Weeks</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHART ───────────────────────────────── -->
+<div class="chart-section">
+  <div class="chart-header">
+    <div class="chart-header-left">
+      <div class="chart-eyebrow">Current est. 1RM</div>
+      <div class="chart-big-num">131.7<span class="chart-big-unit"> kg</span></div>
+    </div>
+    <div class="chart-delta-badge">
+      <div class="chart-delta-main">
+        <span class="arrow-up">↑</span>
+        <span class="delta-num">+18.4 kg</span>
+        <span class="delta-period">&thinsp;16 wks</span>
+      </div>
+      <div class="chart-delta-sub">1.15 kg / week avg</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-svg-wrap">
+      <!--
+        viewBox 0 0 358 175
+        Y map: kg=110→y=152, kg=140→y=12  range=140px over 30kg
+        Per kg: 140/30 = 4.667px
+        y = 152 - (val-110)*4.667
+
+        Sessions:
+          Dec18  113.3 → y=137   x=18
+          Jan05  115.5 → y=127   x=60
+          Jan22  118.8 → y=112   x=102
+          Feb05  121.0 → y=101   x=144
+          Feb19  124.5 → y=85    x=186
+          Mar05  128.0 → y=68    x=224   (wait — let me re-calc)
+          
+        Actually re-doing:
+          y = 152 - (val - 110) * (140/30)
+          110 → 152
+          115 → 129
+          120 → 106
+          125 → 82.5
+          130 → 59
+          135 → 35.5
+          140 → 12
+
+          Dec18  113.3 → y = 152 - 3.3*4.667  = 152-15.4 = 136.6 ≈ 137   x=18
+          Jan05  115.5 → y = 152 - 5.5*4.667  = 152-25.7 = 126.3 ≈ 126   x=62
+          Jan22  118.0 → y = 152 - 8.0*4.667  = 152-37.3 = 114.7 ≈ 115   x=104
+          Feb05  121.0 → y = 152 - 11.0*4.667 = 152-51.3 = 100.7 ≈ 101   x=144
+          Feb19  124.5 → y = 152 - 14.5*4.667 = 152-67.7 = 84.3  ≈ 84    x=186
+          Mar05  128.0 → y = 152 - 18.0*4.667 = 152-84.0 = 68.0  ≈ 68    x=222
+          Mar12  135.3 → y = 152 - 25.3*4.667 = 152-118  = 34.0  ≈ 34    x=250  ← PR
+          Mar26  128.8 → y = 152 - 18.8*4.667 = 152-87.7 = 64.3  ≈ 64    x=290
+          Apr12  131.7 → y = 152 - 21.7*4.667 = 152-101  = 51.0  ≈ 51    x=340
+      -->
+      <svg class="chart-svg" viewBox="0 0 358 175" style="height:175px;">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#3ecf8e" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#3ecf8e"/>
+          </linearGradient>
+          <linearGradient id="fg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#3ecf8e" stop-opacity="0.16"/>
+            <stop offset="85%" stop-color="#3ecf8e" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+
+        <!-- Y grid -->
+        <line x1="28" y1="12"  x2="350" y2="12"  stroke="#161616" stroke-width="1"/>
+        <line x1="28" y1="59"  x2="350" y2="59"  stroke="#161616" stroke-width="1"/>
+        <line x1="28" y1="106" x2="350" y2="106" stroke="#161616" stroke-width="1"/>
+        <line x1="28" y1="152" x2="350" y2="152" stroke="#161616" stroke-width="1"/>
+
+        <!-- Y labels -->
+        <text x="23" y="16"  font-size="9" fill="#333" text-anchor="end" font-family="-apple-system,sans-serif" font-weight="500">140</text>
+        <text x="23" y="63"  font-size="9" fill="#333" text-anchor="end" font-family="-apple-system,sans-serif" font-weight="500">130</text>
+        <text x="23" y="110" font-size="9" fill="#333" text-anchor="end" font-family="-apple-system,sans-serif" font-weight="500">120</text>
+        <text x="23" y="156" font-size="9" fill="#333" text-anchor="end" font-family="-apple-system,sans-serif" font-weight="500">110</text>
+
+        <!-- Area -->
+        <path class="area-fill"
+          d="M18,137 C36,133 50,129 104,115 C128,108 134,104 144,101
+             C160,95 174,88 186,84 C204,78 214,72 222,68
+             C234,55 242,44 250,34
+             C264,44 278,55 290,64 C310,58 328,54 340,51
+             L340,158 L18,158 Z"
+          fill="url(#fg)"/>
+
+        <!-- Line -->
+        <path class="line-path"
+          d="M18,137 C36,133 50,129 104,115 C128,108 134,104 144,101
+             C160,95 174,88 186,84 C204,78 214,72 222,68
+             C234,55 242,44 250,34
+             C264,44 278,55 290,64 C310,58 328,54 340,51"
+          fill="none" stroke="url(#lg)"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Regular dots -->
+        <circle class="cdot d1" cx="18"  cy="137" r="3.5" fill="#0e0e0e" stroke="#3ecf8e" stroke-width="2"/>
+        <circle class="cdot d2" cx="104" cy="115" r="3.5" fill="#0e0e0e" stroke="#3ecf8e" stroke-width="2"/>
+        <circle class="cdot d3" cx="144" cy="101" r="3.5" fill="#0e0e0e" stroke="#3ecf8e" stroke-width="2"/>
+        <circle class="cdot d4" cx="186" cy="84"  r="3.5" fill="#0e0e0e" stroke="#3ecf8e" stroke-width="2"/>
+        <circle class="cdot d5" cx="222" cy="68"  r="3.5" fill="#0e0e0e" stroke="#3ecf8e" stroke-width="2"/>
+
+        <!-- PR dot — the climax -->
+        <circle class="pr-dot-ring" cx="250" cy="34" r="8" fill="none" stroke="#3ecf8e" stroke-width="1.5"/>
+        <circle class="cdot d6" cx="250" cy="34" r="6"   fill="#3ecf8e" filter="url(#glow)"/>
+        <text class="ctext d6" x="250" y="22" font-size="9.5" fill="#3ecf8e"
+              text-anchor="middle" font-family="-apple-system,sans-serif" font-weight="800" letter-spacing="0.5">PR</text>
+
+        <!-- Post-PR + current -->
+        <circle class="cdot d6" cx="290" cy="64"  r="3.5" fill="#0e0e0e" stroke="#3ecf8e" stroke-width="2"/>
+        <circle class="cdot d7" cx="340" cy="51"  r="5.5" fill="#3ecf8e"/>
+
+        <!-- Current tooltip -->
+        <g class="tip-g">
+          <rect x="313" y="31" width="54" height="19" rx="5" fill="#1a1a1a" stroke="#272727" stroke-width="1"/>
+          <text x="340" y="44" font-size="10.5" fill="#f0f0f0" text-anchor="middle"
+                font-family="-apple-system,sans-serif" font-weight="700">131.7 kg</text>
+        </g>
+
+        <!-- X labels -->
+        <text x="18"  y="172" font-size="9" fill="#363636" text-anchor="middle" font-family="-apple-system,sans-serif">Dec</text>
+        <text x="114" y="172" font-size="9" fill="#363636" text-anchor="middle" font-family="-apple-system,sans-serif">Jan</text>
+        <text x="210" y="172" font-size="9" fill="#363636" text-anchor="middle" font-family="-apple-system,sans-serif">Feb</text>
+        <text x="270" y="172" font-size="9" fill="#363636" text-anchor="middle" font-family="-apple-system,sans-serif">Mar</text>
+        <text x="340" y="172" font-size="9" fill="#363636" text-anchor="middle" font-family="-apple-system,sans-serif">Apr</text>
+      </svg>
+    </div>
+    <div class="range-row">
+      <div class="rtab">4W</div>
+      <div class="rtab">8W</div>
+      <div class="rtab on">3M</div>
+      <div class="rtab">6M</div>
+      <div class="rtab">All</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── COACHING BLOCK ─────────────────────── -->
+<div class="coach-wrap">
+  <div class="coach-card">
+    <span class="coach-quote-mark">"</span>
+    <div class="coach-text">
+      In <strong>16 weeks</strong>, you've added
+      <span class="highlight">+18.4 kg</span> to your estimated max.
+      That's not luck — that's <strong>24 sessions of showing up</strong>.
+      You're progressing at <span class="highlight">1.15 kg/week</span>,
+      which puts you in the top 5% of intermediate lifters.
+      Keep Set 1 heavy in the 5–6 rep range. Don't leave weight on the bar.
+    </div>
+    <div class="milestone-block">
+      <div class="milestone-top">
+        <span class="milestone-label">Next milestone: 140 kg est. 1RM</span>
+        <span class="milestone-eta">~3 weeks away</span>
+      </div>
+      <div class="milestone-bar-bg">
+        <div class="milestone-bar-fill"></div>
+      </div>
+      <div class="milestone-pct-row">
+        <span class="milestone-pct-now">131.7 kg now</span>
+        <span class="milestone-pct-target">140 kg target</span>
+      </div>
+    </div>
+    <div class="coach-attribution">
+      <div class="coach-avatar">⚡</div>
+      <span class="coach-name">LazyFit Adaptive Coach</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── SESSION CHRONICLE ──────────────────── -->
+<div class="chronicle-wrap">
+  <div class="chronicle-header">
+    <span class="chronicle-title">Session Chronicle</span>
+    <span class="chronicle-sort">Oldest First ↑</span>
+  </div>
+
+  <div class="chronicle-list">
+
+    <!-- Apr 12 — today, open -->
+    <div class="scard open">
+      <div class="scard-head" onclick="this.closest('.scard').classList.toggle('open')">
+        <div class="scard-dot-col"><div class="scard-dot"></div></div>
+        <div class="scard-main">
+          <div class="scard-top-row">
+            <span class="scard-date">Apr 12, 2025</span>
+            <span class="scard-tag-today">Today</span>
+          </div>
+          <div class="scard-best">Best set: <strong>95 kg × 6 reps</strong></div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-1rm">
+            <div class="scard-1rm-val">131.7</div>
+            <div class="scard-1rm-lbl">est 1RM</div>
+          </div>
+          <svg class="scard-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="scard-body"><div class="scard-body-inner">
+        <table class="sets-tbl">
+          <thead><tr><th style="width:52px">Set</th><th>Weight</th><th>Reps</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr class="ws">
+              <td><div class="snc"><div class="ws-pip"></div>1</div></td>
+              <td><span class="wb">95 kg</span></td><td><span class="wb">6</span></td><td>570 kg</td>
+            </tr>
+            <tr><td><div class="snc"><span class="dim-n">2</span></div></td><td>85 kg</td><td>8</td><td>680 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">3</span></div></td><td>75 kg</td><td>10</td><td>750 kg</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- Mar 12 — PR -->
+    <div class="scard is-pr">
+      <div class="scard-head" onclick="this.closest('.scard').classList.toggle('open')">
+        <div class="scard-dot-col"><div class="scard-dot"></div></div>
+        <div class="scard-main">
+          <div class="scard-top-row">
+            <span class="scard-date">Mar 12, 2025</span>
+            <span class="scard-tag-pr">🏆 PR</span>
+          </div>
+          <div class="scard-best">Best set: <strong>97.5 kg × 5 reps</strong></div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-1rm">
+            <div class="scard-1rm-val">135.3</div>
+            <div class="scard-1rm-lbl">est 1RM</div>
+          </div>
+          <svg class="scard-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="scard-body"><div class="scard-body-inner">
+        <table class="sets-tbl">
+          <thead><tr><th style="width:52px">Set</th><th>Weight</th><th>Reps</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr class="ws">
+              <td><div class="snc"><div class="ws-pip"></div>1</div></td>
+              <td><span class="wb">97.5 kg</span></td><td><span class="wb">5</span></td><td>487 kg</td>
+            </tr>
+            <tr><td><div class="snc"><span class="dim-n">2</span></div></td><td>87.5 kg</td><td>7</td><td>612 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">3</span></div></td><td>77.5 kg</td><td>9</td><td>697 kg</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- Feb 26 -->
+    <div class="scard">
+      <div class="scard-head" onclick="this.closest('.scard').classList.toggle('open')">
+        <div class="scard-dot-col"><div class="scard-dot"></div></div>
+        <div class="scard-main">
+          <div class="scard-top-row"><span class="scard-date">Feb 26, 2025</span></div>
+          <div class="scard-best">Best set: <strong>92.5 kg × 6 reps</strong></div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-1rm"><div class="scard-1rm-val">128.4</div><div class="scard-1rm-lbl">est 1RM</div></div>
+          <svg class="scard-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="scard-body"><div class="scard-body-inner">
+        <table class="sets-tbl">
+          <thead><tr><th style="width:52px">Set</th><th>Weight</th><th>Reps</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr class="ws"><td><div class="snc"><div class="ws-pip"></div>1</div></td><td><span class="wb">92.5 kg</span></td><td><span class="wb">6</span></td><td>555 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">2</span></div></td><td>82.5 kg</td><td>8</td><td>660 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">3</span></div></td><td>72.5 kg</td><td>10</td><td>725 kg</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- Feb 12 -->
+    <div class="scard">
+      <div class="scard-head" onclick="this.closest('.scard').classList.toggle('open')">
+        <div class="scard-dot-col"><div class="scard-dot"></div></div>
+        <div class="scard-main">
+          <div class="scard-top-row"><span class="scard-date">Feb 12, 2025</span></div>
+          <div class="scard-best">Best set: <strong>90 kg × 7 reps</strong></div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-1rm"><div class="scard-1rm-val">111.0</div><div class="scard-1rm-lbl">est 1RM</div></div>
+          <svg class="scard-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="scard-body"><div class="scard-body-inner">
+        <table class="sets-tbl">
+          <thead><tr><th style="width:52px">Set</th><th>Weight</th><th>Reps</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr class="ws"><td><div class="snc"><div class="ws-pip"></div>1</div></td><td><span class="wb">90 kg</span></td><td><span class="wb">7</span></td><td>630 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">2</span></div></td><td>80 kg</td><td>9</td><td>720 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">3</span></div></td><td>70 kg</td><td>11</td><td>770 kg</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- Jan 29 -->
+    <div class="scard">
+      <div class="scard-head" onclick="this.closest('.scard').classList.toggle('open')">
+        <div class="scard-dot-col"><div class="scard-dot"></div></div>
+        <div class="scard-main">
+          <div class="scard-top-row"><span class="scard-date">Jan 29, 2025</span></div>
+          <div class="scard-best">Best set: <strong>87.5 kg × 8 reps</strong></div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-1rm"><div class="scard-1rm-val">111.7</div><div class="scard-1rm-lbl">est 1RM</div></div>
+          <svg class="scard-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="scard-body"><div class="scard-body-inner">
+        <table class="sets-tbl">
+          <thead><tr><th style="width:52px">Set</th><th>Weight</th><th>Reps</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr class="ws"><td><div class="snc"><div class="ws-pip"></div>1</div></td><td><span class="wb">87.5 kg</span></td><td><span class="wb">8</span></td><td>700 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">2</span></div></td><td>77.5 kg</td><td>10</td><td>775 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">3</span></div></td><td>67.5 kg</td><td>12</td><td>810 kg</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- Dec 18 -->
+    <div class="scard">
+      <div class="scard-head" onclick="this.closest('.scard').classList.toggle('open')">
+        <div class="scard-dot-col"><div class="scard-dot"></div></div>
+        <div class="scard-main">
+          <div class="scard-top-row"><span class="scard-date">Dec 18, 2024</span></div>
+          <div class="scard-best">Best set: <strong>82.5 kg × 6 reps</strong></div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-1rm"><div class="scard-1rm-val">113.3</div><div class="scard-1rm-lbl">est 1RM</div></div>
+          <svg class="scard-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="scard-body"><div class="scard-body-inner">
+        <table class="sets-tbl">
+          <thead><tr><th style="width:52px">Set</th><th>Weight</th><th>Reps</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr class="ws"><td><div class="snc"><div class="ws-pip"></div>1</div></td><td><span class="wb">82.5 kg</span></td><td><span class="wb">6</span></td><td>495 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">2</span></div></td><td>72.5 kg</td><td>8</td><td>580 kg</td></tr>
+            <tr><td><div class="snc"><span class="dim-n">3</span></div></td><td>62.5 kg</td><td>10</td><td>625 kg</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+  </div><!-- /chronicle-list -->
+
+  <div class="load-more">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1.5v11M1.5 7h11" stroke="#444" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    Show 18 earlier sessions
+  </div>
+
+</div><!-- /chronicle-wrap -->
+
+</div><!-- /scroll -->
+</div><!-- /device -->
+</body>
+</html>

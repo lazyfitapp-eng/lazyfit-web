@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=430px, initial-scale=1.0"/>
+<title>Progress — LazyFit</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #040404;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 60px;
+}
+
+/* ── TOGGLE ──────────────────────────────────────── */
+.toggle-bar {
+  width: 430px; display: flex; gap: 8px;
+  padding: 12px 16px; background: #0a0a0a;
+  border-bottom: 1px solid #161616;
+  position: sticky; top: 0; z-index: 999;
+}
+.toggle-btn {
+  flex: 1; height: 32px; border-radius: 8px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  border: 1px solid #1a1a1a; background: transparent;
+  color: #333; font-family: inherit; transition: all 0.15s;
+}
+.toggle-btn.active { background: #1a1a1a; color: #f0f0f0; border-color: #282828; }
+
+/* ── DEVICE ──────────────────────────────────────── */
+.device { width: 430px; background: #090909; }
+.state-new  { display: none; }
+.state-full { display: none; }
+.device.show-new  .state-new  { display: block; }
+.device.show-full .state-full { display: block; }
+
+/* ── NAV ─────────────────────────────────────────── */
+.nav {
+  position: sticky; top: 57px; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(9,9,9,0.94);
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border-bottom: 1px solid #111;
+}
+.nav-title { font-size: 17px; font-weight: 700; color: #f0f0f0; letter-spacing: -0.5px; }
+.nav-tabs { display: flex; gap: 2px; }
+.ntab {
+  height: 26px; padding: 0 10px; border-radius: 7px;
+  font-size: 11px; font-weight: 600; color: #2e2e2e;
+  border: none; background: transparent; cursor: pointer;
+  letter-spacing: 0.2px; font-family: inherit;
+}
+.ntab.on { background: #1c1c1c; color: #e0e0e0; border: 1px solid #242424; }
+
+/* ── SECTION CHROME ──────────────────────────────── */
+.sec { padding: 0 20px; }
+.sec-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
+  text-transform: uppercase; color: #333; margin-bottom: 12px;
+  padding-top: 22px;
+}
+
+/* ════════════════════════════════════════════════════
+   HERO — the centerpiece, must stop the eye
+════════════════════════════════════════════════════ */
+.hero {
+  position: relative; padding: 36px 20px 28px; overflow: hidden;
+}
+.hero-bg-glow {
+  position: absolute; top: -120px; left: -80px;
+  width: 500px; height: 500px;
+  background: radial-gradient(ellipse at 35% 35%,
+    rgba(62,207,142,0.11) 0%,
+    rgba(62,207,142,0.04) 40%,
+    transparent 68%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: #3ecf8e; margin-bottom: 16px;
+  opacity: 0; animation: rise 0.6s ease 0.04s both;
+}
+/* The BIG statement — this is the screen */
+.hero-statement {
+  font-size: 34px; font-weight: 800; color: #f0f0f0;
+  letter-spacing: -1.5px; line-height: 1.08; margin-bottom: 12px;
+  opacity: 0; animation: rise 0.6s ease 0.09s both;
+}
+.hero-statement em { font-style: normal; color: #3ecf8e; }
+.hero-statement .dim { color: #444; }
+
+.hero-proof {
+  font-size: 14px; color: #4a4a4a; line-height: 1.55;
+  letter-spacing: -0.2px; margin-bottom: 26px;
+  opacity: 0; animation: rise 0.6s ease 0.13s both;
+}
+.hero-proof strong { color: #848484; font-weight: 600; }
+
+/* Stats strip */
+.hero-stats {
+  display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr;
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 18px; overflow: hidden;
+  opacity: 0; animation: rise 0.6s ease 0.17s both;
+}
+.hstat-div { background: #1a1a1a; width: 1px; }
+.hstat {
+  padding: 16px 0; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+}
+.hstat-val {
+  font-size: 22px; font-weight: 800;
+  color: #f0f0f0; letter-spacing: -0.8px; line-height: 1;
+}
+.hstat-val.g { color: #3ecf8e; }
+.hstat-lbl {
+  font-size: 9px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.6px; color: #2e2e2e;
+}
+/* Streak comparison row under streak stat */
+.streak-compare {
+  display: flex; gap: 6px; margin-top: 2px;
+  font-size: 9px; color: #2e2e2e; font-weight: 500;
+}
+.streak-compare .best { color: #444; }
+
+/* ════════════════════════════════════════════════════
+   TRAINING CALENDAR — monthly view, industry standard
+════════════════════════════════════════════════════ */
+.cal-card {
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 20px; padding: 20px 18px 18px;
+  opacity: 0; animation: rise 0.6s ease 0.22s both;
+}
+
+/* Month header */
+.cal-month-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.cal-month-name {
+  font-size: 15px; font-weight: 700; color: #f0f0f0; letter-spacing: -0.4px;
+}
+.cal-month-year {
+  font-size: 13px; font-weight: 500; color: #3a3a3a; letter-spacing: -0.2px;
+}
+
+/* Day-of-week header row */
+.cal-dow-row {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+.cal-dow {
+  text-align: center; font-size: 10px; font-weight: 700;
+  color: #2e2e2e; letter-spacing: 0.5px; text-transform: uppercase;
+  padding-bottom: 6px;
+}
+.cal-dow.weekend { color: #222; }
+
+/* Calendar grid */
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 600;
+  color: #2e2e2e;
+  position: relative;
+  cursor: default;
+  transition: transform 0.1s;
+}
+.cal-day.empty { visibility: hidden; }
+.cal-day.future { color: #1e1e1e; }
+/* Rest day — just the number, no fill */
+.cal-day.rest { color: #333; }
+/* Trained day — solid green circle, number inside */
+.cal-day.trained {
+  background: #3ecf8e;
+  color: #051a10;
+  font-weight: 800;
+  box-shadow: 0 0 0 0 rgba(62,207,142,0);
+  animation: cal-pop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.cal-day.trained:hover { transform: scale(1.12); }
+/* Today — green ring outline */
+.cal-day.today {
+  color: #3ecf8e;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px #3ecf8e;
+}
+/* Today AND trained */
+.cal-day.today.trained {
+  background: #3ecf8e;
+  color: #051a10;
+  box-shadow: 0 0 0 2px #3ecf8e, 0 0 12px rgba(62,207,142,0.4);
+}
+@keyframes cal-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Divider */
+.cal-divider {
+  height: 1px; background: #141414; margin: 18px 0 16px;
+}
+
+/* ── PROOF SECTION — narrative + week dots ───────
+   Sits below the calendar. Answers: "am I consistent?"
+   in plain English + one row of 8 visual dots.
+─────────────────────────────────────────────────── */
+.cal-proof { }
+
+/* The one plain-English sentence */
+.cal-narrative {
+  font-size: 13px; font-weight: 500;
+  color: #555; line-height: 1.5; letter-spacing: -0.2px;
+  margin-bottom: 14px;
+}
+.cal-narrative strong { color: #c8c8c8; font-weight: 700; }
+.cal-narrative em { font-style: normal; color: #3ecf8e; font-weight: 700; }
+
+/* 8 week dots row */
+.week-dots-row {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 6px;
+}
+.week-dot-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 5px;
+}
+.week-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800;
+  transition: transform 0.15s;
+}
+/* Full week — 3 sessions */
+.week-dot.full {
+  background: #3ecf8e;
+  color: #051a10;
+  box-shadow: 0 0 8px rgba(62,207,142,0.3);
+}
+/* Partial — 1 or 2 sessions */
+.week-dot.partial {
+  background: rgba(62,207,142,0.15);
+  color: rgba(62,207,142,0.7);
+  border: 1.5px solid rgba(62,207,142,0.25);
+}
+/* Miss — 0 sessions */
+.week-dot.miss {
+  background: #141414;
+  color: #2a2a2a;
+  border: 1.5px solid #1a1a1a;
+}
+/* Current week — always outlined */
+.week-dot.current {
+  box-shadow: 0 0 0 2px #3ecf8e;
+}
+.week-dot-lbl {
+  font-size: 8px; font-weight: 600; color: #222;
+  letter-spacing: 0.2px; text-transform: uppercase;
+  font-family: monospace;
+}
+
+/* Footer — streak only, clean */
+.cal-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding-top: 13px; border-top: 1px solid #141414;
+}
+.cal-streak-block { display: flex; flex-direction: column; gap: 2px; }
+.cal-streak-val {
+  font-size: 15px; font-weight: 800;
+  color: #3ecf8e; letter-spacing: -0.5px; line-height: 1;
+}
+.cal-streak-lbl {
+  font-size: 10px; font-weight: 600; color: #2a2a2a;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.cal-streak-best {
+  font-size: 11px; font-weight: 600;
+  color: #2a2a2a; letter-spacing: -0.1px;
+}
+.cal-streak-best.pb { color: rgba(62,207,142,0.5); }
+
+/* ════════════════════════════════════════════════════
+   STRENGTH SNAPSHOT — hero card for top lift + grid
+════════════════════════════════════════════════════ */
+.strength-hero-card {
+  background: linear-gradient(145deg, #0a1f14, #071610 50%, #050f0a);
+  border: 1px solid rgba(62,207,142,0.18);
+  border-radius: 20px; padding: 20px;
+  position: relative; overflow: hidden;
+  margin-bottom: 8px; cursor: pointer;
+  opacity: 0; animation: rise 0.6s ease 0.27s both;
+}
+.strength-hero-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(62,207,142,0.45), transparent);
+}
+.shc-glow {
+  position: absolute; top: -40px; right: -20px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(62,207,142,0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+.shc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.shc-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(62,207,142,0.1); border: 1px solid rgba(62,207,142,0.2);
+  border-radius: 6px; padding: 3px 8px;
+  font-size: 9px; font-weight: 700; color: #3ecf8e; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.shc-tap {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 500; color: rgba(62,207,142,0.35);
+  letter-spacing: -0.1px;
+}
+.shc-name { font-size: 12px; font-weight: 600; color: rgba(62,207,142,0.6); margin-bottom: 6px; }
+.shc-1rm {
+  font-size: 52px; font-weight: 800; color: #3ecf8e;
+  letter-spacing: -2.5px; line-height: 1; margin-bottom: 4px;
+}
+.shc-1rm span { font-size: 24px; font-weight: 500; color: rgba(62,207,142,0.5); letter-spacing: -1px; }
+.shc-sub { font-size: 13px; color: rgba(62,207,142,0.45); font-weight: 500; margin-bottom: 16px; }
+.shc-delta-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; background: rgba(9,21,16,0.7);
+  border: 1px solid rgba(62,207,142,0.1); border-radius: 11px;
+}
+.shc-delta-val { font-size: 18px; font-weight: 800; color: #3ecf8e; letter-spacing: -0.6px; }
+.shc-delta-lbl { font-size: 12px; color: rgba(62,207,142,0.5); font-weight: 500; }
+.shc-sessions { font-size: 11px; color: #2e2e2e; margin-left: auto; }
+
+/* Secondary exercise grid */
+.strength-sub-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  opacity: 0; animation: rise 0.6s ease 0.3s both;
+}
+.sc {
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 16px; padding: 14px;
+  cursor: pointer; position: relative; overflow: hidden;
+}
+.sc-chevron { position: absolute; top: 11px; right: 11px; color: #242424; }
+.sc-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  border-radius: 5px; padding: 2px 6px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.3px;
+  text-transform: uppercase; margin-bottom: 9px;
+}
+.sc-badge.r { background: rgba(62,207,142,0.09); color: #3ecf8e; border: 1px solid rgba(62,207,142,0.18); }
+.sc-badge.h { background: rgba(100,100,100,0.07); color: #555; border: 1px solid #1e1e1e; }
+.sc-badge.n { background: rgba(245,166,35,0.07); color: #f5a623; border: 1px solid rgba(245,166,35,0.18); }
+.sc-badge.b { background: rgba(74,158,255,0.07); color: #4a9eff; border: 1px solid rgba(74,158,255,0.15); }
+.sc-name { font-size: 11px; font-weight: 600; color: #555; margin-bottom: 7px; line-height: 1.3; }
+.sc-val { font-size: 21px; font-weight: 800; color: #f0f0f0; letter-spacing: -0.7px; line-height: 1; margin-bottom: 3px; }
+.sc-val span { font-size: 12px; font-weight: 400; color: #3a3a3a; }
+.sc-delta { font-size: 11px; font-weight: 600; }
+.sc-delta.g { color: #3ecf8e; }
+.sc-delta.n { color: #2e2e2e; }
+.sc-delta.w { color: #f5a623; }
+
+/* ════════════════════════════════════════════════════
+   BODY COMPOSITION
+════════════════════════════════════════════════════ */
+.bc-card {
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 20px; overflow: hidden;
+  opacity: 0; animation: rise 0.6s ease 0.34s both;
+}
+.bc-head { padding: 18px 18px 0; display: flex; gap: 20px; }
+.bc-stat {}
+.bc-slbl { font-size: 10px; font-weight: 500; color: #3a3a3a; margin-bottom: 3px; }
+.bc-sval { font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.bc-sval.wc { color: #4a9eff; }
+.bc-sval.wsc { color: #3ecf8e; }
+.bc-sval.dim { color: #222; font-size: 16px; }
+.bc-su { font-size: 13px; font-weight: 400; color: #3a3a3a; }
+.bc-sdelta { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.bc-sdelta.g { color: #3ecf8e; }
+.bc-sdelta.f { color: #2e2e2e; }
+/* Recomp insight pill */
+.bc-insight {
+  margin: 0 18px; margin-top: 10px;
+  padding: 9px 13px;
+  background: rgba(62,207,142,0.05);
+  border: 1px solid rgba(62,207,142,0.1);
+  border-radius: 10px;
+  font-size: 12px; font-weight: 500;
+  color: rgba(62,207,142,0.6); line-height: 1.45;
+  letter-spacing: -0.1px;
+}
+.bc-insight strong { color: #3ecf8e; font-weight: 700; }
+.bc-svg { padding: 10px 18px 0; }
+.bc-legend {
+  display: flex; gap: 14px; padding: 10px 18px 16px;
+  border-top: 1px solid #111; margin-top: 6px;
+}
+.bc-leg { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 500; color: #383838; }
+.bc-leg-line { width: 18px; height: 2px; border-radius: 1px; }
+/* Waist CTA */
+.waist-cta {
+  margin: 0 18px 16px; padding: 12px 14px;
+  background: rgba(62,207,142,0.04); border: 1px solid rgba(62,207,142,0.09);
+  border-radius: 11px; display: flex; align-items: center; gap: 12px;
+}
+.waist-cta-copy { flex: 1; }
+.waist-cta-title { font-size: 12px; font-weight: 700; color: #848484; margin-bottom: 2px; }
+.waist-cta-sub { font-size: 11px; color: #333; line-height: 1.4; }
+.waist-cta-btn {
+  font-size: 11px; font-weight: 700; color: #3ecf8e;
+  background: rgba(62,207,142,0.08); border: 1px solid rgba(62,207,142,0.2);
+  border-radius: 8px; padding: 7px 13px;
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+
+/* ════════════════════════════════════════════════════
+   PR TROPHY CASE — top PR as hero card
+════════════════════════════════════════════════════ */
+.trophy-wrap {
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 20px; overflow: hidden;
+  opacity: 0; animation: rise 0.6s ease 0.38s both;
+}
+.trophy-head {
+  padding: 16px 18px 14px; display: flex; align-items: center; gap: 8px;
+}
+.trophy-emoji { font-size: 20px; animation: bob 3.5s ease-in-out infinite; }
+@keyframes bob {
+  0%,100% { transform:translateY(0) rotate(0deg); }
+  40%      { transform:translateY(-3px) rotate(-4deg); }
+  60%      { transform:translateY(-3px) rotate(4deg); }
+}
+.trophy-ttl { font-size: 15px; font-weight: 700; color: #f0f0f0; letter-spacing: -0.3px; }
+.trophy-cnt { font-size: 12px; color: #333; margin-left: auto; }
+
+/* Top PR — hero treatment */
+.pr-hero {
+  margin: 0 16px 12px;
+  background: linear-gradient(145deg, #0a1f14, #071610);
+  border: 1px solid rgba(62,207,142,0.15);
+  border-radius: 16px; padding: 16px;
+  position: relative; overflow: hidden; cursor: pointer;
+}
+.pr-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(62,207,142,0.35), transparent);
+}
+.pr-hero-top { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.pr-hero-name { font-size: 12px; font-weight: 600; color: rgba(62,207,142,0.6); }
+.pr-hero-date { font-size: 11px; color: rgba(62,207,142,0.35); }
+.pr-hero-val {
+  font-size: 38px; font-weight: 800; color: #3ecf8e;
+  letter-spacing: -1.8px; line-height: 1; margin-bottom: 4px;
+}
+.pr-hero-val span { font-size: 18px; font-weight: 400; color: rgba(62,207,142,0.45); }
+.pr-hero-sub { font-size: 12px; font-weight: 500; color: rgba(62,207,142,0.45); }
+.pr-hero-delta {
+  display: inline-block; margin-top: 10px;
+  font-size: 13px; font-weight: 700; color: #3ecf8e;
+  background: rgba(62,207,142,0.08); border: 1px solid rgba(62,207,142,0.15);
+  border-radius: 8px; padding: 5px 11px;
+}
+
+/* Other PRs */
+.pr-row {
+  padding: 11px 18px; border-top: 1px solid #111;
+  display: flex; align-items: center; gap: 12px;
+}
+.pr-row-l { flex: 1; min-width: 0; }
+.pr-row-name { font-size: 13px; font-weight: 600; color: #c8c8c8; letter-spacing: -0.2px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-row-meta { font-size: 11px; color: #333; }
+.pr-row-r { text-align: right; flex-shrink: 0; }
+.pr-row-val { font-size: 16px; font-weight: 700; color: #e8e8e8; letter-spacing: -0.5px; line-height: 1; }
+.pr-row-val span { font-size: 11px; font-weight: 400; color: #3a3a3a; }
+.pr-row-delta { font-size: 11px; font-weight: 600; color: #3ecf8e; margin-top: 2px; }
+.pr-see-all {
+  padding: 13px 18px; border-top: 1px solid #111;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #3ecf8e; cursor: pointer;
+}
+/* Empty state */
+.pr-empty {
+  border-top: 1px solid #111; padding: 32px 24px; text-align: center;
+}
+.pr-empty-hed { font-size: 18px; font-weight: 800; color: #f0f0f0; letter-spacing: -0.6px; margin-bottom: 8px; }
+.pr-empty-sub { font-size: 13px; color: #333; line-height: 1.6; }
+.pr-empty-sub em { font-style: normal; color: #444; }
+
+/* ════════════════════════════════════════════════════
+   NUTRITION
+════════════════════════════════════════════════════ */
+.nutr-card {
+  background: #0e0e0e; border: 1px solid #1a1a1a;
+  border-radius: 20px; padding: 18px;
+  opacity: 0; animation: rise 0.6s ease 0.41s both;
+}
+.nutr-item { margin-bottom: 14px; }
+.nutr-item:last-child { margin-bottom: 0; }
+.nutr-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.nutr-lbl { font-size: 12px; font-weight: 500; color: #4a4a4a; }
+.nutr-val { font-size: 13px; font-weight: 700; color: #c0c0c0; letter-spacing: -0.3px; }
+.nutr-bar { height: 5px; background: #161616; border-radius: 2.5px; overflow: hidden; }
+.nutr-fill { height: 100%; border-radius: 2.5px; }
+.nutr-fill.cal { background: linear-gradient(90deg, #2d6ab8, #4a9eff); }
+.nutr-fill.prot { background: linear-gradient(90deg, #2aaa74, #3ecf8e); }
+.nutr-foot { font-size: 10px; font-weight: 600; margin-top: 5px; }
+.nutr-foot.g { color: rgba(62,207,142,0.65); }
+.nutr-foot.w { color: rgba(245,166,35,0.65); }
+
+/* ════════════════════════════════════════════════════
+   COACHING CARD
+════════════════════════════════════════════════════ */
+.coach {
+  background: #0c1c12;
+  border: 1px solid rgba(62,207,142,0.11);
+  border-radius: 20px; padding: 22px;
+  position: relative; overflow: hidden;
+  opacity: 0; animation: rise 0.6s ease 0.44s both;
+}
+.coach::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(62,207,142,0.4), transparent);
+}
+.coach-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 7px; padding: 4px 10px;
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 14px;
+}
+.coach-badge.ach { background: rgba(62,207,142,0.09); color: #3ecf8e; border: 1px solid rgba(62,207,142,0.2); }
+.coach-badge.enc { background: rgba(74,158,255,0.08); color: #4a9eff; border: 1px solid rgba(74,158,255,0.15); }
+.coach-badge.act { background: rgba(245,166,35,0.08); color: #f5a623; border: 1px solid rgba(245,166,35,0.18); }
+.coach-badge.ori { background: rgba(182,109,255,0.07); color: #b66dff; border: 1px solid rgba(182,109,255,0.18); }
+.coach-q {
+  font-size: 48px; line-height: 0.5; color: rgba(62,207,142,0.09);
+  font-family: Georgia, serif; margin-bottom: 12px; display: block;
+}
+.coach-hed {
+  font-size: 17px; font-weight: 800; color: #f0f0f0;
+  letter-spacing: -0.6px; margin-bottom: 10px; line-height: 1.25;
+}
+.coach-body {
+  font-size: 14px; color: #5a5a5a; line-height: 1.68;
+  letter-spacing: -0.2px; margin-bottom: 18px;
+}
+.coach-body strong { color: #c8c8c8; font-weight: 600; }
+.coach-body em { font-style: normal; color: #3ecf8e; font-weight: 600; }
+.coach-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px; border-top: 1px solid rgba(62,207,142,0.07);
+}
+.coach-attr { display: flex; align-items: center; gap: 8px; }
+.coach-av {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, #1d3d28, #0c1c12);
+  border: 1px solid rgba(62,207,142,0.18);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.coach-nm { font-size: 11px; font-weight: 600; color: rgba(62,207,142,0.45); letter-spacing: 0.2px; }
+.coach-next {
+  font-size: 11px; font-weight: 600;
+  color: rgba(62,207,142,0.35); cursor: pointer;
+  display: flex; align-items: center; gap: 3px;
+  padding: 5px 9px; border-radius: 7px;
+  border: 1px solid rgba(62,207,142,0.12);
+  background: rgba(62,207,142,0.04);
+  transition: color 0.15s, border-color 0.15s;
+}
+.coach-next:hover { color: rgba(62,207,142,0.7); border-color: rgba(62,207,142,0.25); }
+
+/* ── ANIMATIONS ─────────────────────────────────── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chl {
+  stroke-dasharray: 900; stroke-dashoffset: 900;
+  animation: chdraw 1.9s ease 0.5s forwards;
+}
+.chl2 {
+  stroke-dasharray: 900; stroke-dashoffset: 900;
+  animation: chdraw 1.9s ease 0.7s forwards;
+}
+@keyframes chdraw { to { stroke-dashoffset: 0; } }
+.cha { opacity: 0; animation: chfade 0.5s ease 2.1s forwards; }
+@keyframes chfade { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="toggle-bar">
+  <button class="toggle-btn active" onclick="ss('new')"  id="b-new">🌱 New User (1 wk)</button>
+  <button class="toggle-btn"        onclick="ss('full')" id="b-full">💪 Mature (12 wks)</button>
+</div>
+
+<div class="device show-new" id="dev">
+
+<!-- ══════════════════════════════════════
+     NEW USER
+══════════════════════════════════════ -->
+<div class="state-new">
+  <nav class="nav">
+    <span class="nav-title">Progress</span>
+    <div class="nav-tabs">
+      <button class="ntab on">1M</button>
+      <button class="ntab">3M</button>
+      <button class="ntab">6M</button>
+      <button class="ntab">All</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg-glow"></div>
+    <div class="hero-eyebrow">Week 1 · Just Started</div>
+    <div class="hero-statement">
+      7 sessions.<br>
+      <span class="dim">That's</span> 7 more<br>
+      than last month.
+    </div>
+    <div class="hero-proof">
+      Most people never start. <strong>You already have.</strong> This screen will look very different in 8 weeks — come back and see.
+    </div>
+    <div class="hero-stats">
+      <div class="hstat">
+        <div class="hstat-val">7</div>
+        <div class="hstat-lbl">Sessions</div>
+      </div>
+      <div class="hstat-div"></div>
+      <div class="hstat">
+        <div class="hstat-val g">🔥 1</div>
+        <div class="hstat-lbl">Wk Streak</div>
+        <div class="streak-compare">
+          <span>Best: <span class="best">1 wk</span></span>
+        </div>
+      </div>
+      <div class="hstat-div"></div>
+      <div class="hstat">
+        <div class="hstat-val">1</div>
+        <div class="hstat-lbl">Weeks In</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR — new user -->
+  <div class="sec">
+    <div class="sec-lbl">Training Consistency</div>
+    <div class="cal-card">
+      <!-- Month header -->
+      <div class="cal-month-header">
+        <span class="cal-month-name" id="cal-new-month"></span>
+        <span class="cal-month-year" id="cal-new-year"></span>
+      </div>
+      <!-- Day of week headers -->
+      <div class="cal-dow-row">
+        <div class="cal-dow">M</div>
+        <div class="cal-dow">T</div>
+        <div class="cal-dow">W</div>
+        <div class="cal-dow">T</div>
+        <div class="cal-dow">F</div>
+        <div class="cal-dow weekend">S</div>
+        <div class="cal-dow weekend">S</div>
+      </div>
+      <!-- Calendar grid — filled by JS -->
+      <div class="cal-grid" id="cal-new-grid"></div>
+
+      <div class="cal-divider"></div>
+
+      <!-- PROOF: narrative + week dots -->
+      <div class="cal-proof">
+        <div class="cal-narrative" id="cal-new-narrative"></div>
+        <div class="week-dots-row" id="cal-new-dots"></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="cal-footer">
+        <div class="cal-streak-block">
+          <div class="cal-streak-val" id="cal-new-streak-val">🔥 1 wk</div>
+          <div class="cal-streak-lbl">Current streak</div>
+        </div>
+        <div class="cal-streak-best" id="cal-new-streak-best"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRENGTH — 1 exercise, building baseline -->
+  <div class="sec">
+    <div class="sec-lbl">Strength Snapshot</div>
+    <div class="strength-hero-card" style="opacity:1; animation:none;">
+      <div class="shc-glow"></div>
+      <div class="shc-top">
+        <div class="shc-badge">📈 Building baseline</div>
+        <div class="shc-tap">tap to explore <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="shc-name">Barbell Bench Press</div>
+      <div class="shc-1rm">123.5<span>kg</span></div>
+      <div class="shc-sub">Estimated one-rep max · 4 sessions logged</div>
+      <div class="shc-delta-row">
+        <div>
+          <div style="font-size:11px; color:rgba(62,207,142,0.45); margin-bottom:2px;">Building your baseline</div>
+          <div style="font-size:12px; color:#3ecf8e; font-weight:600;">4 more sessions → trend unlocks</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 16px; border:1px dashed #1a1a1a; border-radius:14px; margin-top:0;">
+      <div style="font-size:12px; color:#282828; line-height:1.6;">
+        Log 2 more exercises to unlock your full strength snapshot.
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY COMP — weight only -->
+  <div class="sec">
+    <div class="sec-lbl">Body Composition</div>
+    <div class="bc-card">
+      <div class="bc-head">
+        <div class="bc-stat">
+          <div class="bc-slbl">Body Weight</div>
+          <div class="bc-sval wc">81.4<span class="bc-su"> kg</span></div>
+          <div class="bc-sdelta f">— this week</div>
+        </div>
+        <div class="bc-stat">
+          <div class="bc-slbl">Waist</div>
+          <div class="bc-sval dim">—</div>
+        </div>
+      </div>
+      <div class="bc-svg">
+        <svg width="100%" viewBox="0 0 358 80" style="height:80px;display:block;">
+          <defs>
+            <linearGradient id="wg1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4a9eff" stop-opacity="0.14"/>
+              <stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line x1="0" y1="15" x2="358" y2="15" stroke="#141414" stroke-width="1"/>
+          <line x1="0" y1="40" x2="358" y2="40" stroke="#141414" stroke-width="1"/>
+          <line x1="0" y1="65" x2="358" y2="65" stroke="#141414" stroke-width="1"/>
+          <path class="cha"
+            d="M20,55 C80,50 140,46 200,44 C250,42 300,40 338,38 L338,72 L20,72 Z"
+            fill="url(#wg1)"/>
+          <path class="chl"
+            d="M20,55 C80,50 140,46 200,44 C250,42 300,40 338,38"
+            fill="none" stroke="#4a9eff" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="338" cy="38" r="4.5" fill="#4a9eff"/>
+          <rect x="305" y="22" width="50" height="15" rx="4" fill="#141414" stroke="#1e1e1e" stroke-width="1"/>
+          <text x="330" y="33" font-size="9" fill="#4a9eff" text-anchor="middle" font-family="monospace" font-weight="700">81.4 kg</text>
+        </svg>
+      </div>
+      <div class="waist-cta">
+        <div class="waist-cta-copy">
+          <div class="waist-cta-title">Track your waist weekly</div>
+          <div class="waist-cta-sub">The full recomposition story needs both lines.</div>
+        </div>
+        <button class="waist-cta-btn">+ Log</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TROPHY — empty -->
+  <div class="sec">
+    <div class="sec-lbl">PR Trophy Case</div>
+    <div class="trophy-wrap">
+      <div class="trophy-head">
+        <span class="trophy-emoji">🏆</span>
+        <span class="trophy-ttl">Personal Records</span>
+        <span class="trophy-cnt">0 set</span>
+      </div>
+      <div class="pr-empty">
+        <div class="pr-empty-hed">Your first PR is one session away.</div>
+        <div class="pr-empty-sub">
+          Push Set 1 to your absolute limit next workout.<br>
+          <em>Every record you break lives here forever.</em>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUTRITION -->
+  <div class="sec">
+    <div class="sec-lbl">Nutrition · This Week</div>
+    <div class="nutr-card">
+      <div class="nutr-item">
+        <div class="nutr-row">
+          <span class="nutr-lbl">Avg. daily calories</span>
+          <span class="nutr-val">1,840 / 2,292 kcal</span>
+        </div>
+        <div class="nutr-bar"><div class="nutr-fill cal" style="width:80%;"></div></div>
+        <div class="nutr-foot w">80% of target — eat a little more to fuel your training</div>
+      </div>
+      <div class="nutr-item">
+        <div class="nutr-row">
+          <span class="nutr-lbl">Avg. daily protein</span>
+          <span class="nutr-val">142 / 171 g</span>
+        </div>
+        <div class="nutr-bar"><div class="nutr-fill prot" style="width:83%;"></div></div>
+        <div class="nutr-foot g">83% of target — solid foundation, keep building</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COACHING — orientation -->
+  <div class="sec" style="padding-bottom:28px;">
+    <div class="sec-lbl">Your Coach</div>
+    <div class="coach">
+      <div class="coach-badge ori">⭐ Orientation</div>
+      <span class="coach-q">"</span>
+      <div class="coach-hed">Tudor, here's your game plan for the next 4 weeks.</div>
+      <div class="coach-body">
+        Right now your job is simple: <strong>show up 3 times a week and log everything</strong>. Don't chase PRs yet. Your nervous system is still learning the patterns.<br><br>
+        From week 3, start pushing <em>Set 1 to your real limit</em>. That's your working set — the one that drives all your progress. Set 2 and 3 are just volume. Hit Set 1 hard and the numbers will follow.
+      </div>
+      <div class="coach-foot">
+        <div class="coach-attr">
+          <div class="coach-av">⚡</div>
+          <span class="coach-nm">LazyFit Adaptive Coach</span>
+        </div>
+        <div class="coach-next">next insight ↻</div>
+      </div>
+    </div>
+  </div>
+</div><!-- END NEW -->
+
+
+<!-- ══════════════════════════════════════
+     MATURE USER
+══════════════════════════════════════ -->
+<div class="state-full">
+  <nav class="nav">
+    <span class="nav-title">Progress</span>
+    <div class="nav-tabs">
+      <button class="ntab">1M</button>
+      <button class="ntab on">3M</button>
+      <button class="ntab">6M</button>
+      <button class="ntab">All</button>
+    </div>
+  </nav>
+
+  <!-- HERO — data-driven, proud, specific -->
+  <div class="hero">
+    <div class="hero-bg-glow"></div>
+    <div class="hero-eyebrow">Week 12 · Peak Phase</div>
+    <div class="hero-statement">
+      Tudor, you're <em>stronger</em><br>than you've <em>ever</em> been.
+    </div>
+    <div class="hero-proof">
+      <strong>3 PRs this month.</strong> 36 sessions. 12 weeks without stopping. The data doesn't lie — and it's telling a story most people never get to write.
+    </div>
+    <div class="hero-stats">
+      <div class="hstat">
+        <div class="hstat-val">36</div>
+        <div class="hstat-lbl">Sessions</div>
+      </div>
+      <div class="hstat-div"></div>
+      <div class="hstat">
+        <div class="hstat-val g">🔥 8</div>
+        <div class="hstat-lbl">Wk Streak</div>
+        <div class="streak-compare">
+          <span>Best: <span class="best">8 wks</span></span>
+        </div>
+      </div>
+      <div class="hstat-div"></div>
+      <div class="hstat">
+        <div class="hstat-val">12</div>
+        <div class="hstat-lbl">Weeks In</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR — mature user -->
+  <div class="sec">
+    <div class="sec-lbl">Training Consistency</div>
+    <div class="cal-card">
+      <div class="cal-month-header">
+        <span class="cal-month-name" id="cal-full-month"></span>
+        <span class="cal-month-year" id="cal-full-year"></span>
+      </div>
+      <div class="cal-dow-row">
+        <div class="cal-dow">M</div>
+        <div class="cal-dow">T</div>
+        <div class="cal-dow">W</div>
+        <div class="cal-dow">T</div>
+        <div class="cal-dow">F</div>
+        <div class="cal-dow weekend">S</div>
+        <div class="cal-dow weekend">S</div>
+      </div>
+      <div class="cal-grid" id="cal-full-grid"></div>
+
+      <div class="cal-divider"></div>
+
+      <div class="cal-proof">
+        <div class="cal-narrative" id="cal-full-narrative"></div>
+        <div class="week-dots-row" id="cal-full-dots"></div>
+      </div>
+
+      <div class="cal-footer">
+        <div class="cal-streak-block">
+          <div class="cal-streak-val" id="cal-full-streak-val">🔥 8 wks</div>
+          <div class="cal-streak-lbl">Current streak</div>
+        </div>
+        <div class="cal-streak-best pb" id="cal-full-streak-best">🏆 Personal best</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRENGTH — hero lift + 3 secondary -->
+  <div class="sec">
+    <div class="sec-lbl">Strength Snapshot</div>
+    <!-- TOP LIFT — the hero -->
+    <div class="strength-hero-card">
+      <div class="shc-glow"></div>
+      <div class="shc-top">
+        <div class="shc-badge">↑ Rising · Best lift</div>
+        <div class="shc-tap">tap to explore <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="shc-name">Barbell Bench Press</div>
+      <div class="shc-1rm">131.7<span>kg</span></div>
+      <div class="shc-sub">Estimated one-rep max · 24 sessions</div>
+      <div class="shc-delta-row">
+        <div class="shc-delta-val">+18.4 kg</div>
+        <div class="shc-delta-lbl">since your first session</div>
+        <div class="shc-sessions">1.15 kg / week</div>
+      </div>
+    </div>
+    <!-- SECONDARY 3 -->
+    <div class="strength-sub-grid">
+      <div class="sc">
+        <svg class="sc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="sc-badge r">↑ Rising</div>
+        <div class="sc-name">Weighted Pull-Up</div>
+        <div class="sc-val">89.2<span> kg</span></div>
+        <div class="sc-delta g">+12.1 kg</div>
+      </div>
+      <div class="sc">
+        <svg class="sc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="sc-badge h">— Holding</div>
+        <div class="sc-name">OHP</div>
+        <div class="sc-val">74.8<span> kg</span></div>
+        <div class="sc-delta n">3 wk plateau</div>
+      </div>
+      <div class="sc" style="grid-column: span 2;">
+        <svg class="sc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="sc-badge n">⚠ Needs attention</div>
+        <div class="sc-name">Incline DB Press</div>
+        <div class="sc-val">68.3<span> kg</span></div>
+        <div class="sc-delta w">−1.2 kg · 3 sessions declining</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY COMP — dual chart, correct direction, with insight -->
+  <div class="sec">
+    <div class="sec-lbl">Body Composition</div>
+    <div class="bc-card">
+      <div class="bc-head">
+        <div class="bc-stat">
+          <div class="bc-slbl">Body Weight</div>
+          <div class="bc-sval wc">81.4<span class="bc-su"> kg</span></div>
+          <div class="bc-sdelta g">−2.8 kg · 12 wks</div>
+        </div>
+        <div class="bc-stat">
+          <div class="bc-slbl">Waist</div>
+          <div class="bc-sval wsc">82.0<span class="bc-su"> cm</span></div>
+          <div class="bc-sdelta g">−2.5 cm · 12 wks</div>
+        </div>
+      </div>
+      <!-- Explicit interpretation — not implied -->
+      <div class="bc-insight">
+        <strong>Body recomposition confirmed.</strong> Your waist shrank 2.5 cm while weight dropped only 2.8 kg — you're losing fat and building muscle simultaneously. This is the goal.
+      </div>
+      <div class="bc-svg">
+        <!--
+          SVG 358×115. Drawable y: 10–100.
+          Weight 84.2→81.4kg mapped to y-axis (higher y = lower value):
+            y = 100 - ((val - 79) / 7) * 90
+            84.2 → 100 - (5.2/7)*90 = 100 - 66.9 = 33
+            81.4 → 100 - (2.4/7)*90 = 100 - 30.9 = 69
+          Weight starts at y=33 (high on screen, high value) → y=69 (lower, smaller value) = line goes DOWN ✓
+
+          Waist 84.5→82.0cm:
+            84.5 → 100 - (5.5/7)*90 = 100 - 70.7 = 29
+            82.0 → 100 - (3.0/7)*90 = 100 - 38.6 = 61
+          Waist starts y=29 → y=61 = line goes DOWN ✓
+
+          Both lines descend from top-left to bottom-right = values decreasing over time ✓
+        -->
+        <svg width="100%" viewBox="0 0 358 115" style="height:115px;display:block;">
+          <defs>
+            <linearGradient id="wg2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4a9eff" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="wsg2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3ecf8e" stop-opacity="0.10"/>
+              <stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid -->
+          <line x1="24" y1="15" x2="350" y2="15" stroke="#141414" stroke-width="1"/>
+          <line x1="24" y1="37" x2="350" y2="37" stroke="#141414" stroke-width="1"/>
+          <line x1="24" y1="60" x2="350" y2="60" stroke="#141414" stroke-width="1"/>
+          <line x1="24" y1="82" x2="350" y2="82" stroke="#141414" stroke-width="1"/>
+          <!-- Y labels -->
+          <text x="20" y="19"  font-size="8" fill="#252525" text-anchor="end" font-family="monospace">85</text>
+          <text x="20" y="41"  font-size="8" fill="#252525" text-anchor="end" font-family="monospace">83</text>
+          <text x="20" y="64"  font-size="8" fill="#252525" text-anchor="end" font-family="monospace">81</text>
+          <text x="20" y="86"  font-size="8" fill="#252525" text-anchor="end" font-family="monospace">79</text>
+          <!-- Areas -->
+          <path class="cha"
+            d="M28,33 C70,37 120,44 170,51 C220,57 270,62 310,66 C325,67 333,68 338,69 L338,95 L28,95 Z"
+            fill="url(#wg2)"/>
+          <path class="cha"
+            d="M28,29 C70,33 120,40 170,46 C220,52 270,57 310,60 C325,61 333,61 338,61 L338,95 L28,95 Z"
+            fill="url(#wsg2)"/>
+          <!-- Weight line — descends (value decreasing) ✓ -->
+          <path class="chl"
+            d="M28,33 C70,37 120,44 170,51 C220,57 270,62 310,66 C325,67 333,68 338,69"
+            fill="none" stroke="#4a9eff" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Waist line — also descends, slightly above (smaller cm range) ✓ -->
+          <path class="chl2"
+            d="M28,29 C70,33 120,40 170,46 C220,52 270,57 310,60 C325,61 333,61 338,61"
+            fill="none" stroke="#3ecf8e" stroke-width="2"
+            stroke-linecap="round" stroke-dasharray="6,3"/>
+          <!-- Dots -->
+          <circle cx="338" cy="69" r="4.5" fill="#4a9eff"/>
+          <circle cx="338" cy="61" r="4.5" fill="#3ecf8e"/>
+          <!-- X labels -->
+          <text x="28"  y="109" font-size="8" fill="#2a2a2a" text-anchor="middle" font-family="monospace">Jan</text>
+          <text x="114" y="109" font-size="8" fill="#2a2a2a" text-anchor="middle" font-family="monospace">Feb</text>
+          <text x="207" y="109" font-size="8" fill="#2a2a2a" text-anchor="middle" font-family="monospace">Mar</text>
+          <text x="338" y="109" font-size="8" fill="#2a2a2a" text-anchor="middle" font-family="monospace">Apr</text>
+        </svg>
+      </div>
+      <div class="bc-legend">
+        <div class="bc-leg">
+          <div class="bc-leg-line" style="background:#4a9eff;"></div>Body Weight
+        </div>
+        <div class="bc-leg">
+          <div class="bc-leg-line" style="background: repeating-linear-gradient(90deg,#3ecf8e 0,#3ecf8e 6px,transparent 6px,transparent 9px);"></div>Waist
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TROPHY — hero PR + 4 more -->
+  <div class="sec">
+    <div class="sec-lbl">PR Trophy Case</div>
+    <div class="trophy-wrap">
+      <div class="trophy-head">
+        <span class="trophy-emoji">🏆</span>
+        <span class="trophy-ttl">Personal Records</span>
+        <span class="trophy-cnt">11 all time</span>
+      </div>
+      <!-- Latest PR as hero card -->
+      <div class="pr-hero">
+        <div class="pr-hero-top">
+          <div class="pr-hero-name">Barbell Bench Press</div>
+          <div class="pr-hero-date">Apr 12, 2026</div>
+        </div>
+        <div class="pr-hero-val">135.3<span> kg</span></div>
+        <div class="pr-hero-sub">97.5 kg × 5 reps · estimated 1RM</div>
+        <div class="pr-hero-delta">+21.4 kg since you started</div>
+      </div>
+      <!-- Other PRs as rows -->
+      <div class="pr-row">
+        <div class="pr-row-l">
+          <div class="pr-row-name">Weighted Pull-Up</div>
+          <div class="pr-row-meta">20 kg × 6 reps · Apr 8</div>
+        </div>
+        <div class="pr-row-r">
+          <div class="pr-row-val">89.2<span> kg</span></div>
+          <div class="pr-row-delta">+12.1 kg</div>
+        </div>
+      </div>
+      <div class="pr-row">
+        <div class="pr-row-l">
+          <div class="pr-row-name">Barbell Bench Press</div>
+          <div class="pr-row-meta">132.5 kg × 5 reps · Mar 29</div>
+        </div>
+        <div class="pr-row-r">
+          <div class="pr-row-val">132.5<span> kg</span></div>
+          <div class="pr-row-delta">+18.6 kg</div>
+        </div>
+      </div>
+      <div class="pr-row">
+        <div class="pr-row-l">
+          <div class="pr-row-name">OHP</div>
+          <div class="pr-row-meta">55 kg × 6 reps · Mar 21</div>
+        </div>
+        <div class="pr-row-r">
+          <div class="pr-row-val">74.8<span> kg</span></div>
+          <div class="pr-row-delta">+8.9 kg</div>
+        </div>
+      </div>
+      <div class="pr-row">
+        <div class="pr-row-l">
+          <div class="pr-row-name">Weighted Pull-Up</div>
+          <div class="pr-row-meta">17.5 kg × 7 reps · Mar 14</div>
+        </div>
+        <div class="pr-row-r">
+          <div class="pr-row-val">85.6<span> kg</span></div>
+          <div class="pr-row-delta">+8.5 kg</div>
+        </div>
+      </div>
+      <div class="pr-see-all">See all 11 PRs →</div>
+    </div>
+  </div>
+
+  <!-- NUTRITION — supporting context, near bottom -->
+  <div class="sec">
+    <div class="sec-lbl">Nutrition · This Week</div>
+    <div class="nutr-card">
+      <div class="nutr-item">
+        <div class="nutr-row">
+          <span class="nutr-lbl">Avg. daily calories</span>
+          <span class="nutr-val">2,180 / 2,292 kcal</span>
+        </div>
+        <div class="nutr-bar"><div class="nutr-fill cal" style="width:95%;"></div></div>
+        <div class="nutr-foot g">95% of target — excellent, right where you need to be</div>
+      </div>
+      <div class="nutr-item">
+        <div class="nutr-row">
+          <span class="nutr-lbl">Avg. daily protein</span>
+          <span class="nutr-val">164 / 171 g</span>
+        </div>
+        <div class="nutr-bar"><div class="nutr-fill prot" style="width:96%;"></div></div>
+        <div class="nutr-foot g">96% of target — dialled in, keep it exactly here</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COACHING — achievement + action -->
+  <div class="sec" style="padding-bottom:28px;">
+    <div class="sec-lbl">Your Coach</div>
+    <div class="coach">
+      <div class="coach-badge ach">🏆 Achievement</div>
+      <span class="coach-q">"</span>
+      <div class="coach-hed">Tudor, you're in a peak phase right now.</div>
+      <div class="coach-body">
+        <strong>3 PRs in the last 30 days.</strong> This is what progressive overload looks like in practice — not motivation, not genetics. Consistent, intelligent work appearing on the bar.<br><br>
+        Your OHP has stalled 3 weeks straight. That's not failure — that's your nervous system asking for a <em>strategic deload</em>. Drop to 70% on your next OHP session, then come back and watch it break through.
+      </div>
+      <div class="coach-foot">
+        <div class="coach-attr">
+          <div class="coach-av">⚡</div>
+          <span class="coach-nm">LazyFit Adaptive Coach</span>
+        </div>
+        <div class="coach-next">next insight ↻</div>
+      </div>
+    </div>
+  </div>
+</div><!-- END MATURE -->
+
+</div><!-- /device -->
+
+<script>
+function ss(s) {
+  document.getElementById('dev').className = 'device show-' + s
+  document.getElementById('b-new').className  = 'toggle-btn' + (s==='new'  ? ' active' : '')
+  document.getElementById('b-full').className = 'toggle-btn' + (s==='full' ? ' active' : '')
+}
+
+// ── Generate realistic RPT training dates ─────────
+function genDates(weeksBack) {
+  const r = []
+  const today = new Date(); today.setHours(0,0,0,0)
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1
+  const thisMonday = new Date(today); thisMonday.setDate(today.getDate() - dow)
+  for (let w = 0; w < weeksBack; w++) {
+    ;[0,2,4].forEach(off => {
+      const d = new Date(thisMonday)
+      d.setDate(thisMonday.getDate() - w*7 + off)
+      if (d <= today && Math.random() < 0.88) {
+        const jitter = Math.random() > 0.85 ? 1 : 0
+        const dd = new Date(d); dd.setDate(d.getDate() + jitter)
+        if (dd <= today) r.push(dd.toISOString().split('T')[0])
+      }
+    })
+  }
+  return [...new Set(r)]
+}
+
+// ── Build monthly calendar ────────────────────────
+function buildCalendar(gridId, monthNameId, yearId, trainedDates) {
+  const grid = document.getElementById(gridId)
+  const mnEl = document.getElementById(monthNameId)
+  const yrEl = document.getElementById(yearId)
+  if (!grid) return
+
+  const today  = new Date(); today.setHours(0,0,0,0)
+  const year   = today.getFullYear()
+  const month  = today.getMonth()
+  const tSet   = new Set(trainedDates)
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December']
+
+  if (mnEl) mnEl.textContent = MONTHS[month]
+  if (yrEl) yrEl.textContent = year
+
+  const firstDow   = (() => { const d = new Date(year,month,1).getDay(); return d===0?6:d-1 })()
+  const daysInMonth = new Date(year, month+1, 0).getDate()
+
+  grid.innerHTML = ''
+  let trainedIdx = 0
+
+  // Leading empty cells
+  for (let i = 0; i < firstDow; i++) {
+    const el = document.createElement('div')
+    el.className = 'cal-day empty'
+    grid.appendChild(el)
+  }
+
+  // Day cells
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date    = new Date(year, month, day)
+    const dateStr = date.toISOString().split('T')[0]
+    const el      = document.createElement('div')
+    const isToday   = date.getTime() === today.getTime()
+    const isTrained = tSet.has(dateStr)
+    const isFuture  = date > today
+
+    let cls = 'cal-day'
+    if (isFuture)       cls += ' future'
+    else if (isTrained) cls += ' trained'
+    else                cls += ' rest'
+    if (isToday)        cls += ' today'
+
+    el.className = cls
+    el.textContent = day
+
+    if (isTrained) {
+      el.style.animationDelay = (trainedIdx * 0.045) + 's'
+      trainedIdx++
+    }
+    grid.appendChild(el)
+  }
+}
+
+// ── Build week dots + narrative ────────────────────
+// 8 dots: one per week, oldest left → newest right
+// Each dot shows: full (3 sessions) / partial (1-2) / miss (0)
+// Narrative: one plain-English sentence reading the pattern
+function buildWeekDots(dotsId, narrativeId, streakValId, streakBestId, trainedDates, isNewUser) {
+  const dotsEl     = document.getElementById(dotsId)
+  const narrativeEl= document.getElementById(narrativeId)
+  const streakValEl= document.getElementById(streakValId)
+  const streakBestEl= document.getElementById(streakBestId)
+  if (!dotsEl) return
+
+  const today  = new Date(); today.setHours(0,0,0,0)
+  const dow    = today.getDay()===0?6:today.getDay()-1
+  const monday = new Date(today); monday.setDate(today.getDate()-dow)
+  const tSet   = new Set(trainedDates)
+
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec']
+
+  const weekData = [] // { count, isCurrentWeek, monthLabel }
+  for (let w = 7; w >= 0; w--) {
+    const wkStart = new Date(monday); wkStart.setDate(monday.getDate() - w*7)
+    let count = 0
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(wkStart); day.setDate(wkStart.getDate()+d)
+      if (day <= today && tSet.has(day.toISOString().split('T')[0])) count++
+    }
+    // Show month label only on first week of a new month
+    const isFirstOfMonth = wkStart.getDate() <= 7
+    weekData.push({
+      count,
+      isCurrentWeek: w === 0,
+      lbl: isFirstOfMonth ? MONTHS[wkStart.getMonth()] : ''
+    })
+  }
+
+  // Build dots
+  dotsEl.innerHTML = ''
+  weekData.forEach(wk => {
+    const wrap = document.createElement('div')
+    wrap.className = 'week-dot-wrap'
+
+    const dot = document.createElement('div')
+    let cls = 'week-dot'
+    if (wk.count >= 3)      cls += ' full'
+    else if (wk.count >= 1) cls += ' partial'
+    else                    cls += ' miss'
+    if (wk.isCurrentWeek)   cls += ' current'
+    dot.className = cls
+    dot.textContent = wk.count > 0 ? wk.count : ''
+
+    const lbl = document.createElement('div')
+    lbl.className = 'week-dot-lbl'
+    lbl.textContent = wk.lbl
+
+    wrap.appendChild(dot)
+    wrap.appendChild(lbl)
+    dotsEl.appendChild(wrap)
+  })
+
+  // Compute stats for narrative
+  const fullWeeks    = weekData.filter(w => !w.isCurrentWeek && w.count >= 3).length
+  const totalPastWks = 7 // excluding current week
+  const avgSessions  = trainedDates.length
+  const missedWks    = weekData.filter(w => !w.isCurrentWeek && w.count === 0).length
+
+  // Calculate current streak (consecutive weeks with ≥1 session, from now back)
+  let streak = 0
+  for (let i = weekData.length-1; i >= 0; i--) {
+    if (weekData[i].count >= 1) streak++
+    else if (!weekData[i].isCurrentWeek) break
+  }
+
+  // Build narrative — plain English, honest, specific
+  let narrative = ''
+  if (isNewUser) {
+    narrative = `<strong>${trainedDates.length} sessions</strong> in your first week. You've started — that's the hardest part.`
+  } else if (fullWeeks >= 6) {
+    narrative = `<em>${fullWeeks} out of 7 weeks</em> you hit 3 sessions. <strong>That's elite consistency.</strong>`
+  } else if (fullWeeks >= 4) {
+    narrative = `<em>${fullWeeks} perfect weeks</em> out of 7. You're building real momentum.`
+  } else if (missedWks >= 2) {
+    narrative = `You missed <strong>${missedWks} weeks</strong> recently. One session this week restarts the chain.`
+  } else {
+    narrative = `<strong>${avgSessions} sessions</strong> logged. Keep the pattern — ${3 - (weekData[weekData.length-1].count)} more this week.`
+  }
+
+  if (narrativeEl) narrativeEl.innerHTML = narrative
+
+  // Streak value
+  if (streakValEl) streakValEl.textContent = '🔥 ' + streak + (streak === 1 ? ' wk' : ' wks')
+
+  // Streak best — if at personal best, celebrate it
+  if (streakBestEl) {
+    const allTimeStreak = isNewUser ? 1 : 8 // simulated
+    if (streak >= allTimeStreak) {
+      streakBestEl.textContent = '🏆 Personal best'
+      streakBestEl.className = 'cal-streak-best pb'
+    } else {
+      streakBestEl.textContent = 'Best ever: ' + allTimeStreak + ' wks'
+      streakBestEl.className = 'cal-streak-best'
+    }
+  }
+}
+
+// ── Init ─────────────────────────────────────────
+const newDates  = genDates(2)
+const fullDates = genDates(12)
+
+buildCalendar('cal-new-grid',  'cal-new-month',  'cal-new-year',  newDates)
+buildCalendar('cal-full-grid', 'cal-full-month', 'cal-full-year', fullDates)
+
+buildWeekDots('cal-new-dots',  'cal-new-narrative',  'cal-new-streak-val',  'cal-new-streak-best',  newDates,  true)
+buildWeekDots('cal-full-dots', 'cal-full-narrative', 'cal-full-streak-val', 'cal-full-streak-best', fullDates, false)
+</script>
+</body>
+</html>

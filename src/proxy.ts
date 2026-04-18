@@ -32,11 +32,12 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (user && (pathname === '/login' || pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/app/dashboard', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Redirect unauthenticated users away from app pages
-  if (!user && pathname.startsWith('/app')) {
+  // Redirect unauthenticated users away from protected pages
+  const protectedPaths = ['/dashboard', '/train', '/food', '/progress', '/profile']
+  if (!user && protectedPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

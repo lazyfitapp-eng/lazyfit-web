@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=430px, initial-scale=1.0">
+<title>LazyFit — Profile</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background: #090909; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; max-width: 430px; margin: 0 auto; min-height: 100vh; padding-bottom: 100px; }
+  .row-tap { cursor: pointer; transition: background 0.12s; }
+  .row-tap:active { background: #141414 !important; }
+  @keyframes countUp { from { opacity: 0.4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulseGreen { 0%, 100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); } 50% { box-shadow: 0 0 0 6px rgba(62,207,142,0.12); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  .sheet-enter { animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1); }
+  .modal-enter { animation: scaleIn 0.2s ease-out; }
+  .animate-val { animation: countUp 0.35s ease-out; }
+</style>
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;">
+
+<!-- HEADER -->
+<div style="padding:20px 20px 0; display:flex; align-items:center; justify-content:space-between;">
+  <span style="font-size:17px; font-weight:700; color:#f0f0f0;">Profile</span>
+</div>
+
+<!-- IDENTITY -->
+<div style="padding:18px 20px 24px; border-bottom:1px solid #1a1a1a;">
+  <div style="font-size:28px; font-weight:800; letter-spacing:-0.5px; line-height:1.15; color:#f0f0f0;" id="userName">Tudor Gadea</div>
+  <div style="font-size:13px; color:#848484; margin-top:3px;" id="userEmail">tudor@lazyfit.app</div>
+  <div style="display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:rgba(245,166,35,0.07); border:1px solid rgba(245,166,35,0.18); border-radius:20px; padding:4px 12px;">
+    <span style="font-size:11px; line-height:1;">🏆</span>
+    <span style="font-size:11px; font-weight:700; color:#f5a623; letter-spacing:0.8px;">FOUNDING MEMBER</span>
+  </div>
+</div>
+
+<!-- GOAL + NUTRITION BLOCK -->
+<div style="margin:20px 16px 0;">
+  <div style="background:#0e0e0e; border:1px solid #1a1a1a; border-radius:16px; overflow:hidden;">
+
+    <!-- Goal selector -->
+    <div style="padding:14px 16px 12px;">
+      <div style="font-size:11px; font-weight:600; color:#848484; letter-spacing:0.8px; margin-bottom:10px;">GOAL</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+        <div id="g-cut" onclick="selectGoal('cut')" class="row-tap" style="border:1px solid #1a1a1a; border-radius:12px; padding:12px 8px; text-align:center; background:#111; cursor:pointer;">
+          <div style="font-size:14px; font-weight:700; color:#f5a623; margin-bottom:3px;">Cut</div>
+          <div style="font-size:10px; color:#848484; line-height:1.3;">−400 kcal<br>lose fat</div>
+        </div>
+        <div id="g-recomp" onclick="selectGoal('recomp')" class="row-tap" style="border:1px solid #1a1a1a; border-radius:12px; padding:12px 8px; text-align:center; background:#111; cursor:pointer;">
+          <div style="font-size:14px; font-weight:700; color:#4a9eff; margin-bottom:3px;">Recomp</div>
+          <div style="font-size:10px; color:#848484; line-height:1.3;">maintenance<br>recompose</div>
+        </div>
+        <div id="g-bulk" onclick="selectGoal('bulk')" class="row-tap" style="border:1.5px solid #3ecf8e; border-radius:12px; padding:12px 8px; text-align:center; background:#0c1c12; cursor:pointer;">
+          <div style="font-size:14px; font-weight:700; color:#3ecf8e; margin-bottom:3px;">Lean Bulk</div>
+          <div style="font-size:10px; color:#3ecf8e; opacity:0.6; line-height:1.3;">+250 kcal<br>build muscle</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal description -->
+    <div id="goalDesc" style="margin:0 16px 14px; padding:11px 14px; background:#0c1c12; border-radius:10px; border-left:2px solid #3ecf8e;">
+      <div id="goalDescText" style="font-size:13px; color:#848484; line-height:1.55;">Calibrated for <strong style="color:#f0f0f0;">+0.3 kg/week</strong> lean muscle gain. Protein stays high to protect muscle while you build.</div>
+    </div>
+
+    <!-- Training days -->
+    <div style="border-top:1px solid #1a1a1a; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">
+      <span style="font-size:15px; color:#848484;">Training days / week</span>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span style="font-size:22px; color:#848484; cursor:pointer; user-select:none; padding:0 4px;" onclick="var v=parseInt(document.getElementById('td').textContent);if(v>1)document.getElementById('td').textContent=v-1">−</span>
+        <span id="td" style="font-size:16px; font-weight:700; color:#f0f0f0; min-width:20px; text-align:center;">3</span>
+        <span style="font-size:22px; color:#848484; cursor:pointer; user-select:none; padding:0 4px;" onclick="var v=parseInt(document.getElementById('td').textContent);if(v<7)document.getElementById('td').textContent=v+1">+</span>
+      </div>
+    </div>
+
+    <!-- Units toggle -->
+    <div style="border-top:1px solid #1a1a1a; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">
+      <span style="font-size:15px; color:#848484;">Units</span>
+      <div style="display:flex; background:#151515; border-radius:8px; padding:2px; gap:2px;">
+        <div id="kgBtn" onclick="setUnit('kg')" style="padding:6px 18px; font-size:13px; font-weight:700; background:#3ecf8e; color:#090909; border-radius:6px; cursor:pointer;">kg</div>
+        <div id="lbsBtn" onclick="setUnit('lbs')" style="padding:6px 18px; font-size:13px; font-weight:600; color:#848484; border-radius:6px; cursor:pointer; background:transparent;">lbs</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NUTRITION CARD -->
+<div id="nutritionCard" style="margin:12px 16px 0; border-radius:16px; padding:16px 18px; background:#0c1c12; border:1px solid rgba(62,207,142,0.15);">
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:4px;">
+    <div id="targetLabel" style="font-size:11px; font-weight:600; color:#3ecf8e; letter-spacing:0.8px;">LEAN BULK · DAILY TARGET</div>
+    <button onclick="recalculate()" id="recalcBtn" style="font-size:11px; font-weight:600; color:#3ecf8e; background:none; border:none; padding:0; cursor:pointer; font-family:inherit; opacity:0.7;">Recalculate</button>
+  </div>
+  <div style="display:flex; align-items:baseline; gap:5px; margin-bottom:4px;">
+    <span id="kcalVal" style="font-size:38px; font-weight:800; color:#f0f0f0; letter-spacing:-1.5px; line-height:1;">2,850</span>
+    <span style="font-size:14px; color:#848484;">kcal / day</span>
+  </div>
+
+  <!-- Confidence bar -->
+  <div style="margin-bottom:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+      <span style="font-size:11px; color:#2e5c3e;">Estimate accuracy</span>
+      <span id="confLabel" style="font-size:11px; font-weight:600; color:#3ecf8e;">Good · 12 weeks of data</span>
+    </div>
+    <div style="height:3px; background:#1a1a1a; border-radius:2px; overflow:hidden;">
+      <div id="confFill" style="height:100%; width:78%; background:#3ecf8e; border-radius:2px; transition:width 0.6s ease;"></div>
+    </div>
+  </div>
+
+  <!-- Macro grid -->
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+    <div style="background:rgba(62,207,142,0.07); border:1px solid rgba(62,207,142,0.1); border-radius:10px; padding:10px 8px; text-align:center;">
+      <div id="prot" style="font-size:18px; font-weight:800; color:#3ecf8e;">185g</div>
+      <div style="font-size:11px; color:#848484; margin-top:2px;">protein</div>
+    </div>
+    <div style="background:rgba(74,158,255,0.07); border:1px solid rgba(74,158,255,0.1); border-radius:10px; padding:10px 8px; text-align:center;">
+      <div id="carb" style="font-size:18px; font-weight:800; color:#4a9eff;">330g</div>
+      <div style="font-size:11px; color:#848484; margin-top:2px;">carbs</div>
+    </div>
+    <div style="background:rgba(245,166,35,0.07); border:1px solid rgba(245,166,35,0.1); border-radius:10px; padding:10px 8px; text-align:center;">
+      <div id="fat" style="font-size:18px; font-weight:800; color:#f5a623;">82g</div>
+      <div style="font-size:11px; color:#848484; margin-top:2px;">fat</div>
+    </div>
+  </div>
+</div>
+
+<!-- BODY SECTION -->
+<div style="padding:24px 20px 4px;">
+  <span style="font-size:11px; font-weight:600; color:#848484; letter-spacing:1px;">BODY</span>
+</div>
+<div style="margin:8px 16px; background:#0e0e0e; border:1px solid #1a1a1a; border-radius:16px; overflow:hidden;">
+
+  <div class="row-tap" onclick="startEdit('age')" style="display:flex; align-items:center; justify-content:space-between; padding:15px 16px; border-bottom:1px solid #1a1a1a;">
+    <span style="font-size:15px; color:#848484;">Age</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span id="ageVal" style="font-size:15px; font-weight:600; color:#f0f0f0;">34</span>
+      <span style="font-size:18px; color:#848484;">›</span>
+    </div>
+  </div>
+
+  <div class="row-tap" onclick="startEdit('sex')" style="display:flex; align-items:center; justify-content:space-between; padding:15px 16px; border-bottom:1px solid #1a1a1a;">
+    <span style="font-size:15px; color:#848484;">Sex</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span id="sexVal" style="font-size:15px; font-weight:600; color:#f0f0f0;">Male</span>
+      <span style="font-size:18px; color:#848484;">›</span>
+    </div>
+  </div>
+
+  <div class="row-tap" onclick="startEdit('height')" style="display:flex; align-items:center; justify-content:space-between; padding:15px 16px; border-bottom:1px solid #1a1a1a;">
+    <span style="font-size:15px; color:#848484;">Height</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span id="heightVal" style="font-size:15px; font-weight:600; color:#f0f0f0;">178 cm</span>
+      <span style="font-size:18px; color:#848484;">›</span>
+    </div>
+  </div>
+
+  <!-- Activity level with progress bar -->
+  <div class="row-tap" onclick="document.getElementById('actSheet').style.display='flex'" style="border-bottom:1px solid #1a1a1a; cursor:pointer;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 16px 8px;">
+      <div>
+        <div style="font-size:15px; color:#848484;">Activity level</div>
+        <div style="font-size:11px; color:#3a3a3a; margin-top:1px;">Outside the gym — LazyFit knows your training</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="actVal" style="font-size:14px; font-weight:600; color:#f0f0f0;">Lightly active</span>
+        <span style="font-size:18px; color:#848484;">›</span>
+      </div>
+    </div>
+    <div style="margin:0 16px 12px; display:flex; gap:4px;">
+      <div style="flex:1; height:3px; background:#3ecf8e; border-radius:2px;"></div>
+      <div style="flex:1; height:3px; background:#3ecf8e; border-radius:2px;"></div>
+      <div style="flex:1; height:3px; background:#1a1a1a; border-radius:2px;"></div>
+      <div style="flex:1; height:3px; background:#1a1a1a; border-radius:2px;"></div>
+      <div style="flex:1; height:3px; background:#1a1a1a; border-radius:2px;"></div>
+    </div>
+  </div>
+
+  <!-- Body fat row -->
+  <div id="bfRow" style="padding:15px 16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div style="font-size:15px; color:#848484;">Body fat</div>
+        <div id="bfSub" style="font-size:11px; color:#3a3a3a; margin-top:1px;">Log neck measurement to unlock</div>
+      </div>
+      <div id="bfRight">
+        <span onclick="unlockBodyFat()" style="font-size:13px; font-weight:600; color:#3ecf8e; cursor:pointer;">+ Log neck</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ACCOUNT SECTION -->
+<div style="padding:24px 20px 4px;">
+  <span style="font-size:11px; font-weight:600; color:#848484; letter-spacing:1px;">ACCOUNT</span>
+</div>
+<div style="margin:8px 16px; background:#0e0e0e; border:1px solid #1a1a1a; border-radius:16px; overflow:hidden;">
+  <div class="row-tap" style="display:flex; align-items:center; justify-content:space-between; padding:16px 16px; border-bottom:1px solid #1a1a1a; cursor:pointer;">
+    <span style="font-size:15px; color:#848484;">Privacy Policy</span>
+    <span style="font-size:18px; color:#848484;">›</span>
+  </div>
+  <div class="row-tap" style="display:flex; align-items:center; justify-content:space-between; padding:16px 16px; border-bottom:1px solid #1a1a1a; cursor:pointer;">
+    <span style="font-size:15px; color:#848484;">Sign out</span>
+    <span style="font-size:18px; color:#848484;">›</span>
+  </div>
+  <div class="row-tap" style="display:flex; align-items:center; justify-content:space-between; padding:16px 16px; cursor:pointer;">
+    <span style="font-size:15px; color:#e03e3e;">Delete account</span>
+    <span style="font-size:18px; color:#848484;">›</span>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="padding:20px 20px 4px; text-align:center;">
+  <span style="font-size:11px; color:#2a2a2a;">LazyFit v1.0 · Your data is never sold</span>
+</div>
+
+<!-- BOTTOM NAV -->
+<div style="position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:430px; background:#090909; border-top:1px solid #1a1a1a; padding:8px 0 20px; display:flex; justify-content:space-around; align-items:center; z-index:50;">
+  <div style="display:flex; flex-direction:column; align-items:center; gap:3px; opacity:0.4;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span style="font-size:10px; color:#f0f0f0;">Home</span>
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:3px; opacity:0.4;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span style="font-size:10px; color:#f0f0f0;">Food</span>
+  </div>
+  <div style="width:48px; height:48px; background:#3ecf8e; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-top:-20px; border:3px solid #090909;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#090909" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:3px; opacity:0.4;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <span style="font-size:10px; color:#f0f0f0;">Train</span>
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span style="font-size:10px; color:#3ecf8e; font-weight:600;">Profile</span>
+  </div>
+</div>
+
+<!-- EDIT DRAWER -->
+<div id="editDrawer" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%); width:430px; height:100vh; background:rgba(0,0,0,0.85); z-index:100; align-items:flex-end;">
+  <div class="sheet-enter" style="background:#0e0e0e; border-radius:20px 20px 0 0; padding:20px 20px 40px; width:100%; border-top:1px solid #1a1a1a;">
+    <div style="width:36px; height:4px; background:#2a2a2a; border-radius:2px; margin:0 auto 20px;"></div>
+    <div id="editLabel" style="font-size:18px; font-weight:700; color:#f0f0f0; margin-bottom:16px;"></div>
+    <div id="editContent" style="margin-bottom:20px;"></div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="closeEdit()" style="flex:1; padding:14px; background:#1a1a1a; border:none; border-radius:12px; font-size:15px; color:#848484; font-family:inherit; cursor:pointer;">Cancel</button>
+      <button onclick="saveEdit()" style="flex:2; padding:14px; background:#3ecf8e; border:none; border-radius:12px; font-size:15px; font-weight:700; color:#090909; font-family:inherit; cursor:pointer;">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY SHEET -->
+<div id="actSheet" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%); width:430px; height:100vh; background:rgba(0,0,0,0.85); z-index:100; align-items:flex-end;">
+  <div class="sheet-enter" style="background:#0e0e0e; border-radius:20px 20px 0 0; padding:20px 20px 40px; width:100%; border-top:1px solid #1a1a1a;">
+    <div style="width:36px; height:4px; background:#2a2a2a; border-radius:2px; margin:0 auto 20px;"></div>
+    <div style="font-size:18px; font-weight:700; color:#f0f0f0; margin-bottom:4px;">Activity level</div>
+    <div style="font-size:13px; color:#848484; margin-bottom:20px;">Your lifestyle outside the gym. LazyFit already accounts for your training sessions.</div>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+      <div class="row-tap" onclick="setActivity('Sedentary',1)" style="background:#111; border:1px solid #1a1a1a; border-radius:12px; padding:14px 16px; cursor:pointer;">
+        <div style="font-size:15px; font-weight:600; color:#f0f0f0;">Sedentary</div>
+        <div style="font-size:12px; color:#848484; margin-top:2px;">Desk job, minimal movement outside gym</div>
+      </div>
+      <div class="row-tap" onclick="setActivity('Lightly active',2)" style="background:#0c1c12; border:1.5px solid #3ecf8e; border-radius:12px; padding:14px 16px; cursor:pointer;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:15px; font-weight:700; color:#3ecf8e;">Lightly active</div>
+          <span style="font-size:10px; font-weight:700; color:#3ecf8e; background:rgba(62,207,142,0.1); border-radius:6px; padding:3px 8px;">CURRENT</span>
+        </div>
+        <div style="font-size:12px; color:#848484; margin-top:2px;">Light walking, mostly seated work</div>
+      </div>
+      <div class="row-tap" onclick="setActivity('Moderately active',3)" style="background:#111; border:1px solid #1a1a1a; border-radius:12px; padding:14px 16px; cursor:pointer;">
+        <div style="font-size:15px; font-weight:600; color:#f0f0f0;">Moderately active</div>
+        <div style="font-size:12px; color:#848484; margin-top:2px;">Regular walking, active job or lifestyle</div>
+      </div>
+      <div class="row-tap" onclick="setActivity('Very active',4)" style="background:#111; border:1px solid #1a1a1a; border-radius:12px; padding:14px 16px; cursor:pointer;">
+        <div style="font-size:15px; font-weight:600; color:#f0f0f0;">Very active</div>
+        <div style="font-size:12px; color:#848484; margin-top:2px;">Physical job, lots of daily movement</div>
+      </div>
+      <div class="row-tap" onclick="setActivity('Athlete',5)" style="background:#111; border:1px solid #1a1a1a; border-radius:12px; padding:14px 16px; cursor:pointer;">
+        <div style="font-size:15px; font-weight:600; color:#f0f0f0;">Athlete</div>
+        <div style="font-size:12px; color:#848484; margin-top:2px;">Training twice daily or extremely demanding job</div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('actSheet').style.display='none'" style="width:100%; padding:14px; background:#1a1a1a; border:none; border-radius:12px; font-size:15px; color:#848484; font-family:inherit; cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<!-- GOAL CONFIRM MODAL -->
+<div id="confirmModal" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%); width:430px; height:100vh; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center;">
+  <div class="modal-enter" style="background:#0e0e0e; border-radius:20px; padding:24px 20px 20px; width:calc(100% - 48px); border:1px solid #1a1a1a;">
+    <div id="modalTitle" style="font-size:17px; font-weight:700; color:#f0f0f0; margin-bottom:6px;"></div>
+    <div style="font-size:13px; color:#848484; margin-bottom:16px;">Here's exactly what changes on your plan:</div>
+    <div id="modalDiffs" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;"></div>
+    <div style="padding:12px 14px; background:#0c1c12; border-radius:10px; border-left:2px solid #3ecf8e; margin-bottom:18px;">
+      <span id="modalCoach" style="font-size:13px; color:#848484; line-height:1.6; font-style:italic;"></span>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="cancelGoal()" style="flex:1; padding:14px; background:#1a1a1a; border:none; border-radius:12px; font-size:15px; color:#848484; font-family:inherit; cursor:pointer;">Cancel</button>
+      <button onclick="confirmGoal()" style="flex:2; padding:14px; background:#3ecf8e; border:none; border-radius:12px; font-size:15px; font-weight:700; color:#090909; font-family:inherit; cursor:pointer;">Confirm switch</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentGoal = 'bulk';
+var pendingGoal = null;
+var currentEdit = null;
+
+var goals = {
+  cut: {
+    label: 'Cut',
+    tagline: 'CUT · DAILY TARGET',
+    accentColor: '#f5a623',
+    cardBg: '#110d00',
+    cardBorder: 'rgba(245,166,35,0.2)',
+    descBg: '#110d00',
+    descBorder: '#f5a623',
+    desc: 'Calibrated for <strong style="color:#f0f0f0;">−0.4 kg/week</strong> fat loss. Protein is maximised to preserve every kg of muscle you\'ve built.',
+    kcal: 2400, prot: '200g', carb: '240g', fat: '70g',
+    coach: '"Cut phases work when protein stays high and training stays heavy. Don\'t drop calories too fast — slow and steady preserves muscle."'
+  },
+  recomp: {
+    label: 'Recomposition',
+    tagline: 'RECOMP · DAILY TARGET',
+    accentColor: '#4a9eff',
+    cardBg: '#080f1a',
+    cardBorder: 'rgba(74,158,255,0.2)',
+    descBg: '#080f1a',
+    descBorder: '#4a9eff',
+    desc: 'Maintenance calories — lose fat and gain muscle simultaneously. Slower results, but no trade-offs.',
+    kcal: 2600, prot: '200g', carb: '280g', fat: '78g',
+    coach: '"Recomp is a patience game. Hit your protein every day and keep training hard — the body will handle the rest. Don\'t expect the scale to move much."'
+  },
+  bulk: {
+    label: 'Lean Bulk',
+    tagline: 'LEAN BULK · DAILY TARGET',
+    accentColor: '#3ecf8e',
+    cardBg: '#0c1c12',
+    cardBorder: 'rgba(62,207,142,0.15)',
+    descBg: '#0c1c12',
+    descBorder: '#3ecf8e',
+    desc: 'Calibrated for <strong style="color:#f0f0f0;">+0.3 kg/week</strong> lean muscle gain. Protein stays high to protect muscle while you build.',
+    kcal: 2850, prot: '185g', carb: '330g', fat: '82g',
+    coach: '"Lean bulking works when the surplus is small and training intensity is high. You\'re already on the right track."'
+  }
+};
+
+function animateNumber(el, from, to) {
+  var start = null;
+  var duration = 500;
+  function step(ts) {
+    if (!start) start = ts;
+    var progress = Math.min((ts - start) / duration, 1);
+    var ease = 1 - Math.pow(1 - progress, 3);
+    var val = Math.round(from + (to - from) * ease);
+    el.textContent = val.toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function selectGoal(g) {
+  if (g === currentGoal) return;
+  pendingGoal = g;
+  var from = goals[currentGoal];
+  var to = goals[g];
+  document.getElementById('modalTitle').textContent = 'Switch to ' + to.label + '?';
+  document.getElementById('modalCoach').textContent = to.coach;
+  var rows = [
+    ['Calories', from.kcal.toLocaleString() + ' kcal', to.kcal.toLocaleString() + ' kcal'],
+    ['Protein', from.prot, to.prot],
+    ['Carbs', from.carb, to.carb],
+    ['Fat', from.fat, to.fat]
+  ];
+  document.getElementById('modalDiffs').innerHTML = rows.map(function(r) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#111;border-radius:10px;">' +
+      '<span style="font-size:14px;color:#848484;">' + r[0] + '</span>' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<span style="font-size:13px;color:#3a3a3a;text-decoration:line-through;">' + r[1] + '</span>' +
+      '<span style="font-size:14px;font-weight:700;color:#f0f0f0;">' + r[2] + '</span>' +
+      '</div></div>';
+  }).join('');
+  document.getElementById('confirmModal').style.display = 'flex';
+}
+
+function cancelGoal() {
+  pendingGoal = null;
+  document.getElementById('confirmModal').style.display = 'none';
+}
+
+function confirmGoal() {
+  var oldKcal = goals[currentGoal].kcal;
+  currentGoal = pendingGoal;
+  pendingGoal = null;
+  document.getElementById('confirmModal').style.display = 'none';
+  applyGoal(currentGoal, oldKcal);
+}
+
+function applyGoal(g, oldKcal) {
+  var d = goals[g];
+  ['g-cut','g-recomp','g-bulk'].forEach(function(id) {
+    var el = document.getElementById(id);
+    el.style.border = '1px solid #1a1a1a';
+    el.style.background = '#111';
+  });
+  var activeId = g === 'cut' ? 'g-cut' : g === 'recomp' ? 'g-recomp' : 'g-bulk';
+  var activeEl = document.getElementById(activeId);
+  activeEl.style.border = '1.5px solid ' + d.accentColor;
+  activeEl.style.background = d.cardBg;
+  document.getElementById('goalDescText').innerHTML = d.desc;
+  document.getElementById('goalDesc').style.borderLeftColor = d.accentColor;
+  document.getElementById('goalDesc').style.background = d.descBg;
+  document.getElementById('targetLabel').textContent = d.tagline;
+  document.getElementById('targetLabel').style.color = d.accentColor;
+  document.getElementById('nutritionCard').style.background = d.cardBg;
+  document.getElementById('nutritionCard').style.borderColor = d.cardBorder;
+  animateNumber(document.getElementById('kcalVal'), oldKcal || d.kcal, d.kcal);
+  document.getElementById('prot').textContent = d.prot;
+  document.getElementById('carb').textContent = d.carb;
+  document.getElementById('fat').textContent = d.fat;
+  document.getElementById('nutritionCard').style.animation = 'none';
+  setTimeout(function() { document.getElementById('nutritionCard').style.animation = 'pulseGreen 0.8s ease-out'; }, 10);
+}
+
+function setUnit(u) {
+  document.getElementById('kgBtn').style.background = u === 'kg' ? '#3ecf8e' : 'transparent';
+  document.getElementById('kgBtn').style.color = u === 'kg' ? '#090909' : '#848484';
+  document.getElementById('lbsBtn').style.background = u === 'lbs' ? '#3ecf8e' : 'transparent';
+  document.getElementById('lbsBtn').style.color = u === 'lbs' ? '#090909' : '#848484';
+}
+
+function startEdit(field) {
+  currentEdit = field;
+  var labels = { age: 'Edit age', sex: 'Edit sex', height: 'Edit height' };
+  var contents = {
+    age: '<input type="number" id="editInput" value="34" min="16" max="80" style="width:100%;padding:14px 16px;background:#111;border:1px solid #1a1a1a;border-radius:12px;font-size:18px;font-weight:600;color:#f0f0f0;font-family:inherit;box-sizing:border-box;outline:none;" /><div style="font-size:12px;color:#3a3a3a;margin-top:8px;padding:0 4px;">Years old</div>',
+    sex: '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div id="sexM" onclick="selectSex(\'Male\')" style="padding:16px;text-align:center;border:1.5px solid #3ecf8e;border-radius:12px;cursor:pointer;background:#0c1c12;"><div style="font-size:15px;font-weight:700;color:#3ecf8e;">Male</div></div><div id="sexF" onclick="selectSex(\'Female\')" style="padding:16px;text-align:center;border:1px solid #1a1a1a;border-radius:12px;cursor:pointer;background:#111;"><div style="font-size:15px;font-weight:700;color:#f0f0f0;">Female</div></div></div>',
+    height: '<div style="display:flex;align-items:center;gap:8px;"><input type="number" id="editInput" value="178" min="140" max="220" style="flex:1;padding:14px 16px;background:#111;border:1px solid #1a1a1a;border-radius:12px;font-size:18px;font-weight:600;color:#f0f0f0;font-family:inherit;outline:none;" /><span style="font-size:15px;color:#848484;font-weight:600;">cm</span></div>'
+  };
+  document.getElementById('editLabel').textContent = labels[field];
+  document.getElementById('editContent').innerHTML = contents[field];
+  document.getElementById('editDrawer').style.display = 'flex';
+}
+
+function selectSex(val) {
+  document.getElementById('sexM').style.border = val === 'Male' ? '1.5px solid #3ecf8e' : '1px solid #1a1a1a';
+  document.getElementById('sexM').style.background = val === 'Male' ? '#0c1c12' : '#111';
+  document.getElementById('sexM').querySelector('div').style.color = val === 'Male' ? '#3ecf8e' : '#f0f0f0';
+  document.getElementById('sexF').style.border = val === 'Female' ? '1.5px solid #3ecf8e' : '1px solid #1a1a1a';
+  document.getElementById('sexF').style.background = val === 'Female' ? '#0c1c12' : '#111';
+  document.getElementById('sexF').querySelector('div').style.color = val === 'Female' ? '#3ecf8e' : '#f0f0f0';
+  currentEdit = 'sex';
+  window._selectedSex = val;
+}
+
+function closeEdit() {
+  document.getElementById('editDrawer').style.display = 'none';
+  currentEdit = null;
+}
+
+function saveEdit() {
+  if (currentEdit === 'age') {
+    var v = document.getElementById('editInput').value;
+    if (v) document.getElementById('ageVal').textContent = v;
+  } else if (currentEdit === 'height') {
+    var v = document.getElementById('editInput').value;
+    if (v) document.getElementById('heightVal').textContent = v + ' cm';
+  } else if (currentEdit === 'sex' && window._selectedSex) {
+    document.getElementById('sexVal').textContent = window._selectedSex;
+  }
+  closeEdit();
+}
+
+function setActivity(label, level) {
+  document.getElementById('actVal').textContent = label;
+  var bars = document.querySelectorAll('#actSheet ~ * .activity-bar');
+  var mainBars = document.querySelectorAll('[data-act-bar]');
+  var allBars = document.querySelectorAll('.act-progress-bar');
+  document.getElementById('actSheet').style.display = 'none';
+}
+
+function recalculate() {
+  var btn = document.getElementById('recalcBtn');
+  btn.textContent = 'Updating...';
+  btn.style.opacity = '0.5';
+  setTimeout(function() { btn.textContent = 'Recalculate'; btn.style.opacity = '0.7'; }, 1400);
+}
+
+function unlockBodyFat() {
+  document.getElementById('bfSub').textContent = 'Neck logged ✓ · Calculating...';
+  document.getElementById('bfRight').innerHTML = '<span style="font-size:13px;color:#848484;">calculating</span>';
+  setTimeout(function() {
+    document.getElementById('bfSub').textContent = 'Estimated from waist + neck';
+    document.getElementById('bfRight').innerHTML = '<span style="font-size:16px;font-weight:800;color:#f0f0f0;">16.2%</span>';
+    document.getElementById('bfRow').style.transition = 'background 0.3s';
+    document.getElementById('bfRow').style.background = 'rgba(62,207,142,0.04)';
+    setTimeout(function() { document.getElementById('bfRow').style.background = ''; }, 1000);
+  }, 1200);
+}
+</script>
+
+</body>
+</html>

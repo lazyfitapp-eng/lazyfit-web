@@ -75,15 +75,11 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-export type MeasurementCategory =
-  'chest' | 'waist' | 'hips' | 'arms' | 'thighs' | 'calves' | 'shoulders' | 'neck';
-
 export interface BodyMeasurement {
   id: string;
   user_id: string;
-  category: MeasurementCategory;
-  value_cm: number;
-  date: string;       // 'yyyy-MM-dd'
+  measured_at: string;   // 'yyyy-MM-dd'
+  waist_cm: number | null;
   created_at: string;
 }
 

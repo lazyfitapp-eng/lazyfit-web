@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import MatrixRain from '@/components/MatrixRain'
 
 const FEATURES = [
   {
@@ -44,7 +45,20 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
+      <section className="relative flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
+        {/* Matrix rain canvas — absolute, behind hero content */}
+        <MatrixRain />
+
+        {/* Radial gradient overlay — darkest at center (text), rain visible at edges */}
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            background: 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.10) 100%)',
+            pointerEvents: 'none',
+          }}
+          aria-hidden="true"
+        />
+
         <p className="text-xs tracking-widest text-primary mb-4">ADAPTIVE FITNESS TRACKING</p>
         <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-white leading-none mb-6">
           Train smart.<br />

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LazyFit — New Personal Records</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --accent:    #3ecf8e;
+  --accent-bg: #071410;
+  --accent-bd: #163020;
+  --amber:     #f5a623;
+  --amber-bg:  #181000;
+  --amber-bd:  #342200;
+  --red:       #ff3b5c;
+  --blue:      #4a9eff;
+  --purple:    #cc44ff;
+  --orange:    #ff6b4a;
+  --bg:        #080808;
+  --card:      #101010;
+  --card-2:    #151515;
+  --card-3:    #1b1b1b;
+  --border:    #1d1d1d;
+  --border-2:  #232323;
+  --text:      #f2f2f2;
+  --text-2:    #747474;
+  --text-3:    #3d3d3d;
+  --text-4:    #222;
+  --font:      -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══════════════════════════════════════
+   SCROLL PROGRESS BAR
+══════════════════════════════════════ */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 2px; z-index: 100;
+  background: linear-gradient(to right, var(--accent) var(--scroll, 0%), transparent 0%);
+  max-width: 430px; margin: 0 auto;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes checkPop {
+  0%   { transform:scale(0) rotate(-15deg); opacity:0; }
+  65%  { transform:scale(1.18) rotate(4deg); opacity:1; }
+  100% { transform:scale(1) rotate(0); opacity:1; }
+}
+@keyframes barGrow {
+  from { width:0; opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); }
+  50%      { box-shadow: 0 0 28px 4px rgba(62,207,142,0.22); }
+}
+@keyframes prGlow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); }
+  50%      { box-shadow: 0 0 40px 8px rgba(62,207,142,0.18); }
+}
+@keyframes countUp {
+  from { opacity:0; transform:translateY(8px) scale(0.9); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.a1 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.04s both; }
+.a2 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.12s both; }
+.a3 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.20s both; }
+.a4 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.28s both; }
+.a5 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.36s both; }
+.a6 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.44s both; }
+.a7 { animation: fadeUp 0.55s cubic-bezier(.32,.72,0,1) 0.52s both; }
+
+/* ══════════════════════════════════════
+   STICKY HEADER
+══════════════════════════════════════ */
+.hdr {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8,8,8,0.96);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 18px;
+  display: flex; align-items: center; gap: 12px;
+  animation: fadeIn 0.3s ease both;
+}
+.hdr-back {
+  width: 32px; height: 32px;
+  background: var(--card-2); border: 1px solid var(--border-2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: background 0.12s;
+}
+.hdr-back:active { background: var(--card-3); }
+.hdr-back svg { width:13px; height:13px; stroke:var(--text-2); stroke-width:2.3; fill:none; }
+.hdr-info { flex: 1; min-width: 0; }
+.hdr-name {
+  font-size: 14px; font-weight: 700; letter-spacing: -0.3px;
+  color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hdr-meta { font-size: 11px; color: var(--text-3); margin-top: 1px; letter-spacing: -0.1px; }
+.hdr-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--accent-bg); border: 1px solid var(--accent-bd);
+  border-radius: 20px; padding: 5px 11px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px; color: var(--accent);
+  flex-shrink: 0;
+  animation: checkPop 0.5s cubic-bezier(.32,.72,0,1) 0.4s both;
+}
+.hdr-chip svg { width:10px; height:10px; stroke:var(--accent); stroke-width:2.8; fill:none; }
+
+/* ══════════════════════════════════════
+   HERO — the spotlight
+══════════════════════════════════════ */
+.hero {
+  padding: 32px 20px 28px;
+  position: relative; overflow: hidden;
+  /* Subtle stage lighting — diagonal gradient */
+  background: linear-gradient(160deg, #0a1a12 0%, var(--bg) 55%);
+}
+/* Green atmospheric glow behind the PR callout */
+.hero::after {
+  content:'';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(62,207,142,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── PR HEADLINE CALLOUT ── */
+.hero-pr {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative; z-index: 1;
+  animation: prGlow 4s ease-in-out 0.8s infinite;
+}
+.hero-pr-num {
+  font-size: 80px; font-weight: 900;
+  letter-spacing: -6px; line-height: 0.9;
+  color: var(--accent);
+  animation: countUp 0.6s cubic-bezier(.32,.72,0,1) 0.1s both;
+  /* Subtle shimmer on the number */
+  background: linear-gradient(135deg, #3ecf8e 0%, #5adfaa 40%, #3ecf8e 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-pr-label {
+  font-size: 13px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--accent); opacity: 0.7;
+  margin-top: 6px;
+}
+.hero-pr-sub {
+  font-size: 12px; color: var(--text-3); margin-top: 4px; letter-spacing: -0.1px;
+}
+
+/* ── SESSION TITLE ── */
+.hero-session {
+  margin-bottom: 22px; position: relative; z-index: 1;
+}
+.hero-title {
+  font-size: 28px; font-weight: 800; letter-spacing: -1.2px;
+  line-height: 1.05; color: var(--text);
+}
+.hero-tagline {
+  font-size: 13px; color: var(--text-2); margin-top: 4px;
+  letter-spacing: -0.1px; line-height: 1.4;
+}
+.hero-tagline strong { color: var(--accent); font-weight: 700; }
+
+/* ── STAT PILLS ── */
+.hero-stats {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; position: relative; z-index: 1;
+}
+.hero-stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-2);
+  border-radius: 14px; padding: 12px 8px;
+  text-align: center;
+}
+.hero-stat-val {
+  font-size: 18px; font-weight: 800; letter-spacing: -0.8px;
+  line-height: 1; color: var(--text);
+}
+.hero-stat-delta {
+  font-size: 10px; font-weight: 700; color: var(--accent);
+  margin-top: 2px; letter-spacing: -0.1px;
+}
+.hero-stat-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.7px;
+  text-transform: uppercase; color: var(--text-3); margin-top: 4px;
+}
+
+/* ── IDENTITY LINE ── */
+.hero-identity {
+  margin-top: 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  position: relative; z-index: 1;
+}
+.hero-identity-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0; margin-top: 3px;
+  box-shadow: 0 0 10px rgba(62,207,142,0.7);
+}
+.hero-identity-txt {
+  font-size: 12px; font-weight: 500; color: var(--text-2);
+  line-height: 1.55; letter-spacing: -0.1px;
+}
+.hero-identity-txt strong { color: var(--text); font-weight: 700; }
+.hero-identity-txt em { color: var(--accent); font-style: normal; font-weight: 700; }
+
+/* ══════════════════════════════════════
+   COACH CARD — moved to position 2
+══════════════════════════════════════ */
+.coach-wrap { padding: 20px 16px 0; }
+
+.coach-card {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bd);
+  border-radius: 22px; padding: 20px;
+}
+.coach-hd {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.coach-icon {
+  width: 34px; height: 34px;
+  background: rgba(62,207,142,0.08); border: 1px solid var(--accent-bd);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.coach-icon svg { width:16px; height:16px; stroke:var(--accent); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.coach-kicker {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--accent); opacity: 0.65;
+}
+.coach-title {
+  font-size: 15px; font-weight: 700; letter-spacing: -0.3px;
+  color: var(--text); margin-top: 1px;
+}
+
+/* Human coaching message */
+.coach-msg {
+  font-size: 13px; line-height: 1.7;
+  color: rgba(242,242,242,0.65);
+  margin-bottom: 16px; letter-spacing: -0.1px;
+}
+.coach-msg strong { color: var(--accent); font-weight: 700; }
+.coach-msg .attack {
+  display: block; margin-top: 10px;
+  font-size: 14px; font-weight: 700;
+  color: var(--text); letter-spacing: -0.2px;
+}
+
+/* Per-exercise targets */
+.coach-targets { display: flex; flex-direction: column; gap: 5px; }
+.coach-row {
+  display: flex; align-items: center;
+  padding: 9px 12px; gap: 8px;
+  background: rgba(62,207,142,0.04);
+  border: 1px solid rgba(62,207,142,0.08);
+  border-radius: 10px;
+}
+.cr-name {
+  flex: 1; min-width: 0;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
+  /* Allow wrap to 2 lines — no truncation on coaching targets */
+  line-height: 1.35;
+}
+.cr-target {
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  flex-shrink: 0; white-space: nowrap;
+}
+.cr-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.3px;
+  padding: 2px 7px; border-radius: 5px; flex-shrink: 0;
+}
+.cr-badge.up   { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-bd); }
+.cr-badge.hold { background: var(--card-3); color: var(--text-3); border: 1px solid var(--border-2); }
+.cr-badge.build { background: #1a1a00; color: #d4b800; border: 1px solid #3a3800; }
+
+/* ══════════════════════════════════════
+   SECTION DIVIDER
+══════════════════════════════════════ */
+.section-divider {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; margin: 24px 0 10px;
+}
+.sd-line { flex: 1; height: 1px; background: var(--border); }
+.sd-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-3); white-space: nowrap;
+}
+
+/* ══════════════════════════════════════
+   EXERCISE CARDS
+══════════════════════════════════════ */
+.exercises { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.ex-card {
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: 20px; overflow: hidden;
+  position: relative;
+}
+/* Primary compound — elevated treatment */
+.ex-card.primary {
+  border-top: 2px solid var(--accent);
+  background: #0d1410;
+}
+.ex-card.primary-back {
+  border-top: 2px solid var(--orange);
+  background: #130f0d;
+}
+
+/* Completion checkmark — top right */
+.ex-check {
+  position: absolute; top: 14px; right: 16px;
+  width: 20px; height: 20px;
+  background: var(--accent-bg); border: 1px solid var(--accent-bd);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  animation: checkPop 0.4s cubic-bezier(.32,.72,0,1) 0.6s both;
+}
+.ex-check svg { width:9px; height:9px; stroke:var(--accent); stroke-width:2.8; fill:none; }
+
+/* Exercise header */
+.ex-hd {
+  padding: 14px 44px 0 16px; /* right pad for checkmark */
+}
+.ex-name {
+  font-size: 14px; font-weight: 700; letter-spacing: -0.3px;
+  color: var(--text); display: flex; align-items: center; gap: 7px;
+  flex-wrap: wrap;
+}
+.pr-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: var(--accent-bg); border: 1px solid var(--accent-bd);
+  border-radius: 6px; padding: 2px 7px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+  color: var(--accent); text-transform: uppercase; flex-shrink: 0;
+  animation: checkPop 0.4s cubic-bezier(.32,.72,0,1) 0.7s both;
+}
+.pr-badge svg { width:8px; height:8px; stroke:currentColor; stroke-width:2.8; fill:none; }
+
+/* Best set headline */
+.ex-best {
+  margin-top: 6px; padding-bottom: 14px;
+  display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+.ex-best-w {
+  font-size: 26px; font-weight: 800; letter-spacing: -1.2px;
+  color: var(--text); line-height: 1;
+}
+.ex-best-r { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.ex-best-1rm { font-size: 11px; color: var(--text-3); }
+.ex-delta {
+  margin-left: auto;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 6px; flex-shrink: 0;
+  align-self: center;
+}
+.ex-delta.up   { color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent-bd); }
+.ex-delta.build{ color: #d4b800; background: #1a1a00; border: 1px solid #3a3800; }
+.ex-delta.down { color: var(--red); background: #1a0810; border: 1px solid #3a1020; }
+
+/* Warm-up chip — quiet, archive-style */
+.wu-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin: 8px 16px;
+  padding: 4px 9px;
+  background: none; border: 1px solid var(--amber-bd);
+  border-radius: 7px; cursor: pointer;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  color: var(--amber); opacity: 0.6;
+  transition: opacity 0.15s; width: fit-content;
+}
+.wu-chip:hover { opacity: 1; }
+.wu-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2; transition: transform 0.2s; }
+.wu-chip.open { opacity: 1; }
+.wu-chip.open svg { transform: rotate(180deg); }
+.wu-rows {
+  display: none; padding: 4px 16px 8px;
+  background: rgba(245,166,35,0.03);
+  border-top: 1px solid var(--amber-bg);
+}
+.wu-rows.open { display: block; }
+.wu-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0; font-size: 11px;
+}
+.wu-lbl { font-size: 9px; font-weight: 800; color: var(--amber); width: 18px; flex-shrink: 0; opacity: 0.7; }
+.wu-w { color: var(--text-3); }
+.wu-x { color: var(--text-4); }
+.wu-r { color: var(--text-3); }
+
+/* Sets table — compact, proper grid */
+.sets-tbl { padding: 4px 0 6px; }
+.sets-head {
+  display: grid; grid-template-columns: 22px 90px 1fr 64px;
+  padding: 5px 16px; gap: 8px;
+}
+.sh {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.7px;
+  text-transform: uppercase; color: var(--text-3);
+}
+.sh.r { text-align: right; }
+.sh.c { text-align: center; }
+
+.set-row {
+  display: grid; grid-template-columns: 22px 90px 1fr 64px;
+  padding: 9px 16px; gap: 8px; align-items: center;
+  border-top: 1px solid #0c0c0c; transition: background 0.1s;
+}
+.set-row.best {
+  background: #0c180e;
+  border-left: 3px solid var(--accent);
+  padding-left: 13px;
+}
+.sn { font-size: 10px; font-weight: 700; color: var(--text-3); }
+.set-row.best .sn { color: var(--accent); }
+.sw { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.sr { font-size: 13px; font-weight: 600; color: var(--text-2); text-align: center; }
+.s1 { font-size: 11px; font-weight: 600; color: var(--text-3); text-align: right; letter-spacing: -0.1px; }
+.set-row.best .s1 { color: var(--accent); font-weight: 700; }
+
+/* See all sets toggle */
+.see-sets {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 16px 10px; gap: 5px;
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  cursor: pointer; border-top: 1px solid #0c0c0c;
+  transition: color 0.15s;
+}
+.see-sets:hover { color: var(--accent); }
+.see-sets svg { width:10px; height:10px; stroke:currentColor; fill:none; stroke-width:2; transition: transform 0.2s; }
+.see-sets.open svg { transform: rotate(180deg); }
+.hidden-sets { display: none; }
+.hidden-sets.open { display: block; }
+
+/* ══════════════════════════════════════
+   MUSCLE SPLIT
+══════════════════════════════════════ */
+.muscle-wrap { padding: 0 16px; }
+.muscle-card {
+  background: var(--card); border: 1px solid var(--border-2);
+  border-radius: 20px; padding: 16px 18px;
+}
+.muscle-ttl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 12px;
+}
+.muscle-bar {
+  height: 8px; border-radius: 4px; overflow: hidden;
+  display: flex; gap: 2px; margin-bottom: 14px;
+}
+.mseg {
+  height: 100%; border-radius: 3px;
+  animation: barGrow 0.9s cubic-bezier(.32,.72,0,1) 0.5s both;
+}
+.muscle-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.ml-item { display: flex; align-items: center; gap: 6px; }
+.ml-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.ml-name { font-size: 11px; font-weight: 600; color: var(--text-2); }
+.ml-pct { font-size: 11px; color: var(--text-3); }
+
+/* ══════════════════════════════════════
+   BOTTOM — share + CTAs
+══════════════════════════════════════ */
+.bottom-section { padding: 24px 16px 44px; }
+
+/* Visual separator before CTAs */
+.cta-divider {
+  height: 1px; background: var(--border);
+  margin-bottom: 20px;
+}
+
+.share-btn {
+  width: 100%; padding: 12px;
+  background: none; border: 1px solid var(--border-2);
+  border-radius: 13px; font-family: var(--font);
+  font-size: 12px; font-weight: 600; color: var(--text-3);
+  cursor: pointer; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.15s; letter-spacing: -0.1px;
+}
+.share-btn:hover { border-color: var(--border-2); color: var(--text-2); }
+.share-btn svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; }
+
+.save-btn {
+  width: 100%; padding: 12px;
+  background: none; border: 1px solid var(--border-2);
+  border-radius: 13px; font-family: var(--font);
+  font-size: 12px; font-weight: 600; color: var(--text-3);
+  cursor: pointer; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.15s; letter-spacing: -0.1px;
+}
+.save-btn:hover { border-color: var(--accent-bd); color: var(--accent); background: var(--accent-bg); }
+.save-btn svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; }
+
+/* Done button — quiet until hovered */
+.done-btn {
+  width: 100%; padding: 17px;
+  background: var(--accent); border: none; border-radius: 16px;
+  font-family: var(--font);
+  font-size: 16px; font-weight: 800; letter-spacing: 0.1px;
+  color: #000; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.3s;
+}
+/* Glow only activates after 3s delay — "whenever you're ready" */
+.done-btn.ready {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+.done-btn:hover  { opacity: 0.91; }
+.done-btn:active { transform: scale(0.99); opacity: 0.87; }
+
+/* ══════════════════════════════════════
+   COMPLETION RITUAL
+══════════════════════════════════════ */
+.completion {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  max-width: 430px; margin: 0 auto;
+}
+.completion.show {
+  display: flex;
+  animation: fadeIn 0.25s ease both;
+}
+.comp-ring {
+  width: 88px; height: 88px;
+  background: var(--accent-bg); border: 2px solid var(--accent-bd);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  animation: checkPop 0.55s cubic-bezier(.32,.72,0,1) 0.05s both;
+  box-shadow: 0 0 50px rgba(62,207,142,0.25);
+}
+.comp-ring svg { width:38px; height:38px; stroke:var(--accent); stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.comp-title {
+  font-size: 26px; font-weight: 800; letter-spacing: -1px; color: var(--text);
+  animation: fadeUp 0.4s ease 0.25s both;
+}
+.comp-sub {
+  font-size: 14px; color: var(--text-2); letter-spacing: -0.2px;
+  animation: fadeUp 0.4s ease 0.35s both;
+}
+.comp-encourage {
+  font-size: 13px; color: var(--accent); font-weight: 600;
+  animation: fadeUp 0.4s ease 0.45s both; letter-spacing: -0.1px;
+}
+</style>
+</head>
+<body>
+
+<!-- Scroll progress bar -->
+<div class="scroll-progress" id="progress"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="hdr">
+  <div class="hdr-back">
+    <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+  </div>
+  <div class="hdr-info">
+    <div class="hdr-name">Upper A</div>
+    <div class="hdr-meta">Sun 12 Apr · 52 min · 8,420kg</div>
+  </div>
+  <div class="hdr-chip">
+    <svg viewBox="0 0 12 12"><polyline points="1,6 4.5,10 11,2"/></svg>
+    Complete
+  </div>
+</header>
+
+
+<!-- ══ HERO ══ -->
+<div class="hero a1">
+
+  <!-- PR HEADLINE — the news -->
+  <div class="hero-pr">
+    <div class="hero-pr-num">2</div>
+    <div class="hero-pr-label">New Personal Records</div>
+    <div class="hero-pr-sub">Bench Press · Incline DB Press</div>
+  </div>
+
+  <!-- Session title + tagline -->
+  <div class="hero-session">
+    <div class="hero-title">Upper A — Complete</div>
+    <div class="hero-tagline">
+      Sunday, 12 April · 7:30 AM &nbsp;·&nbsp;
+      <strong>Strongest Upper A yet</strong>
+    </div>
+  </div>
+
+  <!-- Stat pills — 3 columns, each with delta -->
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">52</div>
+      <div class="hero-stat-delta">Your fastest</div>
+      <div class="hero-stat-lbl">Minutes</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">18</div>
+      <div class="hero-stat-delta">All completed</div>
+      <div class="hero-stat-lbl">Sets</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">8,420</div>
+      <div class="hero-stat-delta">↑ +340kg</div>
+      <div class="hero-stat-lbl">kg Volume</div>
+    </div>
+  </div>
+
+  <!-- Identity line — the user's story -->
+  <div class="hero-identity">
+    <div class="hero-identity-dot"></div>
+    <div class="hero-identity-txt">
+      Session <strong>14</strong> · Training for <strong>47 days</strong> ·
+      Your Bench Press has gone from <strong>80kg → 97.5kg</strong> since you started.
+      <em>You're not the same person who walked in on day one.</em>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ COACH CARD — position 2, before exercise detail ══ -->
+<div class="coach-wrap a2">
+  <div class="coach-card">
+    <div class="coach-hd">
+      <div class="coach-icon">
+        <!-- Lightning bolt — intelligence, forward momentum -->
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="coach-kicker">Coach</div>
+        <div class="coach-title">Next Session Targets</div>
+      </div>
+    </div>
+
+    <div class="coach-msg">
+      You showed up and you delivered. <strong>Bench and Incline are moving</strong> — that's what consistent 1 RIR training looks like over weeks. Row needs one more session at 90kg and then it breaks too. You're not stuck, you're loading the spring.
+      <span class="attack">Next session: attack 100kg on Bench. →</span>
+    </div>
+
+    <div class="coach-targets">
+      <div class="coach-row">
+        <div class="cr-name">Barbell Bench Press</div>
+        <div class="cr-target">100kg × 5–8</div>
+        <div class="cr-badge up">↑ +2.5kg</div>
+      </div>
+      <div class="coach-row">
+        <div class="cr-name">Barbell Row</div>
+        <div class="cr-target">90kg × 5–8</div>
+        <div class="cr-badge build">→ Build</div>
+      </div>
+      <div class="coach-row">
+        <div class="cr-name">Incline DB Press</div>
+        <div class="cr-target">33kg × 6–10</div>
+        <div class="cr-badge up">↑ +1kg</div>
+      </div>
+      <div class="coach-row">
+        <div class="cr-name">Cable Row</div>
+        <div class="cr-target">72kg × 8–12</div>
+        <div class="cr-badge build">→ Build</div>
+      </div>
+      <div class="coach-row">
+        <div class="cr-name">Lateral Raise</div>
+        <div class="cr-target">14kg × 10–12</div>
+        <div class="cr-badge build">→ Build</div>
+      </div>
+      <div class="coach-row">
+        <div class="cr-name">Tricep Pushdown</div>
+        <div class="cr-target">42kg × 8–12</div>
+        <div class="cr-badge up">↑ +1kg</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ EXERCISES ══ -->
+<div class="section-divider a3">
+  <div class="sd-line"></div>
+  <div class="sd-lbl">Exercise Detail</div>
+  <div class="sd-line"></div>
+</div>
+
+<div class="exercises">
+
+  <!-- BENCH PRESS — primary compound, PR -->
+  <div class="ex-card primary a3">
+    <div class="ex-check">
+      <svg viewBox="0 0 10 10"><polyline points="1.5,5 4,8 8.5,2"/></svg>
+    </div>
+    <div class="ex-hd">
+      <div class="ex-name">
+        Barbell Bench Press
+        <span class="pr-badge">
+          <svg viewBox="0 0 10 10"><polyline points="1,5 3.5,8 9,2"/></svg>
+          PR
+        </span>
+      </div>
+      <div class="ex-best">
+        <span class="ex-best-w">97.5kg</span>
+        <span class="ex-best-r">× 8 reps</span>
+        <span class="ex-best-1rm">Est. 1RM: 123kg</span>
+        <span class="ex-delta up">↑ +2.5kg</span>
+      </div>
+    </div>
+
+    <div class="wu-chip" onclick="toggleWU(this)">
+      <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+      3 warm-up sets
+    </div>
+    <div class="wu-rows">
+      <div class="wu-row"><span class="wu-lbl">W1</span><span class="wu-w">37.5kg</span><span class="wu-x"> × </span><span class="wu-r">8</span></div>
+      <div class="wu-row"><span class="wu-lbl">W2</span><span class="wu-w">57.5kg</span><span class="wu-x"> × </span><span class="wu-r">5</span></div>
+      <div class="wu-row"><span class="wu-lbl">W3</span><span class="wu-w">77.5kg</span><span class="wu-x"> × </span><span class="wu-r">2</span></div>
+    </div>
+
+    <div class="sets-tbl">
+      <div class="sets-head">
+        <div class="sh">#</div>
+        <div class="sh">Weight</div>
+        <div class="sh c">Reps</div>
+        <div class="sh r">Est. 1RM</div>
+      </div>
+      <div class="set-row best">
+        <div class="sn">1</div><div class="sw">97.5kg</div><div class="sr">8</div><div class="s1">123.0</div>
+      </div>
+      <!-- Back-off sets hidden by default — user taps to reveal -->
+      <div class="see-sets" onclick="toggleSets(this)">
+        <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+        2 more sets
+      </div>
+      <div class="hidden-sets">
+        <div class="set-row">
+          <div class="sn">2</div><div class="sw">87.5kg</div><div class="sr">8</div><div class="s1">110.3</div>
+        </div>
+        <div class="set-row">
+          <div class="sn">3</div><div class="sw">80kg</div><div class="sr">8</div><div class="s1">101.3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- BARBELL ROW — primary compound, build -->
+  <div class="ex-card primary-back a3">
+    <div class="ex-check">
+      <svg viewBox="0 0 10 10"><polyline points="1.5,5 4,8 8.5,2"/></svg>
+    </div>
+    <div class="ex-hd">
+      <div class="ex-name">Barbell Row</div>
+      <div class="ex-best">
+        <span class="ex-best-w">90kg</span>
+        <span class="ex-best-r">× 8 reps</span>
+        <span class="ex-best-1rm">Est. 1RM: 114kg</span>
+        <span class="ex-delta build">→ Build</span>
+      </div>
+    </div>
+
+    <div class="wu-chip" onclick="toggleWU(this)">
+      <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+      2 warm-up sets
+    </div>
+    <div class="wu-rows">
+      <div class="wu-row"><span class="wu-lbl">W1</span><span class="wu-w">45kg</span><span class="wu-x"> × </span><span class="wu-r">8</span></div>
+      <div class="wu-row"><span class="wu-lbl">W2</span><span class="wu-w">67.5kg</span><span class="wu-x"> × </span><span class="wu-r">5</span></div>
+    </div>
+
+    <div class="sets-tbl">
+      <div class="sets-head">
+        <div class="sh">#</div><div class="sh">Weight</div><div class="sh c">Reps</div><div class="sh r">Est. 1RM</div>
+      </div>
+      <div class="set-row best">
+        <div class="sn">1</div><div class="sw">90kg</div><div class="sr">8</div><div class="s1">114.0</div>
+      </div>
+      <div class="see-sets" onclick="toggleSets(this)">
+        <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+        2 more sets
+      </div>
+      <div class="hidden-sets">
+        <div class="set-row">
+          <div class="sn">2</div><div class="sw">81kg</div><div class="sr">8</div><div class="s1">102.6</div>
+        </div>
+        <div class="set-row">
+          <div class="sn">3</div><div class="sw">73kg</div><div class="sr">7</div><div class="s1">90.1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- INCLINE DB PRESS — PR -->
+  <div class="ex-card a4">
+    <div class="ex-check">
+      <svg viewBox="0 0 10 10"><polyline points="1.5,5 4,8 8.5,2"/></svg>
+    </div>
+    <div class="ex-hd">
+      <div class="ex-name">
+        Incline DB Press
+        <span class="pr-badge">
+          <svg viewBox="0 0 10 10"><polyline points="1,5 3.5,8 9,2"/></svg>
+          PR
+        </span>
+      </div>
+      <div class="ex-best">
+        <span class="ex-best-w">32kg</span>
+        <span class="ex-best-r">× 10 reps</span>
+        <span class="ex-best-1rm">Est. 1RM: 42.7kg</span>
+        <span class="ex-delta up">↑ +1kg</span>
+      </div>
+    </div>
+    <div class="sets-tbl">
+      <div class="sets-head">
+        <div class="sh">#</div><div class="sh">Weight</div><div class="sh c">Reps</div><div class="sh r">Est. 1RM</div>
+      </div>
+      <div class="set-row best">
+        <div class="sn">1</div><div class="sw">32kg</div><div class="sr">10</div><div class="s1">42.7</div>
+      </div>
+      <div class="see-sets" onclick="toggleSets(this)">
+        <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+        1 more set
+      </div>
+      <div class="hidden-sets">
+        <div class="set-row">
+          <div class="sn">2</div><div class="sw">28.8kg</div><div class="sr">10</div><div class="s1">38.4</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CABLE ROW -->
+  <div class="ex-card a4">
+    <div class="ex-check">
+      <svg viewBox="0 0 10 10"><polyline points="1.5,5 4,8 8.5,2"/></svg>
+    </div>
+    <div class="ex-hd">
+      <div class="ex-name">Cable Row</div>
+      <div class="ex-best">
+        <span class="ex-best-w">72kg</span>
+        <span class="ex-best-r">× 12 reps</span>
+        <span class="ex-best-1rm">Est. 1RM: 96kg</span>
+        <span class="ex-delta build">→ Build</span>
+      </div>
+    </div>
+    <div class="sets-tbl">
+      <div class="sets-head">
+        <div class="sh">#</div><div class="sh">Weight</div><div class="sh c">Reps</div><div class="sh r">Est. 1RM</div>
+      </div>
+      <div class="set-row best">
+        <div class="sn">1</div><div class="sw">72kg</div><div class="sr">12</div><div class="s1">96.0</div>
+      </div>
+      <div class="see-sets" onclick="toggleSets(this)">
+        <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+        1 more set
+      </div>
+      <div class="hidden-sets">
+        <div class="set-row">
+          <div class="sn">2</div><div class="sw">64.8kg</div><div class="sr">11</div><div class="s1">88.6</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- LATERAL RAISE -->
+  <div class="ex-card a5">
+    <div class="ex-check">
+      <svg viewBox="0 0 10 10"><polyline points="1.5,5 4,8 8.5,2"/></svg>
+    </div>
+    <div class="ex-hd">
+      <div class="ex-name">Lateral Raise</div>
+      <div class="ex-best">
+        <span class="ex-best-w">14kg</span>
+        <span class="ex-best-r">× 12 reps</span>
+        <span class="ex-best-1rm">Est. 1RM: 18.7kg</span>
+        <span class="ex-delta build">→ Build</span>
+      </div>
+    </div>
+    <div class="sets-tbl">
+      <div class="sets-head">
+        <div class="sh">#</div><div class="sh">Weight</div><div class="sh c">Reps</div><div class="sh r">Est. 1RM</div>
+      </div>
+      <div class="set-row best">
+        <div class="sn">1</div><div class="sw">14kg</div><div class="sr">12</div><div class="s1">18.7</div>
+      </div>
+      <div class="see-sets" onclick="toggleSets(this)">
+        <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+        1 more set
+      </div>
+      <div class="hidden-sets">
+        <div class="set-row">
+          <div class="sn">2</div><div class="sw">12.6kg</div><div class="sr">12</div><div class="s1">16.8</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TRICEP PUSHDOWN -->
+  <div class="ex-card a5">
+    <div class="ex-check">
+      <svg viewBox="0 0 10 10"><polyline points="1.5,5 4,8 8.5,2"/></svg>
+    </div>
+    <div class="ex-hd">
+      <div class="ex-name">Tricep Pushdown</div>
+      <div class="ex-best">
+        <span class="ex-best-w">41kg</span>
+        <span class="ex-best-r">× 12 reps</span>
+        <span class="ex-best-1rm">Est. 1RM: 54.7kg</span>
+        <span class="ex-delta up">↑ +1kg</span>
+      </div>
+    </div>
+    <div class="sets-tbl">
+      <div class="sets-head">
+        <div class="sh">#</div><div class="sh">Weight</div><div class="sh c">Reps</div><div class="sh r">Est. 1RM</div>
+      </div>
+      <div class="set-row best">
+        <div class="sn">1</div><div class="sw">41kg</div><div class="sr">12</div><div class="s1">54.7</div>
+      </div>
+      <div class="see-sets" onclick="toggleSets(this)">
+        <svg viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3"/></svg>
+        1 more set
+      </div>
+      <div class="hidden-sets">
+        <div class="set-row">
+          <div class="sn">2</div><div class="sw">36.9kg</div><div class="sr">12</div><div class="s1">49.2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ MUSCLE SPLIT ══ -->
+<div class="section-divider a6">
+  <div class="sd-line"></div>
+  <div class="sd-lbl">Muscle Split</div>
+  <div class="sd-line"></div>
+</div>
+<div class="muscle-wrap a6">
+  <div class="muscle-card">
+    <div class="muscle-bar">
+      <div class="mseg" style="width:38%;background:#4a9eff"></div>
+      <div class="mseg" style="width:32%;background:#ff6b4a"></div>
+      <div class="mseg" style="width:16%;background:#f5a623"></div>
+      <div class="mseg" style="width:8%;background:#cc44ff"></div>
+      <div class="mseg" style="width:6%;background:#3ecf8e"></div>
+    </div>
+    <div class="muscle-legend">
+      <div class="ml-item"><div class="ml-dot" style="background:#4a9eff"></div><span class="ml-name">Chest</span><span class="ml-pct">38%</span></div>
+      <div class="ml-item"><div class="ml-dot" style="background:#ff6b4a"></div><span class="ml-name">Back</span><span class="ml-pct">32%</span></div>
+      <div class="ml-item"><div class="ml-dot" style="background:#f5a623"></div><span class="ml-name">Shoulders</span><span class="ml-pct">16%</span></div>
+      <div class="ml-item"><div class="ml-dot" style="background:#cc44ff"></div><span class="ml-name">Arms</span><span class="ml-pct">8%</span></div>
+      <div class="ml-item"><div class="ml-dot" style="background:#3ecf8e"></div><span class="ml-name">Core</span><span class="ml-pct">6%</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ BOTTOM CTAs ══ -->
+<div class="bottom-section a7">
+  <div class="cta-divider"></div>
+
+  <button class="share-btn">
+    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Share this session
+  </button>
+
+  <button class="save-btn">
+    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+    Save as Routine
+  </button>
+
+  <button class="done-btn" id="doneBtn" onclick="showCompletion()">
+    Done
+  </button>
+</div>
+
+
+<!-- ══ COMPLETION RITUAL ══ -->
+<div class="completion" id="completion">
+  <div class="comp-ring">
+    <svg viewBox="0 0 24 24"><polyline points="4,12 9,17 20,6"/></svg>
+  </div>
+  <div class="comp-title">Session Complete</div>
+  <div class="comp-sub">Upper A · 14 sessions</div>
+  <div class="comp-encourage">Keep showing up.</div>
+</div>
+
+
+<script>
+// Scroll progress bar
+window.addEventListener('scroll', () => {
+  const el = document.getElementById('progress');
+  const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+  el.style.setProperty('--scroll', Math.min(pct, 100) + '%');
+});
+
+// Done button — glow activates after 3 seconds
+setTimeout(() => {
+  document.getElementById('doneBtn').classList.add('ready');
+}, 3000);
+
+// Warm-up toggle
+function toggleWU(chip) {
+  chip.classList.toggle('open');
+  chip.nextElementSibling.classList.toggle('open');
+}
+
+// See all sets toggle
+function toggleSets(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+// Completion ritual
+function showCompletion() {
+  const c = document.getElementById('completion');
+  c.classList.add('show');
+  setTimeout(() => {
+    c.style.transition = 'opacity 0.6s ease';
+    c.style.opacity = '0';
+    setTimeout(() => c.remove(), 600);
+  }, 2200);
+}
+</script>
+
+</body>
+</html>

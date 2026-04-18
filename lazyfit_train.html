@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LazyFit Train Screen</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a1a; display: flex; justify-content: center; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; }
+.phone { background: #0a0a0a; border-radius: 28px; overflow: hidden; width: 390px; min-height: 780px; position: relative; padding-bottom: 80px; }
+
+/* Header */
+.hdr { padding: 18px 20px 0; display: flex; justify-content: space-between; align-items: center; }
+.hdr-title { font-size: 26px; font-weight: 700; color: #f0f0f0; letter-spacing: -0.5px; }
+
+/* Tabs */
+.tabs { padding: 14px 20px 0; display: flex; border-bottom: 1px solid #1a1a1a; }
+.tab { padding: 8px 0; margin-right: 24px; font-size: 14px; font-weight: 500; color: #3a3a3a; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.tab.active { color: #f0f0f0; border-bottom-color: #3ecf8e; }
+
+/* Scroll content */
+.scroll { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Section label */
+.sec-label { font-size: 10px; font-weight: 700; color: #484848; text-transform: uppercase; letter-spacing: 1px; padding: 4px 0 2px; }
+
+/* Last session card */
+.last-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 14px 16px; }
+.last-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.last-name { font-size: 16px; font-weight: 700; color: #f0f0f0; }
+.last-meta { font-size: 11px; color: #484848; margin-top: 3px; }
+.view-link { font-size: 12px; font-weight: 600; color: #3ecf8e; background: none; border: none; cursor: pointer; white-space: nowrap; }
+.muscle-row { display: flex; gap: 8px; }
+.muscle-bar-wrap { flex: 1; }
+.muscle-bar-label { font-size: 10px; color: #555; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+.muscle-bar-label span:last-child { color: #888; }
+.muscle-bar-track { background: #1e1e1e; border-radius: 3px; height: 4px; overflow: hidden; }
+.muscle-bar-fill { height: 100%; border-radius: 3px; }
+
+/* Routines grid */
+.routines-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.routine-card {
+  background: #141414;
+  border: 1px solid #1e1e1e;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  cursor: pointer;
+}
+/* Last done card gets a subtle green border */
+.routine-card.last-done { border-color: #1a3528; }
+.routine-name { font-size: 15px; font-weight: 700; color: #f0f0f0; letter-spacing: -0.3px; }
+.routine-count { font-size: 11px; color: #484848; margin-top: 2px; }
+.routine-last { font-size: 10px; color: #2a6e50; margin-top: 4px; font-weight: 500; }
+.routine-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: 10px; font-weight: 500; padding: 3px 7px; border-radius: 20px; background: #1e1e1e; color: #484848; }
+
+/* Start button inside routine card */
+.start-btn {
+  background: #3ecf8e;
+  color: #0a0a0a;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+/* New routine dashed card */
+.new-routine-card {
+  background: transparent;
+  border: 1px dashed #222;
+  border-radius: 12px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.new-routine-icon { font-size: 24px; color: #252525; font-weight: 300; line-height: 1; }
+.new-routine-label { font-size: 12px; color: #2e2e2e; font-weight: 600; }
+.new-routine-sub { font-size: 10px; color: #252525; }
+
+/* Empty workout button */
+.empty-btn {
+  background: none;
+  border: 1px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 14px;
+  color: #383838;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+/* Bottom nav */
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #0d0d0d; border-top: 1px solid #1a1a1a; display: flex; align-items: center; padding: 8px 0 20px; }
+.ni { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ni-lbl { font-size: 9px; color: #2a2a2a; text-transform: uppercase; letter-spacing: 0.4px; }
+.ni-lbl.active { color: #3ecf8e; }
+.fab { width: 40px; height: 40px; background: #3ecf8e; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -14px; border: 3px solid #0d0d0d; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="hdr">
+    <div class="hdr-title">Train</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">Routines</div>
+    <div class="tab">History</div>
+  </div>
+
+  <div class="scroll">
+
+    <!-- SECTION: Last session -->
+    <div class="sec-label">Last session</div>
+    <div class="last-card">
+      <div class="last-top">
+        <div>
+          <div class="last-name">Upper A</div>
+          <div class="last-meta">2 days ago · 48 min · 3,633 kg total</div>
+        </div>
+        <button class="view-link">View →</button>
+      </div>
+      <div class="muscle-row">
+        <div class="muscle-bar-wrap">
+          <div class="muscle-bar-label"><span>Chest</span><span>65%</span></div>
+          <div class="muscle-bar-track"><div class="muscle-bar-fill" style="width:65%; background:#3ecf8e"></div></div>
+        </div>
+        <div class="muscle-bar-wrap">
+          <div class="muscle-bar-label"><span>Shoulders</span><span>25%</span></div>
+          <div class="muscle-bar-track"><div class="muscle-bar-fill" style="width:25%; background:#2a6e50"></div></div>
+        </div>
+        <div class="muscle-bar-wrap">
+          <div class="muscle-bar-label"><span>Triceps</span><span>10%</span></div>
+          <div class="muscle-bar-track"><div class="muscle-bar-fill" style="width:10%; background:#1a3d2c"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: My routines -->
+    <div class="sec-label" style="margin-top:4px">My routines</div>
+    <div class="routines-grid">
+
+      <!-- Upper A — last done, subtle green border -->
+      <div class="routine-card last-done">
+        <div>
+          <div class="routine-name">Upper A</div>
+          <div class="routine-count">6 exercises</div>
+          <div class="routine-last">Done 2 days ago</div>
+          <div class="routine-tags">
+            <div class="tag">Push</div>
+            <div class="tag">Upper</div>
+          </div>
+        </div>
+        <button class="start-btn">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#0a0a0a"><polygon points="5,3 19,12 5,21"/></svg>
+          Start
+        </button>
+      </div>
+
+      <!-- Lower -->
+      <div class="routine-card">
+        <div>
+          <div class="routine-name">Lower</div>
+          <div class="routine-count">5 exercises</div>
+          <div style="height:16px"></div>
+          <div class="routine-tags">
+            <div class="tag">Legs</div>
+            <div class="tag">Lower</div>
+          </div>
+        </div>
+        <button class="start-btn">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#0a0a0a"><polygon points="5,3 19,12 5,21"/></svg>
+          Start
+        </button>
+      </div>
+
+      <!-- Upper B -->
+      <div class="routine-card">
+        <div>
+          <div class="routine-name">Upper B</div>
+          <div class="routine-count">6 exercises</div>
+          <div style="height:16px"></div>
+          <div class="routine-tags">
+            <div class="tag">Pull</div>
+            <div class="tag">Upper</div>
+          </div>
+        </div>
+        <button class="start-btn">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#0a0a0a"><polygon points="5,3 19,12 5,21"/></svg>
+          Start
+        </button>
+      </div>
+
+      <!-- New routine dashed card -->
+      <div class="new-routine-card">
+        <div class="new-routine-icon">+</div>
+        <div class="new-routine-label">New routine</div>
+        <div class="new-routine-sub">Build from scratch</div>
+      </div>
+
+    </div>
+
+    <!-- Empty workout escape hatch -->
+    <button class="empty-btn">+ Start empty workout</button>
+
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <div class="ni-lbl">Home</div>
+    </div>
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <div class="ni-lbl">Food</div>
+    </div>
+    <div class="ni">
+      <div class="fab">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#0a0a0a"><polygon points="5,3 19,12 5,21"/></svg>
+      </div>
+    </div>
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      <div class="ni-lbl active">Train</div>
+    </div>
+    <div class="ni">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div class="ni-lbl">Progress</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
