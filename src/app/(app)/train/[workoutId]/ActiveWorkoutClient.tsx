@@ -771,7 +771,7 @@ export default function ActiveWorkoutClient({
           <div style={{ flex: 1, height: '4px', background: '#2a2a2a', borderRadius: '9999px', overflow: 'hidden' }}>
             <div style={{ height: '100%', background: '#3ecf8e', borderRadius: '9999px', transition: 'width 500ms', width: totalSets > 0 ? `${(totalLogged / totalSets) * 100}%` : '0%' }} />
           </div>
-          <p style={{ fontSize: '10px', color: '#888', flexShrink: 0, fontFamily: 'inherit', margin: 0 }}>
+          <p style={{ fontSize: '14px', color: '#888', flexShrink: 0, fontFamily: 'inherit', margin: 0 }}>
             {formatTime(elapsed)} · {totalLogged}/{totalSets} working sets
           </p>
         </div>
@@ -834,7 +834,7 @@ export default function ActiveWorkoutClient({
                   </button>
                   <button
                     onClick={() => setShowHowToFor(exercise.exercise_name)}
-                    style={{ fontSize: '11px', color: '#3ecf8e', fontWeight: 600, background: '#0d2118', border: 'none', borderRadius: '5px', padding: '4px 9px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                    style={{ fontSize: '13px', color: '#f0f0f0', fontWeight: 600, background: '#0d2118', border: '1px solid rgba(62,207,142,0.4)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
                   >
                     How to
                   </button>
@@ -933,14 +933,14 @@ export default function ActiveWorkoutClient({
                           const sn = Number(setNumStr)
                           return (
                             <div key={sn} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontSize: '9px', color: '#3a5040', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Set {sn}</span>
+                              <span style={{ fontSize: '12px', color: '#b8b8b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Set {sn}</span>
                               <span style={{ fontSize: '14px', fontWeight: 700, color: '#e0f5ed' }}>{t.weight}kg</span>
-                              <span style={{ fontSize: '10px', color: '#4a7060' }}>× {t.repsMin}–{t.repsMax}</span>
+                              <span style={{ fontSize: '13px', color: '#b8b8b8' }}>× {t.repsMin}–{t.repsMax}</span>
                             </div>
                           )
                         })}
                       {Object.keys(targets).length > 3 && (
-                        <span style={{ fontSize: '10px', color: '#3a5040', paddingBottom: '2px' }}>
+                        <span style={{ fontSize: '10px', color: '#b8b8b8', paddingBottom: '2px' }}>
                           +{Object.keys(targets).length - 3} more
                         </span>
                       )}
@@ -951,7 +951,7 @@ export default function ActiveWorkoutClient({
                   )}
                   {prevSummary && (
                     <div>
-                      <span style={{ fontSize: '11px', color: '#3a5040' }}>Last session: </span>
+                      <span style={{ fontSize: '12px', color: '#b8b8b8' }}>Last session: </span>
                       <span style={{ fontSize: '11px', color: '#5aaa80' }}>{prevSummary}</span>
                     </div>
                   )}
@@ -995,16 +995,16 @@ export default function ActiveWorkoutClient({
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#FFAA00', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', color: '#FFAA00', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                           WARM UP
                           <div style={{ flex: 1, height: '1px', background: '#2a1f00' }} />
                         </div>
                         {/* Column headers */}
                         <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', paddingBottom: '6px' }}>
                           <span /><span />
-                          <span style={{ fontSize: '9px', color: '#5a4000', letterSpacing: '0.8px', fontFamily: 'inherit' }}>—</span>
-                          <span style={{ fontSize: '9px', color: '#5a4000', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
-                          <span style={{ fontSize: '9px', color: '#5a4000', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
+                          <span style={{ fontSize: '12px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>—</span>
+                          <span style={{ fontSize: '12px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
+                          <span style={{ fontSize: '12px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
                           <span />
                         </div>
                         {/* Warm-up rows */}
@@ -1012,20 +1012,18 @@ export default function ActiveWorkoutClient({
                           {warmupSets.map(({ s: setData, i: idx }, warmupIdx) => {
                             const isDone = setData.logged
                             const isActive = !isDone && warmupIdx === firstUnloggedWarmupIdx
-                            const rowStyle: CSSProperties = isDone
-                              ? { opacity: 0.35 }
-                              : isActive
-                                ? { background: '#1a1200', borderRadius: '9px', borderLeft: '3px solid #FFAA00', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
-                                : {}
+                            const rowStyle: CSSProperties = isActive
+                              ? { background: '#1a1200', borderRadius: '9px', borderLeft: '3px solid #FFAA00', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
+                              : {}
                             const kgStyle: CSSProperties = isActive
-                              ? { background: '#1a1200', border: '1px solid #FFAA00', borderRadius: '7px', padding: '8px 5px', fontSize: '14px', fontWeight: 600, color: '#FFAA00', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                              : { background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '14px', fontWeight: 600, color: '#888', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                              ? { background: '#1a1200', border: '1px solid #FFAA00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 700, color: '#FFAA00', WebkitTextFillColor: '#FFAA00', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                              : { background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 700, color: '#b8b8b8', WebkitTextFillColor: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
                             const repsStyle: CSSProperties = isActive
-                              ? { background: '#1a1200', border: '1px solid #FFAA00', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#FFAA00', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                              : { background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#5a4000', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                              ? { background: '#1a1200', border: '1px solid #FFAA00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 600, color: '#FFAA00', WebkitTextFillColor: '#FFAA00', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                              : { background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 600, color: '#f0f0f0', WebkitTextFillColor: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
 
                             return (
-                              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', ...rowStyle }}>
+                              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '52px', ...rowStyle }}>
                                 {/* × delete */}
                                 <button
                                   onClick={() => removeSet(exercise.id, idx)}
@@ -1034,29 +1032,39 @@ export default function ActiveWorkoutClient({
                                   ×
                                 </button>
                                 {/* Type badge */}
-                                <div style={{ fontSize: '10px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: '#FFAA00', background: '#1a1200' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: '#f0f0f0', background: '#1a1200' }}>
                                   W{warmupIdx + 1}
                                 </div>
                                 {/* Last ghost */}
                                 <span style={{ fontSize: '10px', color: '#3a2a00', fontFamily: 'inherit' }}>—</span>
                                 {/* KG */}
-                                <input
-                                  type="number"
-                                  inputMode="decimal"
-                                  value={setData.weight}
-                                  onChange={e => updateSet(exercise.id, idx, 'weight', e.target.value)}
-                                  disabled={setData.logged}
-                                  style={kgStyle}
-                                />
+                                {isDone ? (
+                                  <div style={{ background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 700, color: '#b8b8b8', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
+                                    {setData.weight}
+                                  </div>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    value={setData.weight}
+                                    onChange={e => updateSet(exercise.id, idx, 'weight', e.target.value)}
+                                    style={kgStyle}
+                                  />
+                                )}
                                 {/* Reps */}
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={setData.reps}
-                                  onChange={e => updateSet(exercise.id, idx, 'reps', e.target.value)}
-                                  disabled={setData.logged}
-                                  style={repsStyle}
-                                />
+                                {isDone ? (
+                                  <div style={{ background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 600, color: '#f0f0f0', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
+                                    {setData.reps}
+                                  </div>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={setData.reps}
+                                    onChange={e => updateSet(exercise.id, idx, 'reps', e.target.value)}
+                                    style={repsStyle}
+                                  />
+                                )}
                                 {/* Circle */}
                                 {isDone ? (
                                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFAA00', border: '2px solid #FFAA00', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1081,7 +1089,7 @@ export default function ActiveWorkoutClient({
                         {/* Add warm-up set */}
                         <button
                           onClick={() => addWarmupSet(exercise.id)}
-                          style={{ marginTop: '8px', fontSize: '9px', color: '#3a2a00', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.08em', fontFamily: 'inherit' }}
+                          style={{ marginTop: '8px', fontSize: '14px', color: '#b8b8b8', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.08em', fontFamily: 'inherit' }}
                         >
                           + ADD WARM-UP SET
                         </button>
@@ -1101,16 +1109,16 @@ export default function ActiveWorkoutClient({
                   <>
                     {hasWarmups && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 16px 8px' }}>
-                        <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.08em', fontFamily: 'inherit' }}>WORKING SETS</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#f0f0f0', letterSpacing: '0.08em', fontFamily: 'inherit' }}>WORKING SETS</span>
                         <div style={{ flex: 1, height: '1px', background: '#1a1a1a' }} />
                       </div>
                     )}
                     {/* Column headers */}
                     <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', padding: '0 16px 6px' }}>
                       <span /><span />
-                      <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>LAST TIME</span>
-                      <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
-                      <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
+                      <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>LAST TIME</span>
+                      <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
+                      <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
                       <span />
                     </div>
                     {/* Working set rows */}
@@ -1132,14 +1140,14 @@ export default function ActiveWorkoutClient({
                             ? { background: '#0d1a12', borderRadius: '9px', borderLeft: '3px solid #3ecf8e', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
                             : {}
                         const kgStyle: CSSProperties = isActive
-                          ? { background: '#0d1f17', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '14px', fontWeight: 600, color: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '14px', fontWeight: 600, color: '#888', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                          ? { background: '#0d1f17', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#888', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
                         const repsStyle: CSSProperties = isActive
-                          ? { background: '#0d1f17', border: '1px solid #1a3528', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#3ecf8e', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                          ? { background: '#3ecf8e', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#000000', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
 
                         return (
-                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', ...rowStyle }}>
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '56px', ...rowStyle }}>
                             {/* × delete */}
                             <button
                               onClick={() => removeSet(exercise.id, idx)}
@@ -1148,11 +1156,11 @@ export default function ActiveWorkoutClient({
                               ×
                             </button>
                             {/* Type badge */}
-                            <div style={{ fontSize: '10px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: isActive ? '#3ecf8e' : '#b8b8b8', background: isActive ? '#0d2118' : '#1e1e1e', minWidth: '28px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: isActive ? '#3ecf8e' : '#b8b8b8', background: isActive ? '#0d2118' : '#1e1e1e', minWidth: '28px' }}>
                               {setData.isPR ? '🏆' : workingSetNum}
                             </div>
                             {/* Last session ghost */}
-                            <span style={{ fontSize: '10px', color: '#b8b8b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+                            <span style={{ fontSize: '14px', color: '#b8b8b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
                               {prevSet ? `${prevSet.weight} × ${prevSet.reps}` : '—'}
                             </span>
                             {/* KG */}
@@ -1203,7 +1211,7 @@ export default function ActiveWorkoutClient({
               {/* + ADD SET */}
               <button
                 onClick={() => addSet(exercise.id)}
-                style={{ width: '100%', padding: '10px', fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.08em', background: 'none', border: 'none', borderTop: '1px solid #1a1a1a', marginTop: '8px', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ width: '100%', padding: '10px', fontSize: '15px', fontWeight: 600, color: '#b8b8b8', letterSpacing: '0.08em', background: 'none', border: 'none', borderTop: '1px solid #1a1a1a', marginTop: '8px', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 + ADD SET
               </button>
@@ -1214,7 +1222,7 @@ export default function ActiveWorkoutClient({
         {/* + ADD EXERCISE */}
         <button
           onClick={() => setShowAddExercise(true)}
-          style={{ width: '100%', padding: '16px', border: '1px dashed #888888', borderRadius: '12px', fontSize: '10px', color: '#b8b8b8', letterSpacing: '0.08em', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ width: '100%', padding: '16px', border: '1px dashed #888888', borderRadius: '12px', fontSize: '15px', fontWeight: 600, color: '#b8b8b8', letterSpacing: '0.08em', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
         >
           + ADD EXERCISE
         </button>
@@ -1223,7 +1231,7 @@ export default function ActiveWorkoutClient({
         <button
           onClick={finishWorkout}
           disabled={finishing}
-          style={{ background: 'none', border: '1px solid #222', color: '#b8b8b8', borderRadius: '12px', padding: '14px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: finishing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: finishing ? 0.4 : 1 }}
+          style={{ background: 'none', border: '1px solid #222', color: '#b8b8b8', borderRadius: '12px', padding: '14px', fontSize: '17px', fontWeight: 700, width: '100%', cursor: finishing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: finishing ? 0.4 : 1 }}
         >
           {finishing ? 'SAVING WORKOUT...' : 'FINISH WORKOUT'}
         </button>
@@ -1232,17 +1240,17 @@ export default function ActiveWorkoutClient({
       {/* Session bar — overlays BottomNav (zIndex 50 > BottomNav z-40) */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0d0d0d', borderTop: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', paddingLeft: '20px', paddingRight: '20px', paddingBottom: 'env(safe-area-inset-bottom, 20px)', zIndex: 50, fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '11px', color: '#b8b8b8' }}>Elapsed</span>
+          <span style={{ fontSize: '13px', color: '#b8b8b8' }}>Elapsed</span>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#f0f0f0' }}>{formatTime(elapsed)}</span>
         </div>
         <div style={{ width: '1px', height: '22px', background: '#1a1a1a' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '10px', color: '#b8b8b8' }}>Sets done</span>
+          <span style={{ fontSize: '13px', color: '#b8b8b8' }}>Sets done</span>
           <span style={{ fontSize: '15px', fontWeight: 700, color: '#3ecf8e' }}>{totalLogged}</span>
         </div>
         <div style={{ width: '1px', height: '22px', background: '#1a1a1a' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '10px', color: '#b8b8b8' }}>Remaining</span>
+          <span style={{ fontSize: '13px', color: '#b8b8b8' }}>Remaining</span>
           <span style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0' }}>{totalSets - totalLogged}</span>
         </div>
         <div style={{ width: '1px', height: '22px', background: '#1a1a1a' }} />
