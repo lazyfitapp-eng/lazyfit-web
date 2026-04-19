@@ -41,7 +41,7 @@ export function getMuscle(name: string): { muscle: string; color: string } {
   for (const m of MUSCLE_MAP) {
     if (lower.includes(m.keyword)) return { muscle: m.muscle, color: m.color }
   }
-  return { muscle: 'Other', color: '#444' }
+  return { muscle: 'Other', color: '#b8b8b8' }
 }
 
 export function computeMuscleSplit(

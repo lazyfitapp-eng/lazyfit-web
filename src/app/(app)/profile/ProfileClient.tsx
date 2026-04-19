@@ -496,7 +496,7 @@ export default function ProfileClient({ user, profile }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px 8px' }}>
             <div>
               <div style={{ fontSize: 15, color: '#b8b8b8' }}>Activity level</div>
-              <div style={{ fontSize: 11, color: '#3a3a3a', marginTop: 1 }}>Outside the gym — LazyFit knows your training</div>
+              <div style={{ fontSize: 11, color: '#888888', marginTop: 1 }}>Outside the gym — LazyFit knows your training</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{activityLabel(activityLevel)}</span>
@@ -515,7 +515,7 @@ export default function ProfileClient({ user, profile }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 15, color: '#b8b8b8' }}>Body fat</div>
-              <div style={{ fontSize: 11, color: '#3a3a3a', marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: '#888888', marginTop: 1 }}>
                 {neckCm ? 'Estimated from waist + neck' : 'Log neck measurement to unlock'}
               </div>
             </div>
@@ -573,7 +573,7 @@ export default function ProfileClient({ user, profile }: Props) {
 
       {/* Footer */}
       <div style={{ padding: '20px 20px 4px', textAlign: 'center' }}>
-        <span style={{ fontSize: 11, color: '#2a2a2a' }}>LazyFit v1.0 · Your data is never sold</span>
+        <span style={{ fontSize: 11, color: '#888888' }}>LazyFit v1.0 · Your data is never sold</span>
       </div>
 
       {/* ── Overlays ── */}
@@ -597,7 +597,7 @@ export default function ProfileClient({ user, profile }: Props) {
                     style={{ width: '100%', padding: '14px 16px', background: '#111', border: '1px solid #1a1a1a', borderRadius: 12, fontSize: 18, fontWeight: 600, color: '#f0f0f0', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none' }}
                     autoFocus
                   />
-                  <div style={{ fontSize: 12, color: '#3a3a3a', marginTop: 8, paddingLeft: 4 }}>Years old</div>
+                  <div style={{ fontSize: 12, color: '#888888', marginTop: 8, paddingLeft: 4 }}>Years old</div>
                 </>
               )}
               {editDrawer === 'sex' && (
@@ -685,7 +685,7 @@ export default function ProfileClient({ user, profile }: Props) {
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#111', borderRadius: 10 }}>
                     <span style={{ fontSize: 14, color: '#b8b8b8' }}>{label}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 13, color: '#3a3a3a', textDecoration: 'line-through' }}>{fromVals[i].toLocaleString()}{suffix}</span>
+                      <span style={{ fontSize: 13, color: '#888888', textDecoration: 'line-through' }}>{fromVals[i].toLocaleString()}{suffix}</span>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0' }}>{toVals[i].toLocaleString()}{suffix}</span>
                     </div>
                   </div>

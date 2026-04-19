@@ -62,7 +62,7 @@ export default function SurveyModal({
       <div className="relative w-full max-w-sm bg-[#0d0d0d] border border-[#222] rounded-2xl p-6 shadow-2xl">
         <button
           onClick={dismiss}
-          className="absolute top-4 right-4 text-[#444] hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-[#b8b8b8] hover:text-white transition-colors"
           aria-label="Close"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -95,7 +95,7 @@ export default function SurveyModal({
                 >
                   <div
                     className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
-                      selected.includes(opt) ? 'bg-primary border-primary' : 'border-[#333]'
+                      selected.includes(opt) ? 'bg-primary border-primary' : 'border-[#888888]'
                     }`}
                   >
                     {selected.includes(opt) && (

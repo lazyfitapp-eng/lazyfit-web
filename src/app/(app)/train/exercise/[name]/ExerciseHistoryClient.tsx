@@ -137,7 +137,7 @@ function SessionCard({
             borderRadius: '50%',
             flexShrink: 0,
             background: isPR ? '#3ecf8e' : '#2a2a2a',
-            border: isPR ? '1px solid #3ecf8e' : '1px solid #333',
+            border: isPR ? '1px solid #3ecf8e' : '1px solid #888888',
             boxShadow: isPR ? '0 0 8px rgba(62,207,142,0.5)' : 'none',
           }}
         />
@@ -229,11 +229,11 @@ function SessionCard({
             </div>
             <div
               style={{
-                fontSize: 9,
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
-                color: '#383838',
+                color: '#b8b8b8',
                 marginTop: 2,
               }}
             >
@@ -286,8 +286,8 @@ function SessionCard({
             const isWarmup = s.setType === 'warmup'
             const isFirstWorking = i === firstWorkingIdx
             const vol = (s.weightKg * s.repsCompleted).toFixed(0)
-            const textColor = isWarmup ? '#333' : isFirstWorking ? '#f0f0f0' : '#b8b8b8'
-            const setLabelColor = isWarmup ? '#333' : isFirstWorking ? '#3ecf8e' : '#555'
+            const textColor = isWarmup ? '#888888' : isFirstWorking ? '#f0f0f0' : '#b8b8b8'
+            const setLabelColor = isWarmup ? '#888888' : isFirstWorking ? '#3ecf8e' : '#555'
 
             return (
               <div key={i} style={{ display: 'flex', gap: 0, padding: '5px 0' }}>
@@ -321,7 +321,7 @@ function SessionCard({
                 <div style={{ flex: 1, fontSize: 12, fontWeight: isFirstWorking ? 700 : 400, color: textColor }}>
                   {s.repsCompleted}
                 </div>
-                <div style={{ flex: 1, fontSize: 12, color: isWarmup ? '#2a2a2a' : '#3a3a3a' }}>
+                <div style={{ flex: 1, fontSize: 12, color: isWarmup ? '#888888' : '#888888' }}>
                   {vol}
                 </div>
               </div>
@@ -342,7 +342,7 @@ function EmptyState({ exerciseName }: { exerciseName: string }) {
         {exerciseName}
       </div>
       <div style={{ fontSize: 15, color: '#999999' }}>No sessions logged yet.</div>
-      <div style={{ fontSize: 13, color: '#3a3a3a', marginTop: 6 }}>
+      <div style={{ fontSize: 13, color: '#888888', marginTop: 6 }}>
         Complete a workout that includes this exercise to see your progress here.
       </div>
     </div>
@@ -660,7 +660,7 @@ export default function ExerciseHistoryClient({
                   <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.6px', color: t.green ? '#3ecf8e' : '#f0f0f0' }}>
                     {t.display}
                   </div>
-                  <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#3a3a3a' }}>
+                  <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888888' }}>
                     {t.label}
                   </div>
                 </div>
@@ -686,7 +686,7 @@ export default function ExerciseHistoryClient({
                     <span style={{ fontSize: 11, color: 'rgba(62,207,142,0.4)' }}> {weeksTraining} wks</span>
                   </div>
                   {weeklyRate > 0 && (
-                    <div style={{ fontSize: 11, color: '#3a3a3a' }}>{weeklyRate.toFixed(2)} kg / week avg</div>
+                    <div style={{ fontSize: 11, color: '#888888' }}>{weeklyRate.toFixed(2)} kg / week avg</div>
                   )}
                 </div>
               ) : (

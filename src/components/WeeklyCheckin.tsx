@@ -294,31 +294,31 @@ export default function WeeklyCheckin({
           {step === 0 && (
             <div className="space-y-5 pt-3">
               <div>
-                <p className="text-[10px] tracking-widest text-[#444] mb-1">STEP 1 OF {TOTAL}</p>
+                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 1 OF {TOTAL}</p>
                 <h2 className="text-lg font-bold text-white">Weight Review</h2>
               </div>
 
               <div className="bg-[#111] rounded-xl p-4 flex items-center justify-around">
                 <div className="text-center">
-                  <p className="text-[10px] text-[#444] tracking-widest mb-1">LAST WEEK</p>
+                  <p className="text-[10px] text-[#b8b8b8] tracking-widest mb-1">LAST WEEK</p>
                   <p className="text-2xl font-bold font-mono text-white">{prevWeight ?? '—'}</p>
-                  {prevWeight && <p className="text-xs text-[#444]">kg</p>}
+                  {prevWeight && <p className="text-xs text-[#b8b8b8]">kg</p>}
                 </div>
                 <div className="text-center">
                   <p className={`text-2xl font-bold font-mono ${
-                    weightDelta === null ? 'text-[#333]'
+                    weightDelta === null ? 'text-[#888888]'
                     : weightDelta > 0 ? 'text-[#FF0040]'
                     : weightDelta < 0 ? 'text-primary'
                     : 'text-[#555]'
                   }`}>
                     {weightDelta === null ? '—' : `${weightDelta > 0 ? '+' : ''}${weightDelta}`}
                   </p>
-                  <p className="text-[10px] text-[#444]">kg change</p>
+                  <p className="text-[10px] text-[#b8b8b8]">kg change</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-[#444] tracking-widest mb-1">THIS WEEK</p>
+                  <p className="text-[10px] text-[#b8b8b8] tracking-widest mb-1">THIS WEEK</p>
                   <p className="text-2xl font-bold font-mono text-white">{currentWeight ?? '—'}</p>
-                  {currentWeight && <p className="text-xs text-[#444]">kg</p>}
+                  {currentWeight && <p className="text-xs text-[#b8b8b8]">kg</p>}
                 </div>
               </div>
 
@@ -339,14 +339,14 @@ export default function WeeklyCheckin({
           {step === 1 && (
             <div className="space-y-5 pt-3">
               <div>
-                <p className="text-[10px] tracking-widest text-[#444] mb-1">STEP 2 OF {TOTAL}</p>
+                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 2 OF {TOTAL}</p>
                 <h2 className="text-lg font-bold text-white">Exercise Progress</h2>
                 <p className="text-xs text-[#555] mt-1">Compared to your previous session.</p>
               </div>
 
               {loadingStats ? (
                 <div className="bg-[#111] rounded-xl p-8 text-center">
-                  <p className="text-xs text-[#444] tracking-widest animate-pulse">LOADING...</p>
+                  <p className="text-xs text-[#b8b8b8] tracking-widest animate-pulse">LOADING...</p>
                 </div>
               ) : exerciseStats ? (
                 <div className="space-y-3">
@@ -379,7 +379,7 @@ export default function WeeklyCheckin({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(0)}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#444] transition-colors"
+                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
@@ -397,14 +397,14 @@ export default function WeeklyCheckin({
           {step === 2 && (
             <div className="space-y-5 pt-3">
               <div>
-                <p className="text-[10px] tracking-widest text-[#444] mb-1">STEP 3 OF {TOTAL}</p>
+                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 3 OF {TOTAL}</p>
                 <h2 className="text-lg font-bold text-white">Nutrition Adherence</h2>
                 <p className="text-xs text-[#555] mt-1">Deselect any days you know were inaccurate.</p>
               </div>
 
               {loadingDays ? (
                 <div className="bg-[#111] rounded-xl p-8 text-center">
-                  <p className="text-xs text-[#444] tracking-widest animate-pulse">LOADING...</p>
+                  <p className="text-xs text-[#b8b8b8] tracking-widest animate-pulse">LOADING...</p>
                 </div>
               ) : (
                 <>
@@ -432,17 +432,17 @@ export default function WeeklyCheckin({
                           }`}
                         >
                           <p className={`text-[10px] tracking-widest ${
-                            !day.logged ? 'text-[#333]' : isSelected ? 'text-primary' : 'text-[#555]'
+                            !day.logged ? 'text-[#888888]' : isSelected ? 'text-primary' : 'text-[#555]'
                           }`}>
                             {formatDay(day.date)}
                           </p>
                           <p className={`text-sm font-mono font-bold mt-0.5 ${
-                            !day.logged ? 'text-[#333]' : isSelected ? 'text-primary' : 'text-[#444]'
+                            !day.logged ? 'text-[#888888]' : isSelected ? 'text-primary' : 'text-[#b8b8b8]'
                           }`}>
                             {day.logged ? `${Math.round(day.calories)}` : '—'}
                           </p>
                           {day.logged && (
-                            <p className={`text-[9px] ${isSelected ? 'text-primary/60' : 'text-[#333]'}`}>
+                            <p className={`text-[9px] ${isSelected ? 'text-primary/60' : 'text-[#888888]'}`}>
                               kcal
                             </p>
                           )}
@@ -453,12 +453,12 @@ export default function WeeklyCheckin({
 
                   {selectedDays.size > 0 && (
                     <div className="bg-[#111] rounded-xl p-4 flex items-center justify-between">
-                      <p className="text-[10px] text-[#444] tracking-widest">
+                      <p className="text-[10px] text-[#b8b8b8] tracking-widest">
                         AVG ({selectedDays.size} {selectedDays.size === 1 ? 'DAY' : 'DAYS'})
                       </p>
                       <p className="text-xl font-bold font-mono text-white">
                         {loggedAvg}{' '}
-                        <span className="text-sm font-normal text-[#444]">kcal</span>
+                        <span className="text-sm font-normal text-[#b8b8b8]">kcal</span>
                       </p>
                     </div>
                   )}
@@ -474,7 +474,7 @@ export default function WeeklyCheckin({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#444] transition-colors"
+                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
@@ -492,7 +492,7 @@ export default function WeeklyCheckin({
           {step === 3 && (
             <div className="space-y-5 pt-3">
               <div>
-                <p className="text-[10px] tracking-widest text-[#444] mb-1">STEP 4 OF {TOTAL}</p>
+                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 4 OF {TOTAL}</p>
                 <h2 className="text-lg font-bold text-white">Calorie Baseline</h2>
                 <p className="text-xs text-[#555] mt-1">What should we base your adjustment on?</p>
               </div>
@@ -516,7 +516,7 @@ export default function WeeklyCheckin({
                     </p>
                   </div>
                   <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                    baselineChoice === 'logged' ? 'border-primary bg-primary' : 'border-[#444]'
+                    baselineChoice === 'logged' ? 'border-primary bg-primary' : 'border-[#b8b8b8]'
                   }`} />
                 </button>
 
@@ -538,7 +538,7 @@ export default function WeeklyCheckin({
                     </p>
                   </div>
                   <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                    baselineChoice === 'target' ? 'border-primary bg-primary' : 'border-[#444]'
+                    baselineChoice === 'target' ? 'border-primary bg-primary' : 'border-[#b8b8b8]'
                   }`} />
                 </button>
 
@@ -559,7 +559,7 @@ export default function WeeklyCheckin({
                       <p className="text-[11px] text-[#555] mt-0.5">Enter your actual average manually</p>
                     </div>
                     <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                      baselineChoice === 'custom' ? 'border-primary bg-primary' : 'border-[#444]'
+                      baselineChoice === 'custom' ? 'border-primary bg-primary' : 'border-[#b8b8b8]'
                     }`} />
                   </div>
                   {baselineChoice === 'custom' && (
@@ -571,9 +571,9 @@ export default function WeeklyCheckin({
                         onChange={e => setCustomCalories(e.target.value)}
                         placeholder="e.g. 2100"
                         autoFocus
-                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg px-4 py-3 text-2xl font-mono text-white placeholder:text-[#333] focus:outline-none focus:border-primary transition-colors text-center"
+                        className="w-full bg-[#0d0d0d] border border-[#888888] rounded-lg px-4 py-3 text-2xl font-mono text-white placeholder:text-[#888888] focus:outline-none focus:border-primary transition-colors text-center"
                       />
-                      <p className="text-[10px] text-[#444] text-center mt-1.5 tracking-widest">KCAL / DAY</p>
+                      <p className="text-[10px] text-[#b8b8b8] text-center mt-1.5 tracking-widest">KCAL / DAY</p>
                     </div>
                   )}
                 </div>
@@ -582,7 +582,7 @@ export default function WeeklyCheckin({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#444] transition-colors"
+                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
@@ -601,21 +601,21 @@ export default function WeeklyCheckin({
           {step === 4 && (
             <div className="space-y-5 pt-3">
               <div>
-                <p className="text-[10px] tracking-widest text-[#444] mb-1">STEP 5 OF {TOTAL}</p>
+                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 5 OF {TOTAL}</p>
                 <h2 className="text-lg font-bold text-white">Program Update</h2>
               </div>
 
               <div className="bg-[#111] rounded-xl p-5 space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] text-[#444] tracking-widest">DAILY AVERAGE CALORIES</p>
+                    <p className="text-[10px] text-[#b8b8b8] tracking-widest">DAILY AVERAGE CALORIES</p>
                     <p className="text-4xl font-bold font-mono text-white mt-2">
                       {suggestedTarget}
                     </p>
-                    <p className="text-xs text-[#444] mt-0.5">kcal / day</p>
+                    <p className="text-xs text-[#b8b8b8] mt-0.5">kcal / day</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-[#444] tracking-widest">CHANGE</p>
+                    <p className="text-[10px] text-[#b8b8b8] tracking-widest">CHANGE</p>
                     <p className={`text-2xl font-bold font-mono mt-2 ${
                       suggestion > 0 ? 'text-primary'
                       : suggestion < 0 ? 'text-[#FF0040]'
@@ -640,13 +640,13 @@ export default function WeeklyCheckin({
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep(3)}
-                  className="px-4 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-xs rounded-xl hover:border-[#444] transition-colors flex-shrink-0"
+                  className="px-4 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-xs rounded-xl hover:border-[#b8b8b8] transition-colors flex-shrink-0"
                 >
                   BACK
                 </button>
                 <button
                   onClick={declineSuggestion}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#444] transition-colors"
+                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   DECLINE
                 </button>
@@ -676,7 +676,7 @@ export default function WeeklyCheckin({
                 </h2>
                 <p className="text-sm text-[#555] mt-2">Keep logging to see your trend.</p>
                 {accepted && (
-                  <p className="text-xs text-[#444] mt-3 font-mono">
+                  <p className="text-xs text-[#b8b8b8] mt-3 font-mono">
                     New target:{' '}
                     <span className="text-primary">{suggestedTarget} kcal/day</span>
                   </p>

@@ -204,7 +204,7 @@ function CalendarMonth({
               boxShadow = '0 0 0 2px #3ecf8e, 0 0 12px rgba(62,207,142,0.4)'
             }
           } else {
-            color = '#333'
+            color = '#888888'
           }
 
           if (isToday && !isTrained) {
@@ -396,11 +396,11 @@ function WeekDots({
           <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#b8b8b8' }}>
             {currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks} {currentStreakWeeks === 1 ? 'wk' : 'wks'}
           </div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#2a2a2a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#888888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Current streak
           </div>
         </div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: isPersonalBest ? 'rgba(62,207,142,0.5)' : '#2a2a2a', letterSpacing: '-0.1px' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: isPersonalBest ? 'rgba(62,207,142,0.5)' : '#888888', letterSpacing: '-0.1px' }}>
           {isPersonalBest ? '🏆 Personal best' : `Best ever: ${bestStreakWeeks} wks`}
         </div>
       </div>
@@ -555,7 +555,7 @@ function BodyCompChart({
       )}
       {/* X labels */}
       {xLabels.map((l) => (
-        <text key={l.lbl} x={l.x} y={H + 8} fontSize="8" fill="#2a2a2a" textAnchor="middle" fontFamily="monospace">{l.lbl}</text>
+        <text key={l.lbl} x={l.x} y={H + 8} fontSize="8" fill="#888888" textAnchor="middle" fontFamily="monospace">{l.lbl}</text>
       ))}
     </svg>
   )
@@ -577,7 +577,7 @@ function heroContent(
       statement: (
         <>
           {totalSessions} sessions.<br />
-          <span style={{ color: '#444' }}>That&apos;s</span> {totalSessions} more<br />
+          <span style={{ color: '#b8b8b8' }}>That&apos;s</span> {totalSessions} more<br />
           than last month.
         </>
       ),
@@ -828,7 +828,7 @@ export default function ProgressClient({
               <div style={{ fontSize: 22, fontWeight: 800, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#b8b8b8', letterSpacing: '-0.8px', lineHeight: 1 }}>{currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks}</div>
               <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Wk Streak</div>
               <div style={{ display: 'flex', gap: 6, fontSize: 9, color: '#2e2e2e', fontWeight: 500 }}>
-                <span>Best: <span style={{ color: '#444' }}>{bestStreakWeeks} wk{bestStreakWeeks !== 1 ? 's' : ''}</span></span>
+                <span>Best: <span style={{ color: '#b8b8b8' }}>{bestStreakWeeks} wk{bestStreakWeeks !== 1 ? 's' : ''}</span></span>
               </div>
             </div>
             <div style={{ background: '#1a1a1a', width: 1 }} />
@@ -841,7 +841,7 @@ export default function ProgressClient({
 
         {/* ── TRAINING CONSISTENCY ── */}
         <div style={{ padding: '0 20px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#333', marginBottom: 12, paddingTop: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             Training Consistency
           </div>
           <div className="rise-5" style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, padding: '20px 18px 18px' }}>
@@ -860,7 +860,7 @@ export default function ProgressClient({
 
         {/* ── STRENGTH SNAPSHOT ── */}
         <div style={{ padding: '0 20px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#333', marginBottom: 12, paddingTop: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             Strength Snapshot
           </div>
 
@@ -979,7 +979,7 @@ export default function ProgressClient({
                         )}
                         <div style={{ fontSize: 11, fontWeight: 600, color: '#555', marginBottom: 7, lineHeight: 1.3, marginTop: ex.sessionCount < 4 ? 18 : 0 }}>{ex.name}</div>
                         <div style={{ fontSize: 21, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.7px', lineHeight: 1, marginBottom: 3 }}>
-                          {ex.current1RM.toFixed(1)}<span style={{ fontSize: 12, fontWeight: 400, color: '#3a3a3a' }}> kg</span>
+                          {ex.current1RM.toFixed(1)}<span style={{ fontSize: 12, fontWeight: 400, color: '#888888' }}> kg</span>
                         </div>
                         <div style={{ fontSize: 11, fontWeight: 600, color: ex.trend === 'rising' ? '#3ecf8e' : ex.trend === 'attention' ? '#f5a623' : '#2e2e2e' }}>
                           {ex.sessionCount >= 4
@@ -1012,25 +1012,25 @@ export default function ProgressClient({
           ) : (
             <div style={{ padding: '24px', background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, textAlign: 'center' }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f0', marginBottom: 8 }}>No strength data yet</div>
-              <div style={{ fontSize: 13, color: '#333' }}>Complete a workout to see your strength snapshot.</div>
+              <div style={{ fontSize: 13, color: '#888888' }}>Complete a workout to see your strength snapshot.</div>
             </div>
           )}
         </div>
 
         {/* ── BODY COMPOSITION ── */}
         <div style={{ padding: '0 20px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#333', marginBottom: 12, paddingTop: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             Body Composition
           </div>
           <div className="rise-8" style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, overflow: 'hidden' }}>
             {/* Header stats */}
             <div style={{ padding: '18px 18px 0', display: 'flex', gap: 20 }}>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 500, color: '#3a3a3a', marginBottom: 3 }}>Body Weight</div>
+                <div style={{ fontSize: 10, fontWeight: 500, color: '#888888', marginBottom: 3 }}>Body Weight</div>
                 {latestWeight !== null ? (
                   <>
                     <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1, color: '#4a9eff' }}>
-                      {latestWeight.toFixed(1)}<span style={{ fontSize: 13, fontWeight: 400, color: '#3a3a3a' }}> kg</span>
+                      {latestWeight.toFixed(1)}<span style={{ fontSize: 13, fontWeight: 400, color: '#888888' }}> kg</span>
                     </div>
                     {weightDelta !== null && (
                       <div style={{ fontSize: 11, fontWeight: 600, marginTop: 3, color: weightDelta <= 0 ? '#3ecf8e' : '#2e2e2e' }}>
@@ -1052,11 +1052,11 @@ export default function ProgressClient({
                 )}
               </div>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 500, color: '#3a3a3a', marginBottom: 3 }}>Waist</div>
+                <div style={{ fontSize: 10, fontWeight: 500, color: '#888888', marginBottom: 3 }}>Waist</div>
                 {latestWaist !== null ? (
                   <>
                     <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1, color: '#3ecf8e' }}>
-                      {latestWaist.toFixed(1)}<span style={{ fontSize: 13, fontWeight: 400, color: '#3a3a3a' }}> cm</span>
+                      {latestWaist.toFixed(1)}<span style={{ fontSize: 13, fontWeight: 400, color: '#888888' }}> cm</span>
                     </div>
                     {waistDelta !== null && (
                       <div style={{ fontSize: 11, fontWeight: 600, marginTop: 3, color: waistDelta <= 0 ? '#3ecf8e' : '#2e2e2e' }}>
@@ -1074,7 +1074,7 @@ export default function ProgressClient({
                       cursor: 'pointer', fontFamily: 'inherit',
                       display: 'block', marginBottom: 5,
                     }}>+ Log Waist</button>
-                    <div style={{ fontSize: 10, color: '#333', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 10, color: '#888888', lineHeight: 1.4 }}>
                       Track weekly
                     </div>
                   </div>
@@ -1126,14 +1126,14 @@ export default function ProgressClient({
 
         {/* ── PR TROPHY CASE ── */}
         <div style={{ padding: '0 20px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#333', marginBottom: 12, paddingTop: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             PR Trophy Case
           </div>
           <div className="rise-9" style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, overflow: 'hidden' }}>
             <div style={{ padding: '16px 18px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 20, animation: 'bob 3.5s ease-in-out infinite' }}>🏆</span>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px' }}>Personal Records</span>
-              <span style={{ fontSize: 12, color: '#333', marginLeft: 'auto' }}>{allTimePRs.length} all time</span>
+              <span style={{ fontSize: 12, color: '#888888', marginLeft: 'auto' }}>{allTimePRs.length} all time</span>
             </div>
 
             {heroPR ? (
@@ -1185,7 +1185,7 @@ export default function ProgressClient({
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#c8c8c8', letterSpacing: '-0.2px', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {pr.exerciseName}
                       </div>
-                      <div style={{ fontSize: 11, color: '#333' }}>
+                      <div style={{ fontSize: 11, color: '#888888' }}>
                         {pr.sessionCount >= 4
                           ? `${pr.weight} kg × ${pr.reps} reps · ${new Date(pr.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                           : `best logged · ${new Date(pr.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
@@ -1194,8 +1194,8 @@ export default function ProgressClient({
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: '#e8e8e8', letterSpacing: '-0.5px', lineHeight: 1 }}>
                         {pr.sessionCount >= 4
-                          ? <>{pr.est1RM.toFixed(1)}<span style={{ fontSize: 11, fontWeight: 400, color: '#3a3a3a' }}> kg</span></>
-                          : <>{pr.weight}<span style={{ fontSize: 11, fontWeight: 400, color: '#3a3a3a' }}> kg</span></>}
+                          ? <>{pr.est1RM.toFixed(1)}<span style={{ fontSize: 11, fontWeight: 400, color: '#888888' }}> kg</span></>
+                          : <>{pr.weight}<span style={{ fontSize: 11, fontWeight: 400, color: '#888888' }}> kg</span></>}
                       </div>
                       {pr.sessionCount >= 4 && pr.deltaFromStart > 0 && (
                         <div style={{ fontSize: 11, fontWeight: 600, color: '#3ecf8e', marginTop: 2 }}>
@@ -1221,9 +1221,9 @@ export default function ProgressClient({
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.6px', marginBottom: 8 }}>
                   Your first PR is one session away.
                 </div>
-                <div style={{ fontSize: 13, color: '#333', lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: '#888888', lineHeight: 1.6 }}>
                   Push Set 1 to your absolute limit next workout.<br />
-                  <em style={{ fontStyle: 'normal', color: '#444' }}>Every record you break lives here forever.</em>
+                  <em style={{ fontStyle: 'normal', color: '#b8b8b8' }}>Every record you break lives here forever.</em>
                 </div>
               </div>
             )}
@@ -1232,12 +1232,12 @@ export default function ProgressClient({
 
         {/* ── NUTRITION THIS WEEK ── */}
         <div style={{ padding: '0 20px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#333', marginBottom: 12, paddingTop: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             Nutrition · This Week
           </div>
           <div className="rise-10" style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, padding: 18 }}>
             {weekFoodLogs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 12, color: '#333' }}>
+              <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 12, color: '#888888' }}>
                 No food logged this week. Start logging to see your nutrition snapshot.
               </div>
             ) : (
@@ -1279,7 +1279,7 @@ export default function ProgressClient({
 
         {/* ── YOUR COACH ── */}
         <div style={{ padding: '0 20px 28px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#333', marginBottom: 12, paddingTop: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             Your Coach
           </div>
           <div className="rise-11" style={{

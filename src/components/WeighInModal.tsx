@@ -72,7 +72,7 @@ export default function WeighInModal({ userId, recentWeights, onSave, onClose }:
         <div className="px-5 pb-8 space-y-5">
           <div>
             <h2 className="text-lg font-bold text-white">Log Weight</h2>
-            <p className="text-xs text-[#444] mt-0.5">Today&apos;s morning weight</p>
+            <p className="text-xs text-[#b8b8b8] mt-0.5">Today&apos;s morning weight</p>
           </div>
 
           {/* Large input */}
@@ -85,9 +85,9 @@ export default function WeighInModal({ userId, recentWeights, onSave, onClose }:
               onKeyDown={e => e.key === 'Enter' && handleSave()}
               autoFocus
               placeholder="82.5"
-              className="w-full bg-[#111] border border-[#333] rounded-xl px-5 py-5 text-3xl text-white font-mono font-bold focus:outline-none focus:border-primary transition-colors pr-16 text-center"
+              className="w-full bg-[#111] border border-[#888888] rounded-xl px-5 py-5 text-3xl text-white font-mono font-bold focus:outline-none focus:border-primary transition-colors pr-16 text-center"
             />
-            <span className="absolute right-5 top-1/2 -translate-y-1/2 text-base text-[#444] font-mono">kg</span>
+            <span className="absolute right-5 top-1/2 -translate-y-1/2 text-base text-[#b8b8b8] font-mono">kg</span>
           </div>
 
           {error && <p className="text-xs text-[#FF0040] text-center">{error}</p>}
@@ -103,7 +103,7 @@ export default function WeighInModal({ userId, recentWeights, onSave, onClose }:
 
           <button
             onClick={onClose}
-            className="w-full py-2 text-[#444] text-xs tracking-widest hover:text-[#666] transition-colors"
+            className="w-full py-2 text-[#b8b8b8] text-xs tracking-widest hover:text-[#666] transition-colors"
           >
             CANCEL
           </button>

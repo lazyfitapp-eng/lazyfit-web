@@ -101,12 +101,12 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
   const isFuture = year > today.getFullYear() || (year === today.getFullYear() && month >= today.getMonth())
 
   return (
-    <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '12px 14px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
+    <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '18px 20px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
       {/* Month nav */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <button
           onClick={() => onMonthChange(-1)}
-          style={{ background: 'none', border: 'none', color: '#484848', fontSize: '18px', cursor: 'pointer', padding: '2px 10px', lineHeight: 1, borderRadius: '6px', fontFamily: 'inherit' }}
+          style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: '18px', cursor: 'pointer', padding: '2px 10px', lineHeight: 1, borderRadius: '6px', fontFamily: 'inherit' }}
         >
           ‹
         </button>
@@ -116,7 +116,7 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
         <button
           onClick={() => onMonthChange(1)}
           disabled={isFuture}
-          style={{ background: 'none', border: 'none', color: isFuture ? '#2a2a2a' : '#484848', fontSize: '18px', cursor: isFuture ? 'not-allowed' : 'pointer', padding: '2px 10px', lineHeight: 1, borderRadius: '6px', fontFamily: 'inherit' }}
+          style={{ background: 'none', border: 'none', color: isFuture ? '#888888' : '#b8b8b8', fontSize: '18px', cursor: isFuture ? 'not-allowed' : 'pointer', padding: '2px 10px', lineHeight: 1, borderRadius: '6px', fontFamily: 'inherit' }}
         >
           ›
         </button>
@@ -125,7 +125,7 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
       {/* Day-of-week labels */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {DAY_LABELS.map((label, i) => (
-          <div key={i} style={{ fontSize: '9px', fontWeight: 600, color: '#2e2e2e', textTransform: 'uppercase', textAlign: 'center', padding: '3px 0 5px', letterSpacing: '0.4px' }}>
+          <div key={i} style={{ fontSize: '13px', fontWeight: 600, color: '#888888', textTransform: 'uppercase', textAlign: 'center', padding: '3px 0 5px', letterSpacing: '0.4px' }}>
             {label}
           </div>
         ))}
@@ -140,13 +140,13 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
           const numColor = !cell.currentMonth ? '#1e1e1e'
             : isToday ? '#0a0a0a'
             : hasWorkout ? '#3ecf8e'
-            : '#3a3a3a'
+            : '#888888'
 
           const numWeight = isToday ? 700 : hasWorkout ? 600 : 400
 
           return (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 1px', gap: '3px', borderRadius: '5px', background: isToday ? '#3ecf8e' : 'transparent' }}>
-              <span style={{ fontSize: '11px', fontWeight: numWeight, color: numColor, lineHeight: 1 }}>
+              <span style={{ fontSize: '14px', fontWeight: numWeight, color: numColor, lineHeight: 1 }}>
                 {cell.day}
               </span>
               <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: hasWorkout ? (isToday ? 'rgba(0,0,0,0.3)' : '#3ecf8e') : 'transparent' }} />
@@ -187,19 +187,19 @@ function WorkoutCard({ workout }: { workout: HistoryWorkout }) {
         {/* Top row: name + date */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2px' }}>
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px' }}>{displayName}</div>
-          <div style={{ fontSize: '11px', color: '#383838', whiteSpace: 'nowrap', paddingTop: '2px', marginLeft: '8px' }}>{dateStr}</div>
+          <div style={{ fontSize: '11px', color: '#b8b8b8', whiteSpace: 'nowrap', paddingTop: '2px', marginLeft: '8px' }}>{dateStr}</div>
         </div>
 
         {/* Relative date */}
-        <div style={{ fontSize: '11px', color: '#484848', marginBottom: '9px' }}>{relative}</div>
+        <div style={{ fontSize: '11px', color: '#b8b8b8', marginBottom: '9px' }}>{relative}</div>
 
         {/* Stats row */}
         {stats.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
             {stats.map((stat, i) => (
               <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                {i > 0 && <span style={{ fontSize: '10px', color: '#2a2a2a' }}>·</span>}
-                <span style={{ fontSize: '11px', color: '#484848' }}>{stat.text}</span>
+                {i > 0 && <span style={{ fontSize: '10px', color: '#888888' }}>·</span>}
+                <span style={{ fontSize: '13px', color: '#b8b8b8' }}>{stat.text}</span>
               </span>
             ))}
           </div>
@@ -208,15 +208,14 @@ function WorkoutCard({ workout }: { workout: HistoryWorkout }) {
         {/* Best set pill */}
         {bestSet && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: '7px', padding: '6px 10px' }}>
-            <span style={{ fontSize: '12px', color: '#666' }}>{bestSet.exercise}</span>
-            <span style={{ fontSize: '10px', color: '#2a2a2a' }}>—</span>
+            <span style={{ fontSize: '13px', color: '#b8b8b8' }}>{bestSet.exercise}</span>
             <span style={{ fontSize: '13px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.2px' }}>{bestSet.weight} kg × {bestSet.reps}</span>
           </div>
         )}
       </div>
 
       {/* Right arrow */}
-      <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', color: '#484848', fontSize: '16px', flexShrink: 0 }}>›</div>
+      <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', color: '#b8b8b8', fontSize: '16px', flexShrink: 0 }}>›</div>
     </Link>
   )
 }
@@ -328,16 +327,16 @@ export default function WorkoutHistory({ userId }: { userId: string }) {
       {workouts.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', gap: '10px' }}>
           <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#141414', border: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#484848" strokeWidth="1.5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.5">
               <path d="M6.5 6.5h11M6.5 17.5h11M4 12h16M2 9.5l2 2.5-2 2.5M22 9.5l-2 2.5 2 2.5" />
             </svg>
           </div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: '#484848' }}>No workouts yet</div>
-          <div style={{ fontSize: '12px', color: '#2e2e2e', lineHeight: 1.6 }}>Start your first session from the Routines tab.</div>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#b8b8b8' }}>No workouts yet</div>
+          <div style={{ fontSize: '12px', color: '#888888', lineHeight: 1.6 }}>Start your first session from the Routines tab.</div>
         </div>
       ) : (
         <>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#484848', textTransform: 'uppercase', letterSpacing: '1px', paddingTop: '4px', paddingBottom: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#b8b8b8', textTransform: 'uppercase', letterSpacing: '1px', paddingTop: '4px', paddingBottom: '2px' }}>
             {workoutsThisMonth} workout{workoutsThisMonth !== 1 ? 's' : ''} this month
           </div>
           {workouts.map(w => <WorkoutCard key={w.id} workout={w} />)}

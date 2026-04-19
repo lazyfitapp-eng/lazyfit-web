@@ -27,7 +27,7 @@ function HowToModal({ exerciseName, onClose }: { exerciseName: string; onClose: 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1a1a1a] flex-shrink-0">
-        <button onClick={onClose} className="text-[#555] hover:text-white transition-colors">
+        <button onClick={onClose} className="text-[#b8b8b8] hover:text-white transition-colors">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -38,11 +38,11 @@ function HowToModal({ exerciseName, onClose }: { exerciseName: string; onClose: 
         {loading && (
           <div className="flex items-center gap-2 py-4">
             <div className="w-4 h-4 border border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-[#444] font-mono">Loading...</span>
+            <span className="text-xs text-[#b8b8b8] font-mono">Loading...</span>
           </div>
         )}
         {!loading && !data && (
-          <p className="text-xs text-[#444] font-mono py-4">No instructions found for this exercise.</p>
+          <p className="text-xs text-[#b8b8b8] font-mono py-4">No instructions found for this exercise.</p>
         )}
         {!loading && data && (
           <div className="space-y-4">
@@ -56,7 +56,7 @@ function HowToModal({ exerciseName, onClose }: { exerciseName: string; onClose: 
                 href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exerciseName + ' proper form tutorial')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-center justify-center gap-3 w-full py-8 rounded-lg bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#333] transition-colors"
+                className="flex flex-col items-center justify-center gap-3 w-full py-8 rounded-lg bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#888888] transition-colors"
               >
                 <svg width="48" height="34" viewBox="0 0 48 34" fill="none">
                   <rect width="48" height="34" rx="8" fill="#FF0000"/>
@@ -64,12 +64,12 @@ function HowToModal({ exerciseName, onClose }: { exerciseName: string; onClose: 
                 </svg>
                 <div className="text-center">
                   <p className="text-xs font-bold text-white font-mono">{exerciseName.toUpperCase()}</p>
-                  <p className="text-[10px] text-[#555] font-mono mt-1">TAP TO WATCH FORM GUIDE</p>
+                  <p className="text-[10px] text-[#b8b8b8] font-mono mt-1">TAP TO WATCH FORM GUIDE</p>
                 </div>
               </a>
             )}
             {data.targetMuscle && (
-              <p className="text-[10px] text-[#555] font-mono">
+              <p className="text-[10px] text-[#b8b8b8] font-mono">
                 Target: <span className="text-[#888]">{data.targetMuscle}</span>
                 {data.secondaryMuscles.length > 0 && (
                   <> · Secondary: <span className="text-[#888]">{data.secondaryMuscles.join(', ')}</span></>
@@ -308,7 +308,7 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
       {/* X close button */}
       <button
         onClick={() => onDoneRef.current()}
-        className="absolute top-6 right-6 text-[#555] hover:text-white transition-colors"
+        className="absolute top-6 right-6 text-[#b8b8b8] hover:text-white transition-colors"
         aria-label="Close rest timer"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -317,7 +317,7 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
       </button>
 
       <div className="text-center px-8">
-        <p className="text-[10px] tracking-widest text-[#666] mb-6 font-mono">REST</p>
+        <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-6 font-mono">REST</p>
         <p
           className="text-8xl font-bold text-primary font-mono tabular-nums"
           style={{ textShadow: '0 0 40px #00FF41' }}
@@ -335,19 +335,19 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
         <div className="flex items-center justify-center gap-8 mt-8">
           <button
             onClick={() => adjust(-15)}
-            className="w-14 h-14 rounded-full border border-[#333] text-[#aaa] hover:border-[#666] hover:text-white transition-all font-mono text-sm font-bold"
+            className="w-14 h-14 rounded-full border border-[#888888] text-[#aaa] hover:border-[#666] hover:text-white transition-all font-mono text-sm font-bold"
           >
             −15
           </button>
           <button
             onClick={() => onDoneRef.current()}
-            className="text-[10px] tracking-widest text-[#555] hover:text-white transition-colors font-mono"
+            className="text-[10px] tracking-widest text-[#b8b8b8] hover:text-white transition-colors font-mono"
           >
             SKIP
           </button>
           <button
             onClick={() => adjust(+15)}
-            className="w-14 h-14 rounded-full border border-[#333] text-[#aaa] hover:border-[#666] hover:text-white transition-all font-mono text-sm font-bold"
+            className="w-14 h-14 rounded-full border border-[#888888] text-[#aaa] hover:border-[#666] hover:text-white transition-all font-mono text-sm font-bold"
           >
             +15
           </button>
@@ -385,7 +385,7 @@ function AddExerciseModal({ onAdd, onClose }: { onAdd: (name: string) => Promise
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1a1a1a] flex-shrink-0">
-        <button onClick={onClose} className="text-[#555] hover:text-white transition-colors">
+        <button onClick={onClose} className="text-[#b8b8b8] hover:text-white transition-colors">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -396,10 +396,10 @@ function AddExerciseModal({ onAdd, onClose }: { onAdd: (name: string) => Promise
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search exercises..."
-          className="flex-1 bg-transparent text-white text-sm placeholder-[#444] focus:outline-none"
+          className="flex-1 bg-transparent text-white text-sm placeholder-[#b8b8b8] focus:outline-none"
         />
         {query && (
-          <button onClick={() => setQuery('')} className="text-[#444] hover:text-white transition-colors">
+          <button onClick={() => setQuery('')} className="text-[#b8b8b8] hover:text-white transition-colors">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -416,7 +416,7 @@ function AddExerciseModal({ onAdd, onClose }: { onAdd: (name: string) => Promise
           </button>
         )}
         {filtered.length === 0 && !canAddCustom && (
-          <p className="text-center text-[#444] text-sm py-12">No exercises found.</p>
+          <p className="text-center text-[#b8b8b8] text-sm py-12">No exercises found.</p>
         )}
         {filtered.map(ex => (
           <button
@@ -732,7 +732,7 @@ export default function ActiveWorkoutClient({
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px 8px' }}>
           <button
             onClick={() => router.push('/train')}
-            style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', flexShrink: 0, padding: 0, fontFamily: 'inherit' }}
+            style={{ background: 'none', border: 'none', color: '#b8b8b8', cursor: 'pointer', flexShrink: 0, padding: 0, fontFamily: 'inherit' }}
             aria-label="Back to train"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -748,7 +748,7 @@ export default function ActiveWorkoutClient({
             {restTimer.seconds > 0 && (
               <button
                 onClick={() => setRestTimer(r => ({ ...r, active: true }))}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', border: '1px solid #333', color: '#888', borderRadius: '8px', fontSize: '10px', fontFamily: 'inherit', letterSpacing: '0.08em', background: 'none', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', border: '1px solid #888888', color: '#888', borderRadius: '8px', fontSize: '10px', fontFamily: 'inherit', letterSpacing: '0.08em', background: 'none', cursor: 'pointer' }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="10" />
@@ -782,7 +782,7 @@ export default function ActiveWorkoutClient({
         {exercises.length === 0 && (
           <div style={{ textAlign: 'center', padding: '64px 0' }}>
             <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>No exercises yet.</p>
-            <p style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>Tap &quot;+ Add Exercise&quot; below to start.</p>
+            <p style={{ color: '#b8b8b8', fontSize: '12px', marginTop: '4px' }}>Tap &quot;+ Add Exercise&quot; below to start.</p>
           </div>
         )}
 
@@ -845,7 +845,7 @@ export default function ActiveWorkoutClient({
                       e.stopPropagation()
                       setShowOptionsFor(showOptionsFor === exercise.id ? null : exercise.id)
                     }}
-                    style={{ color: '#444', cursor: 'pointer', background: 'none', border: 'none', padding: '4px', fontFamily: 'inherit' }}
+                    style={{ color: '#b8b8b8', cursor: 'pointer', background: 'none', border: 'none', padding: '4px', fontFamily: 'inherit' }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                       <circle cx="5" cy="12" r="2" />
@@ -907,7 +907,7 @@ export default function ActiveWorkoutClient({
                           </span>
                         )}
                         {coachStatus === 'hold' && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#666', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#b8b8b8', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px' }}>
                             → Hold
                           </span>
                         )}
@@ -917,7 +917,7 @@ export default function ActiveWorkoutClient({
                           </span>
                         )}
                         {coachStatus === 'up' && (
-                          <button style={{ background: '#141414', border: 'none', borderRadius: '5px', padding: '3px 8px', fontSize: '11px', color: '#484848', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          <button style={{ background: '#141414', border: 'none', borderRadius: '5px', padding: '3px 8px', fontSize: '11px', color: '#b8b8b8', cursor: 'pointer', fontFamily: 'inherit' }}>
                             Keep same
                           </button>
                         )}
@@ -956,7 +956,7 @@ export default function ActiveWorkoutClient({
                     </div>
                   )}
                   {!targetSet1 && !prevSummary && (
-                    <p style={{ fontSize: '11px', color: '#555', margin: 0 }}>No history yet — enter a comfortable starting weight.</p>
+                    <p style={{ fontSize: '11px', color: '#b8b8b8', margin: 0 }}>No history yet — enter a comfortable starting weight.</p>
                   )}
                 </div>
               )}
@@ -1029,7 +1029,7 @@ export default function ActiveWorkoutClient({
                                 {/* × delete */}
                                 <button
                                   onClick={() => removeSet(exercise.id, idx)}
-                                  style={{ background: 'none', border: 'none', color: '#2a2a2a', fontSize: '14px', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+                                  style={{ background: 'none', border: 'none', color: '#888888', fontSize: '14px', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
                                 >
                                   ×
                                 </button>
@@ -1101,16 +1101,16 @@ export default function ActiveWorkoutClient({
                   <>
                     {hasWarmups && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 16px 8px' }}>
-                        <span style={{ fontSize: '9px', color: '#484848', letterSpacing: '0.08em', fontFamily: 'inherit' }}>WORKING SETS</span>
+                        <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.08em', fontFamily: 'inherit' }}>WORKING SETS</span>
                         <div style={{ flex: 1, height: '1px', background: '#1a1a1a' }} />
                       </div>
                     )}
                     {/* Column headers */}
                     <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', padding: '0 16px 6px' }}>
                       <span /><span />
-                      <span style={{ fontSize: '9px', color: '#484848', letterSpacing: '0.8px', fontFamily: 'inherit' }}>LAST TIME</span>
-                      <span style={{ fontSize: '9px', color: '#484848', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
-                      <span style={{ fontSize: '9px', color: '#484848', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
+                      <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>LAST TIME</span>
+                      <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
+                      <span style={{ fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
                       <span />
                     </div>
                     {/* Working set rows */}
@@ -1136,23 +1136,23 @@ export default function ActiveWorkoutClient({
                           : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '14px', fontWeight: 600, color: '#888', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
                         const repsStyle: CSSProperties = isActive
                           ? { background: '#0d1f17', border: '1px solid #1a3528', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#3ecf8e', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#444', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '11px', fontWeight: 600, color: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
 
                         return (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', ...rowStyle }}>
                             {/* × delete */}
                             <button
                               onClick={() => removeSet(exercise.id, idx)}
-                              style={{ background: 'none', border: 'none', color: '#2a2a2a', fontSize: '14px', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+                              style={{ background: 'none', border: 'none', color: '#888888', fontSize: '14px', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
                             >
                               ×
                             </button>
                             {/* Type badge */}
-                            <div style={{ fontSize: '10px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: isActive ? '#3ecf8e' : '#555', background: isActive ? '#0d2118' : '#1e1e1e', minWidth: '28px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: isActive ? '#3ecf8e' : '#b8b8b8', background: isActive ? '#0d2118' : '#1e1e1e', minWidth: '28px' }}>
                               {setData.isPR ? '🏆' : workingSetNum}
                             </div>
                             {/* Last session ghost */}
-                            <span style={{ fontSize: '10px', color: '#484848', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+                            <span style={{ fontSize: '10px', color: '#b8b8b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
                               {prevSet ? `${prevSet.weight} × ${prevSet.reps}` : '—'}
                             </span>
                             {/* KG */}
@@ -1203,7 +1203,7 @@ export default function ActiveWorkoutClient({
               {/* + ADD SET */}
               <button
                 onClick={() => addSet(exercise.id)}
-                style={{ width: '100%', padding: '10px', fontSize: '9px', color: '#484848', letterSpacing: '0.08em', background: 'none', border: 'none', borderTop: '1px solid #1a1a1a', marginTop: '8px', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ width: '100%', padding: '10px', fontSize: '9px', color: '#b8b8b8', letterSpacing: '0.08em', background: 'none', border: 'none', borderTop: '1px solid #1a1a1a', marginTop: '8px', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 + ADD SET
               </button>
@@ -1214,7 +1214,7 @@ export default function ActiveWorkoutClient({
         {/* + ADD EXERCISE */}
         <button
           onClick={() => setShowAddExercise(true)}
-          style={{ width: '100%', padding: '16px', border: '1px dashed #333', borderRadius: '12px', fontSize: '10px', color: '#484848', letterSpacing: '0.08em', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ width: '100%', padding: '16px', border: '1px dashed #888888', borderRadius: '12px', fontSize: '10px', color: '#b8b8b8', letterSpacing: '0.08em', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
         >
           + ADD EXERCISE
         </button>
@@ -1223,7 +1223,7 @@ export default function ActiveWorkoutClient({
         <button
           onClick={finishWorkout}
           disabled={finishing}
-          style={{ background: 'none', border: '1px solid #222', color: '#484848', borderRadius: '12px', padding: '14px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: finishing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: finishing ? 0.4 : 1 }}
+          style={{ background: 'none', border: '1px solid #222', color: '#b8b8b8', borderRadius: '12px', padding: '14px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: finishing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: finishing ? 0.4 : 1 }}
         >
           {finishing ? 'SAVING WORKOUT...' : 'FINISH WORKOUT'}
         </button>
@@ -1232,21 +1232,21 @@ export default function ActiveWorkoutClient({
       {/* Session bar — overlays BottomNav (zIndex 50 > BottomNav z-40) */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0d0d0d', borderTop: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', paddingLeft: '20px', paddingRight: '20px', paddingBottom: 'env(safe-area-inset-bottom, 20px)', zIndex: 50, fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '11px', color: '#484848' }}>Elapsed</span>
+          <span style={{ fontSize: '11px', color: '#b8b8b8' }}>Elapsed</span>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#f0f0f0' }}>{formatTime(elapsed)}</span>
         </div>
         <div style={{ width: '1px', height: '22px', background: '#1a1a1a' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '10px', color: '#484848' }}>Sets done</span>
+          <span style={{ fontSize: '10px', color: '#b8b8b8' }}>Sets done</span>
           <span style={{ fontSize: '15px', fontWeight: 700, color: '#3ecf8e' }}>{totalLogged}</span>
         </div>
         <div style={{ width: '1px', height: '22px', background: '#1a1a1a' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '10px', color: '#484848' }}>Remaining</span>
+          <span style={{ fontSize: '10px', color: '#b8b8b8' }}>Remaining</span>
           <span style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0' }}>{totalSets - totalLogged}</span>
         </div>
         <div style={{ width: '1px', height: '22px', background: '#1a1a1a' }} />
-        <button style={{ background: '#1a1a1a', border: 'none', borderRadius: '8px', padding: '8px 14px', color: '#484848', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <button style={{ background: '#1a1a1a', border: 'none', borderRadius: '8px', padding: '8px 14px', color: '#b8b8b8', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
           Pause
         </button>
       </div>

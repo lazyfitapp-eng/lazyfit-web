@@ -618,7 +618,7 @@ export default function FoodClient({
                 style={{
                   flex: 1, padding: '11px 0 10px', background: 'none', border: 'none',
                   fontFamily: 'inherit', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px',
-                  textTransform: 'uppercase', color: mode === m ? '#3ecf8e' : '#444',
+                  textTransform: 'uppercase', color: mode === m ? '#3ecf8e' : '#b8b8b8',
                   cursor: 'pointer', position: 'relative',
                 }}
               >
@@ -661,7 +661,7 @@ export default function FoodClient({
                 return (
                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: barColor, flexShrink: 0 }} />
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: over ? '#ff3b5c' : '#444', width: 28, flexShrink: 0 }}>{label}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: over ? '#ff3b5c' : '#b8b8b8', width: 28, flexShrink: 0 }}>{label}</div>
                     <div style={{ flex: 1, height: 5, background: '#1e1e1e', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{ height: '100%', borderRadius: 3, background: barColor, width: `${pct}%`, transition: 'width 0.35s cubic-bezier(.4,0,.2,1)' }} />
                     </div>
@@ -804,9 +804,9 @@ export default function FoodClient({
                             style={{ width: 22, height: 22, borderRadius: '50%', background: '#181818', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer', border: 'none' }}
                           >
                             <svg width="3" height="11" viewBox="0 0 4 14">
-                              <circle cx="2" cy="2" r="1.5" fill="#444"/>
-                              <circle cx="2" cy="7" r="1.5" fill="#444"/>
-                              <circle cx="2" cy="12" r="1.5" fill="#444"/>
+                              <circle cx="2" cy="2" r="1.5" fill="#b8b8b8"/>
+                              <circle cx="2" cy="7" r="1.5" fill="#b8b8b8"/>
+                              <circle cx="2" cy="12" r="1.5" fill="#b8b8b8"/>
                             </svg>
                           </button>
                           {actionMenuId === log.id && (
@@ -858,10 +858,10 @@ export default function FoodClient({
                   <div style={{ padding: '8px 16px 14px', borderTop: '1px solid #0d0d0d' }}>
                     <button
                       onClick={() => openModal(meal)}
-                      style={{ width: '100%', border: '1px dashed #333', borderRadius: 12, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: '#161616', fontFamily: 'inherit', textAlign: 'left' }}
+                      style={{ width: '100%', border: '1px dashed #888888', borderRadius: 12, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: '#161616', fontFamily: 'inherit', textAlign: 'left' }}
                     >
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#181818', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#444" strokeWidth="2.5"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg>
+                        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#b8b8b8" strokeWidth="2.5"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg>
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 500, color: '#b8b8b8' }}>Log {MEAL_CONFIG[meal].label.toLowerCase()}</span>
                     </button>
@@ -938,7 +938,7 @@ export default function FoodClient({
                   display: 'flex', alignItems: 'center', gap: 6, padding: '6px 13px',
                   border: `1px solid ${modalMeal === m ? '#183525' : '#242424'}`,
                   borderRadius: 20, fontSize: 12, fontWeight: 600,
-                  color: modalMeal === m ? '#3ecf8e' : '#444',
+                  color: modalMeal === m ? '#3ecf8e' : '#b8b8b8',
                   cursor: 'pointer', whiteSpace: 'nowrap', background: modalMeal === m ? '#091510' : 'none',
                   fontFamily: 'inherit', flexShrink: 0, transition: 'all 0.15s',
                 }}
@@ -959,7 +959,7 @@ export default function FoodClient({
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                   padding: '6px 4px 11px', cursor: 'pointer', border: 'none', background: 'none',
                   fontFamily: 'inherit', position: 'relative',
-                  color: methodTab === id ? '#3ecf8e' : '#444', transition: 'color 0.15s',
+                  color: methodTab === id ? '#3ecf8e' : '#b8b8b8', transition: 'color 0.15s',
                 }}
               >
                 {icon}
@@ -1084,7 +1084,7 @@ export default function FoodClient({
                       {/* Weight field */}
                       <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 28, height: 28, background: '#1e1e1e', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="1.8" strokeLinecap="round">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.8" strokeLinecap="round">
                             <path d="M12 3a4 4 0 014 4H8a4 4 0 014-4z"/><rect x="2" y="7" width="20" height="14" rx="2"/>
                           </svg>
                         </div>
@@ -1106,7 +1106,7 @@ export default function FoodClient({
                       {/* Description field */}
                       <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: '11px 14px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                         <div style={{ width: 28, height: 28, background: '#1e1e1e', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="1.8" strokeLinecap="round">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.8" strokeLinecap="round">
                             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                           </svg>
                         </div>
@@ -1190,7 +1190,7 @@ export default function FoodClient({
                     <div style={{ padding: '16px 0 12px' }}>
                       {/* Search input */}
                       <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input
                           type="text"
                           value={searchQuery}
@@ -1226,7 +1226,7 @@ export default function FoodClient({
                                     transition: 'background 0.1s',
                                   }}
                                 >
-                                  <div style={{ width: 32, height: 32, borderRadius: 8, background: isSelected ? '#0d2018' : '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 800, color: isSelected ? lcColor : '#444' }}>
+                                  <div style={{ width: 32, height: 32, borderRadius: 8, background: isSelected ? '#0d2018' : '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 800, color: isSelected ? lcColor : '#b8b8b8' }}>
                                     {firstLetter}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>

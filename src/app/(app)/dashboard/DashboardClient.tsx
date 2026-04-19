@@ -305,7 +305,7 @@ function MiniLineChart({
         <line
           x1={PAD.left} y1={yScale(targetValue)}
           x2={W - PAD.right} y2={yScale(targetValue)}
-          stroke="#444" strokeWidth="1.5" strokeDasharray="5 4"
+          stroke="#b8b8b8" strokeWidth="1.5" strokeDasharray="5 4"
         />
       )}
       <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5" opacity="0.9" />
@@ -341,7 +341,7 @@ function ProgressTabContent({
       <div className="grid grid-cols-2 gap-3 h-full">
         <Link
           href="/progress#body"
-          className="bg-[#141414] border border-[#1e1e1e] hover:border-[#333] active:opacity-70 rounded-xl p-3 flex flex-col transition-all font-sans"
+          className="bg-[#141414] border border-[#1e1e1e] hover:border-[#888888] active:opacity-70 rounded-xl p-3 flex flex-col transition-all font-sans"
         >
           <p className="text-[11px] font-semibold text-[#f0f0f0] mb-1 flex-shrink-0">Body Composition</p>
           <div className="flex items-center gap-2 mb-2 flex-shrink-0">
@@ -354,13 +354,13 @@ function ProgressTabContent({
         </Link>
         <Link
           href="/progress#nutrition"
-          className="bg-[#141414] border border-[#1e1e1e] hover:border-[#333] active:opacity-70 rounded-xl p-3 flex flex-col transition-all font-sans"
+          className="bg-[#141414] border border-[#1e1e1e] hover:border-[#888888] active:opacity-70 rounded-xl p-3 flex flex-col transition-all font-sans"
         >
           <p className="text-[11px] font-semibold text-[#f0f0f0] mb-1 flex-shrink-0">Nutrition</p>
           <div className="flex items-center gap-2 mb-2 flex-shrink-0">
             <div className="w-3 h-[2px] bg-[#4a9eff] opacity-90 rounded" />
             <span className="text-[9px] text-[#b8b8b8]">Logged</span>
-            <div className="w-3 h-[2px] rounded ml-1" style={{ background: 'repeating-linear-gradient(90deg,#444 0 3px,transparent 3px 6px)' }} />
+            <div className="w-3 h-[2px] rounded ml-1" style={{ background: 'repeating-linear-gradient(90deg,#b8b8b8 0 3px,transparent 3px 6px)' }} />
             <span className="text-[9px] text-[#b8b8b8]">Target</span>
           </div>
           <div className="flex-1 min-h-0">

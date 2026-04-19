@@ -165,7 +165,7 @@ export default function FoodAIModal({
             className={`px-3 py-1 text-[10px] rounded-full tracking-widest transition-all ${
               mealType === m
                 ? 'bg-primary text-black font-bold'
-                : 'border border-[#222] text-[#555] hover:border-[#444]'
+                : 'border border-[#222] text-[#555] hover:border-[#b8b8b8]'
             }`}
           >
             {m.toUpperCase()}
@@ -197,7 +197,7 @@ export default function FoodAIModal({
                     {item.confidence === 'low' && (
                       <span className="text-[10px] text-[#FFAA00]" title="Low confidence">⚠</span>
                     )}
-                    <button onClick={() => removeItem(item.id)} className="text-[#333] hover:text-[#FF0040] transition-colors">
+                    <button onClick={() => removeItem(item.id)} className="text-[#888888] hover:text-[#FF0040] transition-colors">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
@@ -221,20 +221,20 @@ export default function FoodAIModal({
                         onChange={e => updateItem(item.id, field, e.target.value)}
                         className="w-full bg-[#111] border border-[#222] rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-primary"
                       />
-                      {unit && <span className="text-[9px] text-[#333] mt-0.5">{unit}</span>}
+                      {unit && <span className="text-[9px] text-[#888888] mt-0.5">{unit}</span>}
                     </div>
                   ))}
                 </div>
 
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="text-[10px] text-[#444] tracking-widest">QTY</span>
+                  <span className="text-[10px] text-[#b8b8b8] tracking-widest">QTY</span>
                   <input
                     type="number"
                     value={item.quantity_g}
                     onChange={e => updateItem(item.id, 'quantity_g', e.target.value)}
                     className="w-20 bg-[#111] border border-[#222] rounded-lg px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-primary"
                   />
-                  <span className="text-[10px] text-[#444]">g</span>
+                  <span className="text-[10px] text-[#b8b8b8]">g</span>
                 </div>
               </div>
             ))}
@@ -255,7 +255,7 @@ export default function FoodAIModal({
             </button>
             <button
               onClick={resetToInput}
-              className="w-full py-2 text-xs text-[#444] hover:text-[#666] tracking-widest transition-colors"
+              className="w-full py-2 text-xs text-[#b8b8b8] hover:text-[#666] tracking-widest transition-colors"
             >
               RETAKE / EDIT
             </button>
@@ -271,7 +271,7 @@ export default function FoodAIModal({
                 key={t}
                 onClick={() => setTab(t)}
                 className={`pb-2 text-xs tracking-widest border-b-2 transition-all ${
-                  tab === t ? 'border-primary text-white' : 'border-transparent text-[#444]'
+                  tab === t ? 'border-primary text-white' : 'border-transparent text-[#b8b8b8]'
                 }`}
               >
                 {t === 'camera' ? '📷 CAMERA' : '✏️ TEXT'}
@@ -298,13 +298,13 @@ export default function FoodAIModal({
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-48 border-2 border-dashed border-[#222] rounded-xl flex flex-col items-center justify-center gap-3 hover:border-[#444] transition-colors"
+                    className="w-full h-48 border-2 border-dashed border-[#222] rounded-xl flex flex-col items-center justify-center gap-3 hover:border-[#b8b8b8] transition-colors"
                   >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="1.5">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.5">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                       <circle cx="12" cy="13" r="4" />
                     </svg>
-                    <span className="text-xs text-[#444] tracking-widest">TAP TO TAKE PHOTO</span>
+                    <span className="text-xs text-[#b8b8b8] tracking-widest">TAP TO TAKE PHOTO</span>
                   </button>
                 )}
                 <input
@@ -316,28 +316,28 @@ export default function FoodAIModal({
                   onChange={handleImageCapture}
                 />
                 <div>
-                  <label className="text-[10px] text-[#444] tracking-widest block mb-2">DESCRIPTION (OPTIONAL)</label>
+                  <label className="text-[10px] text-[#b8b8b8] tracking-widest block mb-2">DESCRIPTION (OPTIONAL)</label>
                   <textarea
                     value={text}
                     onChange={e => setText(e.target.value)}
                     placeholder="e.g. 200g chicken breast with rice and salad"
                     rows={2}
-                    className="w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl px-3 py-2 text-sm text-white placeholder-[#333] focus:outline-none focus:border-primary resize-none"
+                    className="w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl px-3 py-2 text-sm text-white placeholder-[#888888] focus:outline-none focus:border-primary resize-none"
                   />
                 </div>
               </>
             ) : (
               <div>
-                <label className="text-[10px] text-[#444] tracking-widest block mb-2">DESCRIBE YOUR MEAL</label>
+                <label className="text-[10px] text-[#b8b8b8] tracking-widest block mb-2">DESCRIBE YOUR MEAL</label>
                 <textarea
                   value={text}
                   onChange={e => setText(e.target.value)}
                   placeholder="e.g. 200g chicken breast, 150g rice, 100g broccoli"
                   rows={5}
                   autoFocus
-                  className="w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl px-3 py-3 text-sm text-white placeholder-[#333] focus:outline-none focus:border-primary resize-none"
+                  className="w-full bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl px-3 py-3 text-sm text-white placeholder-[#888888] focus:outline-none focus:border-primary resize-none"
                 />
-                <p className="text-[10px] text-[#333] mt-2">
+                <p className="text-[10px] text-[#888888] mt-2">
                   Be specific about quantities for accurate macros.
                 </p>
               </div>

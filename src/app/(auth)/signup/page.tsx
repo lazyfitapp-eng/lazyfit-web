@@ -105,7 +105,7 @@ export default function SignupPage() {
         {/* Divider */}
         <div className="flex items-center gap-3 mb-6">
           <div className="flex-1 h-px bg-[#222]" />
-          <span className="text-xs text-[#444] tracking-widest">OR</span>
+          <span className="text-xs text-[#b8b8b8] tracking-widest">OR</span>
           <div className="flex-1 h-px bg-[#222]" />
         </div>
 
@@ -118,7 +118,7 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#444] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
               placeholder="you@example.com"
             />
           </div>
@@ -132,7 +132,7 @@ export default function SignupPage() {
               required
               minLength={6}
               autoComplete="new-password"
-              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#444] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
               placeholder="min. 6 characters"
             />
           </div>

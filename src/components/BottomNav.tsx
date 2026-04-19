@@ -63,11 +63,11 @@ function NavItem({ href, label, icon }: { href: string; label: string; icon: (ac
         flex: 1,
         padding: '2px 0',
         textDecoration: 'none',
-        opacity: active ? 1 : 0.4,
+        opacity: active ? 1 : 0.6,
       }}
     >
       {icon(active)}
-      <span style={{ fontSize: 10, color: active ? '#3ecf8e' : '#f0f0f0', fontWeight: active ? 600 : 400 }}>
+      <span style={{ fontSize: 10, color: active ? '#3ecf8e' : '#888888', fontWeight: active ? 600 : 400 }}>
         {label}
       </span>
     </Link>

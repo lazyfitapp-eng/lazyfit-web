@@ -46,7 +46,7 @@ export default function ExerciseProgressChart({ points, accentColor, cardBg }: P
 
   if (n === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '32px 0', color: '#333', fontSize: 12 }}>
+      <div style={{ textAlign: 'center', padding: '32px 0', color: '#888888', fontSize: 12 }}>
         No data yet
       </div>
     )
@@ -162,8 +162,8 @@ export default function ExerciseProgressChart({ points, accentColor, cardBg }: P
               x="23"
               y={yScale(v) + 4}
               textAnchor="end"
-              fill="#383838"
-              fontSize="9"
+              fill="#b8b8b8"
+              fontSize="11"
               fontFamily="monospace"
             >
               {v.toFixed(0)}
@@ -236,8 +236,8 @@ export default function ExerciseProgressChart({ points, accentColor, cardBg }: P
             x={l.x}
             y="170"
             textAnchor="middle"
-            fill="#3a3a3a"
-            fontSize="9"
+            fill="#888888"
+            fontSize="11"
             fontFamily="monospace"
           >
             {l.label}
@@ -258,7 +258,7 @@ export default function ExerciseProgressChart({ points, accentColor, cardBg }: P
               borderRadius: 8,
               border: r === range ? `1px solid ${accentColor}` : '1px solid #222',
               background: r === range ? 'rgba(62,207,142,0.08)' : 'transparent',
-              color: r === range ? accentColor : '#3a3a3a',
+              color: r === range ? accentColor : '#888888',
               cursor: 'pointer',
               letterSpacing: '0.5px',
               fontFamily: 'monospace',

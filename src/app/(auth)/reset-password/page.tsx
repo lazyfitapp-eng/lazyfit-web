@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
               required
               minLength={6}
               autoComplete="new-password"
-              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#444] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
               placeholder="min. 6 characters"
             />
           </div>
@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
               required
               minLength={6}
               autoComplete="new-password"
-              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#444] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
               placeholder="repeat password"
             />
           </div>

@@ -175,7 +175,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
   const sectionLabel = {
     fontSize: '10px',
     fontWeight: 700,
-    color: '#484848',
+    color: '#b8b8b8',
     textTransform: 'uppercase' as const,
     letterSpacing: '1px',
     paddingTop: '4px',
@@ -202,7 +202,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                   marginBottom: '-1px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: activeTab === tab ? '#f0f0f0' : '#3a3a3a',
+                  color: activeTab === tab ? '#f0f0f0' : '#888888',
                   border: 'none',
                   borderBottomWidth: '2px',
                   borderBottomStyle: 'solid',
@@ -241,7 +241,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                     <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0f0f0' }}>
                       {lastWorkout.routineName ?? 'Custom Workout'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#484848', marginTop: '3px' }}>
+                    <div style={{ fontSize: '11px', color: '#b8b8b8', marginTop: '3px' }}>
                       {relativeDate(lastWorkout.completedAt)}
                       {lastWorkout.durationMinutes ? ` · ${lastWorkout.durationMinutes} min` : ''}
                       {totalVolume > 0 ? ` · ${totalVolume.toLocaleString()} kg total` : ''}
@@ -261,7 +261,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                     {muscleSplit.slice(0, 3).map(m => (
                       <div key={m.muscle} style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '10px', color: '#555' }}>{m.muscle}</span>
+                          <span style={{ fontSize: '10px', color: '#b8b8b8' }}>{m.muscle}</span>
                           <span style={{ fontSize: '10px', color: '#888' }}>{m.pct}%</span>
                         </div>
                         <div style={{ background: '#1e1e1e', borderRadius: '3px', height: '4px', overflow: 'hidden' }}>
@@ -280,7 +280,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
 
           {routines.length === 0 ? (
             <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '24px', textAlign: 'center' }}>
-              <p style={{ color: '#555', fontSize: '13px', marginBottom: '16px' }}>
+              <p style={{ color: '#b8b8b8', fontSize: '13px', marginBottom: '16px' }}>
                 No routines yet. Load the recommended 3-day program or create your own.
               </p>
               <button
@@ -315,7 +315,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                       <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px' }}>
                         {r.name}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#484848', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: '#b8b8b8', marginTop: '2px' }}>
                         {r.exerciseCount} exercises
                       </div>
                       {isLastDone && lastWorkout && (
@@ -328,7 +328,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                           {tags.map(tag => (
                             <span
                               key={tag}
-                              style={{ fontSize: '10px', fontWeight: 500, padding: '3px 7px', borderRadius: '20px', background: '#1e1e1e', color: '#484848' }}
+                              style={{ fontSize: '12px', fontWeight: 500, padding: '3px 7px', borderRadius: '20px', background: '#1e1e1e', color: '#b8b8b8' }}
                             >
                               {tag}
                             </span>
@@ -341,14 +341,14 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                     {!r.is_system && (
                       confirmDelete === r.id ? (
                         <div style={{ position: 'absolute', top: '8px', right: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '11px', color: '#555' }}>Delete?</span>
+                          <span style={{ fontSize: '11px', color: '#b8b8b8' }}>Delete?</span>
                           <span onClick={() => handleDelete(r.id)} style={{ fontSize: '11px', color: '#ff4444', cursor: 'pointer', fontWeight: 600 }}>Yes</span>
-                          <span onClick={() => setConfirmDelete(null)} style={{ fontSize: '11px', color: '#555', cursor: 'pointer' }}>No</span>
+                          <span onClick={() => setConfirmDelete(null)} style={{ fontSize: '11px', color: '#b8b8b8', cursor: 'pointer' }}>No</span>
                         </div>
                       ) : (
                         <button
                           onClick={() => setConfirmDelete(r.id)}
-                          style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#444', fontSize: '18px', cursor: 'pointer', lineHeight: 1, padding: '0', fontFamily: 'inherit' }}
+                          style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#b8b8b8', fontSize: '18px', cursor: 'pointer', lineHeight: 1, padding: '0', fontFamily: 'inherit' }}
                         >
                           ×
                         </button>
@@ -422,7 +422,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
               border: '1px solid #1a1a1a',
               borderRadius: '10px',
               padding: '14px',
-              color: '#383838',
+              color: '#b8b8b8',
               fontSize: '13px',
               fontWeight: 500,
               width: '100%',
@@ -458,7 +458,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => { setShowNewRoutine(false); setNewRoutineName('') }}
-                style={{ flex: 1, padding: '12px', border: '1px solid #222', color: '#555', fontSize: '12px', fontWeight: 700, borderRadius: '12px', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ flex: 1, padding: '12px', border: '1px solid #222', color: '#b8b8b8', fontSize: '12px', fontWeight: 700, borderRadius: '12px', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Cancel
               </button>
