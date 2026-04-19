@@ -312,7 +312,7 @@ export default function ProfileClient({ user, profile }: Props) {
       {/* Identity */}
       <div style={{ padding: '18px 20px 24px', borderBottom: '1px solid #1a1a1a' }}>
         <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.15, color: '#f0f0f0' }}>{displayName}</div>
-        <div style={{ fontSize: 13, color: '#848484', marginTop: 3 }}>{user.email}</div>
+        <div style={{ fontSize: 13, color: '#b8b8b8', marginTop: 3 }}>{user.email}</div>
         {isFoundingMember && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.18)', borderRadius: 20, padding: '4px 12px' }}>
             <span style={{ fontSize: 11, lineHeight: 1 }}>🏆</span>
@@ -327,7 +327,7 @@ export default function ProfileClient({ user, profile }: Props) {
 
           {/* Goal selector */}
           <div style={{ padding: '14px 16px 12px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#848484', letterSpacing: '0.8px', marginBottom: 10 }}>GOAL</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#b8b8b8', letterSpacing: '0.8px', marginBottom: 10 }}>GOAL</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               {(['cut', 'recomp', 'lean_bulk'] as GoalKey[]).map(g => {
                 const cfg = GOALS[g]
@@ -346,7 +346,7 @@ export default function ProfileClient({ user, profile }: Props) {
                     }}
                   >
                     <div style={{ fontSize: 14, fontWeight: 700, color: cfg.accentColor, marginBottom: 3 }}>{cfg.label}</div>
-                    <div style={{ fontSize: 10, color: active ? cfg.accentColor : '#848484', opacity: active ? 0.6 : 1, lineHeight: 1.3 }}>
+                    <div style={{ fontSize: 10, color: active ? cfg.accentColor : '#b8b8b8', opacity: active ? 0.6 : 1, lineHeight: 1.3 }}>
                       {g === 'cut' ? '−400 kcal\nlose fat' : g === 'recomp' ? 'maintenance\nrecompose' : '+250 kcal\nbuild muscle'}
                     </div>
                   </div>
@@ -357,28 +357,28 @@ export default function ProfileClient({ user, profile }: Props) {
 
           {/* Goal description */}
           <div style={{ margin: '0 16px 14px', padding: '11px 14px', background: activeGoal.descBg, borderRadius: 10, borderLeft: `2px solid ${activeGoal.descBorder}` }}>
-            <div style={{ fontSize: 13, color: '#848484', lineHeight: 1.55 }} dangerouslySetInnerHTML={{ __html: activeGoal.desc }} />
+            <div style={{ fontSize: 13, color: '#b8b8b8', lineHeight: 1.55 }} dangerouslySetInnerHTML={{ __html: activeGoal.desc }} />
           </div>
 
           {/* Training days */}
           <div style={{ borderTop: '1px solid #1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 15, color: '#848484' }}>Training days / week</span>
+            <span style={{ fontSize: 15, color: '#b8b8b8' }}>Training days / week</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <span
                 onClick={() => { const v = Math.max(1, trainingDays - 1); saveTrainingDays(v) }}
-                style={{ fontSize: 22, color: '#848484', cursor: 'pointer', userSelect: 'none', padding: '0 4px' }}
+                style={{ fontSize: 22, color: '#b8b8b8', cursor: 'pointer', userSelect: 'none', padding: '0 4px' }}
               >−</span>
               <span style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f0', minWidth: 20, textAlign: 'center' }}>{trainingDays}</span>
               <span
                 onClick={() => { const v = Math.min(7, trainingDays + 1); saveTrainingDays(v) }}
-                style={{ fontSize: 22, color: '#848484', cursor: 'pointer', userSelect: 'none', padding: '0 4px' }}
+                style={{ fontSize: 22, color: '#b8b8b8', cursor: 'pointer', userSelect: 'none', padding: '0 4px' }}
               >+</span>
             </div>
           </div>
 
           {/* Units toggle */}
           <div style={{ borderTop: '1px solid #1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 15, color: '#848484' }}>Units</span>
+            <span style={{ fontSize: 15, color: '#b8b8b8' }}>Units</span>
             <div style={{ display: 'flex', background: '#151515', borderRadius: 8, padding: 2, gap: 2 }}>
               {(['kg', 'lbs'] as const).map(u => (
                 <div
@@ -389,7 +389,7 @@ export default function ProfileClient({ user, profile }: Props) {
                     fontSize: 13,
                     fontWeight: units === u ? 700 : 600,
                     background: units === u ? '#3ecf8e' : 'transparent',
-                    color: units === u ? '#090909' : '#848484',
+                    color: units === u ? '#090909' : '#b8b8b8',
                     borderRadius: 6,
                     cursor: 'pointer',
                   }}
@@ -415,7 +415,7 @@ export default function ProfileClient({ user, profile }: Props) {
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 4 }}>
           <span style={{ fontSize: 38, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-1.5px', lineHeight: 1 }}>{displayKcal.toLocaleString()}</span>
-          <span style={{ fontSize: 14, color: '#848484' }}>kcal / day</span>
+          <span style={{ fontSize: 14, color: '#b8b8b8' }}>kcal / day</span>
         </div>
 
         {/* Confidence bar */}
@@ -433,22 +433,22 @@ export default function ProfileClient({ user, profile }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           <div style={{ background: 'rgba(62,207,142,0.07)', border: '1px solid rgba(62,207,142,0.1)', borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#3ecf8e' }}>{currentMacros.protein}g</div>
-            <div style={{ fontSize: 11, color: '#848484', marginTop: 2 }}>protein</div>
+            <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2 }}>protein</div>
           </div>
           <div style={{ background: 'rgba(74,158,255,0.07)', border: '1px solid rgba(74,158,255,0.1)', borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#4a9eff' }}>{currentMacros.carbs}g</div>
-            <div style={{ fontSize: 11, color: '#848484', marginTop: 2 }}>carbs</div>
+            <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2 }}>carbs</div>
           </div>
           <div style={{ background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.1)', borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#f5a623' }}>{currentMacros.fat}g</div>
-            <div style={{ fontSize: 11, color: '#848484', marginTop: 2 }}>fat</div>
+            <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2 }}>fat</div>
           </div>
         </div>
       </div>
 
       {/* Body section */}
       <div style={{ padding: '14px 20px 4px' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#848484', letterSpacing: '1px' }}>BODY</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#b8b8b8', letterSpacing: '1px' }}>BODY</span>
       </div>
       <div style={{ margin: '8px 16px', background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden' }}>
 
@@ -457,10 +457,10 @@ export default function ProfileClient({ user, profile }: Props) {
           onClick={() => openEditDrawer('age')}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}
         >
-          <span style={{ fontSize: 15, color: '#848484' }}>Age</span>
+          <span style={{ fontSize: 15, color: '#b8b8b8' }}>Age</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 600, color: '#f0f0f0' }}>{age || '—'}</span>
-            <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+            <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
           </div>
         </div>
 
@@ -469,10 +469,10 @@ export default function ProfileClient({ user, profile }: Props) {
           onClick={() => openEditDrawer('sex')}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}
         >
-          <span style={{ fontSize: 15, color: '#848484' }}>Sex</span>
+          <span style={{ fontSize: 15, color: '#b8b8b8' }}>Sex</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 600, color: '#f0f0f0' }}>{sex || '—'}</span>
-            <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+            <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
           </div>
         </div>
 
@@ -481,10 +481,10 @@ export default function ProfileClient({ user, profile }: Props) {
           onClick={() => openEditDrawer('height')}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}
         >
-          <span style={{ fontSize: 15, color: '#848484' }}>Height</span>
+          <span style={{ fontSize: 15, color: '#b8b8b8' }}>Height</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 600, color: '#f0f0f0' }}>{heightCm ? `${heightCm} cm` : '—'}</span>
-            <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+            <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
           </div>
         </div>
 
@@ -495,12 +495,12 @@ export default function ProfileClient({ user, profile }: Props) {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px 8px' }}>
             <div>
-              <div style={{ fontSize: 15, color: '#848484' }}>Activity level</div>
+              <div style={{ fontSize: 15, color: '#b8b8b8' }}>Activity level</div>
               <div style={{ fontSize: 11, color: '#3a3a3a', marginTop: 1 }}>Outside the gym — LazyFit knows your training</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{activityLabel(activityLevel)}</span>
-              <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+              <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
             </div>
           </div>
           <div style={{ margin: '0 16px 12px', display: 'flex', gap: 4 }}>
@@ -514,7 +514,7 @@ export default function ProfileClient({ user, profile }: Props) {
         <div style={{ padding: '15px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 15, color: '#848484' }}>Body fat</div>
+              <div style={{ fontSize: 15, color: '#b8b8b8' }}>Body fat</div>
               <div style={{ fontSize: 11, color: '#3a3a3a', marginTop: 1 }}>
                 {neckCm ? 'Estimated from waist + neck' : 'Log neck measurement to unlock'}
               </div>
@@ -540,22 +540,22 @@ export default function ProfileClient({ user, profile }: Props) {
 
       {/* Account section */}
       <div style={{ padding: '14px 20px 4px' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#848484', letterSpacing: '1px' }}>ACCOUNT</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#b8b8b8', letterSpacing: '1px' }}>ACCOUNT</span>
       </div>
       <div style={{ margin: '8px 16px', background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden' }}>
         <a
           href="/privacy"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer', textDecoration: 'none' }}
         >
-          <span style={{ fontSize: 15, color: '#848484' }}>Privacy Policy</span>
-          <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+          <span style={{ fontSize: 15, color: '#b8b8b8' }}>Privacy Policy</span>
+          <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
         </a>
         <div
           onClick={handleSignOut}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}
         >
-          <span style={{ fontSize: 15, color: '#848484' }}>Sign out</span>
-          <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+          <span style={{ fontSize: 15, color: '#b8b8b8' }}>Sign out</span>
+          <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
         </div>
         <div
           onClick={async () => {
@@ -567,7 +567,7 @@ export default function ProfileClient({ user, profile }: Props) {
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px', cursor: 'pointer' }}
         >
           <span style={{ fontSize: 15, color: '#e03e3e' }}>Delete account</span>
-          <span style={{ fontSize: 18, color: '#848484' }}>›</span>
+          <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
         </div>
       </div>
 
@@ -623,12 +623,12 @@ export default function ProfileClient({ user, profile }: Props) {
                     style={{ flex: 1, padding: '14px 16px', background: '#111', border: '1px solid #1a1a1a', borderRadius: 12, fontSize: 18, fontWeight: 600, color: '#f0f0f0', fontFamily: 'inherit', outline: 'none' }}
                     autoFocus
                   />
-                  <span style={{ fontSize: 15, color: '#848484', fontWeight: 600 }}>cm</span>
+                  <span style={{ fontSize: 15, color: '#b8b8b8', fontWeight: 600 }}>cm</span>
                 </div>
               )}
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setEditDrawer(null)} style={{ flex: 1, padding: 14, background: '#1a1a1a', border: 'none', borderRadius: 12, fontSize: 15, color: '#848484', fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => setEditDrawer(null)} style={{ flex: 1, padding: 14, background: '#1a1a1a', border: 'none', borderRadius: 12, fontSize: 15, color: '#b8b8b8', fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
               <button onClick={saveEditField} style={{ flex: 2, padding: 14, background: '#3ecf8e', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#090909', fontFamily: 'inherit', cursor: 'pointer' }}>Save</button>
             </div>
           </div>
@@ -641,7 +641,7 @@ export default function ProfileClient({ user, profile }: Props) {
           <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px 40px', width: '100%', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
             <div style={{ width: 36, height: 4, background: '#2a2a2a', borderRadius: 2, margin: '0 auto 20px' }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 4 }}>Activity level</div>
-            <div style={{ fontSize: 13, color: '#848484', marginBottom: 20 }}>Your lifestyle outside the gym. LazyFit already accounts for your training sessions.</div>
+            <div style={{ fontSize: 13, color: '#b8b8b8', marginBottom: 20 }}>Your lifestyle outside the gym. LazyFit already accounts for your training sessions.</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {ACTIVITY_OPTIONS.map(opt => {
                 const active = activityLevel === opt.value
@@ -655,12 +655,12 @@ export default function ProfileClient({ user, profile }: Props) {
                       <div style={{ fontSize: 15, fontWeight: active ? 700 : 600, color: active ? '#3ecf8e' : '#f0f0f0' }}>{opt.label}</div>
                       {active && <span style={{ fontSize: 10, fontWeight: 700, color: '#3ecf8e', background: 'rgba(62,207,142,0.1)', borderRadius: 6, padding: '3px 8px' }}>CURRENT</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: '#848484', marginTop: 2 }}>{opt.sub}</div>
+                    <div style={{ fontSize: 12, color: '#b8b8b8', marginTop: 2 }}>{opt.sub}</div>
                   </div>
                 )
               })}
             </div>
-            <button onClick={() => setActSheetOpen(false)} style={{ width: '100%', padding: 14, background: '#1a1a1a', border: 'none', borderRadius: 12, fontSize: 15, color: '#848484', fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
+            <button onClick={() => setActSheetOpen(false)} style={{ width: '100%', padding: 14, background: '#1a1a1a', border: 'none', borderRadius: 12, fontSize: 15, color: '#b8b8b8', fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -670,7 +670,7 @@ export default function ProfileClient({ user, profile }: Props) {
         <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 430, height: '100vh', background: 'rgba(0,0,0,0.9)', zIndex: 200, alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#0e0e0e', borderRadius: 20, padding: '24px 20px 20px', width: 'calc(100% - 48px)', border: '1px solid #1a1a1a', animation: 'scaleIn 0.2s ease-out' }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: '#f0f0f0', marginBottom: 6 }}>Switch to {pendingGoalData.label}?</div>
-            <div style={{ fontSize: 13, color: '#848484', marginBottom: 16 }}>Here&apos;s exactly what changes on your plan:</div>
+            <div style={{ fontSize: 13, color: '#b8b8b8', marginBottom: 16 }}>Here&apos;s exactly what changes on your plan:</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {(['Calories', 'Protein', 'Carbs', 'Fat'] as const).map((label, i) => {
                 const fromVals = [currentMacros.kcal, currentMacros.protein, currentMacros.carbs, currentMacros.fat]
@@ -683,7 +683,7 @@ export default function ProfileClient({ user, profile }: Props) {
                 const suffix = i === 0 ? ' kcal' : 'g'
                 return (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#111', borderRadius: 10 }}>
-                    <span style={{ fontSize: 14, color: '#848484' }}>{label}</span>
+                    <span style={{ fontSize: 14, color: '#b8b8b8' }}>{label}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ fontSize: 13, color: '#3a3a3a', textDecoration: 'line-through' }}>{fromVals[i].toLocaleString()}{suffix}</span>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0' }}>{toVals[i].toLocaleString()}{suffix}</span>
@@ -693,10 +693,10 @@ export default function ProfileClient({ user, profile }: Props) {
               })}
             </div>
             <div style={{ padding: '12px 14px', background: '#0c1c12', borderRadius: 10, borderLeft: '2px solid #3ecf8e', marginBottom: 18 }}>
-              <span style={{ fontSize: 13, color: '#848484', lineHeight: 1.6, fontStyle: 'italic' }}>{pendingGoalData.coach}</span>
+              <span style={{ fontSize: 13, color: '#b8b8b8', lineHeight: 1.6, fontStyle: 'italic' }}>{pendingGoalData.coach}</span>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { setPendingGoal(null); setConfirmModalOpen(false) }} style={{ flex: 1, padding: 14, background: '#1a1a1a', border: 'none', borderRadius: 12, fontSize: 15, color: '#848484', fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => { setPendingGoal(null); setConfirmModalOpen(false) }} style={{ flex: 1, padding: 14, background: '#1a1a1a', border: 'none', borderRadius: 12, fontSize: 15, color: '#b8b8b8', fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
               <button onClick={confirmGoalSwitch} style={{ flex: 2, padding: 14, background: '#3ecf8e', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#090909', fontFamily: 'inherit', cursor: 'pointer' }}>Confirm switch</button>
             </div>
           </div>

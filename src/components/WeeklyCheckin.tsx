@@ -69,7 +69,7 @@ export function WeeklyCheckinBanner({ onClick }: { onClick: () => void }) {
         </div>
         <div>
           <p style={{ color: '#FFAA00', fontSize: '12px', fontWeight: 600, margin: 0 }}>Weekly Check-in due</p>
-          <p style={{ color: '#555555', fontSize: '11px', margin: '2px 0 0' }}>Review your progress and adjust targets</p>
+          <p style={{ color: '#999999', fontSize: '11px', margin: '2px 0 0' }}>Review your progress and adjust targets</p>
         </div>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2">

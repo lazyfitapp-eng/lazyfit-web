@@ -232,7 +232,7 @@ export default function SummaryClient({
     border: '#1d1d1d',
     border2: '#232323',
     text: '#f2f2f2',
-    text2: '#747474',
+    text2: '#a8a8a8',
     text3: '#3d3d3d',
     text4: '#222',
     accent: '#3ecf8e',
@@ -324,7 +324,7 @@ export default function SummaryClient({
             {completedAt ? formatWorkoutDate(completedAt) : ''}
             {completedAt ? ` · ${formatTime(completedAt)}` : ''}
             {durationMinutes ? ` · ${durationMinutes} min` : ''}
-            {sets.length > 0 ? ` · ${totalVolume}kg` : ''}
+            {sets.length > 0 ? ` · ${totalVolume} kg` : ''}
           </div>
         </div>
 

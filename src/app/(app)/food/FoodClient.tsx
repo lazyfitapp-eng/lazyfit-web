@@ -101,13 +101,13 @@ function DayNote({ userId, date, initialNote }: { userId: string; date: string; 
     <div style={{ background: '#121212', border: '1px solid #242424', borderRadius: 20, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
       {/* pencil icon */}
       <div style={{ width: 28, height: 28, background: '#181818', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#848484" strokeWidth="1.8" strokeLinecap="round">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.8" strokeLinecap="round">
           <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#444', marginBottom: 6 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>
           Day Note{saving && <span style={{ marginLeft: 8, color: '#282828' }}>saving…</span>}
         </div>
         <textarea
@@ -116,7 +116,7 @@ function DayNote({ userId, date, initialNote }: { userId: string; date: string; 
           onBlur={handleBlur}
           placeholder="How did today go?"
           rows={2}
-          style={{ background: 'none', border: 'none', color: '#848484', fontSize: 13, fontFamily: 'inherit', width: '100%', outline: 'none', resize: 'none', lineHeight: 1.6, caretColor: '#3ecf8e' }}
+          style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: 13, fontFamily: 'inherit', width: '100%', outline: 'none', resize: 'none', lineHeight: 1.6, caretColor: '#3ecf8e' }}
         />
       </div>
     </div>
@@ -581,7 +581,7 @@ export default function FoodClient({
             onClick={() => shiftDay(-1)}
             style={{ width: 32, height: 32, background: '#181818', border: '1px solid #242424', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#848484" strokeWidth="2.2"><polyline points="9,2 4,7 9,12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#b8b8b8" strokeWidth="2.2"><polyline points="9,2 4,7 9,12"/></svg>
           </button>
 
           {/* Date + badge */}
@@ -599,7 +599,7 @@ export default function FoodClient({
             onClick={() => shiftDay(1)}
             style={{ width: 32, height: 32, background: '#181818', border: '1px solid #242424', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#848484" strokeWidth="2.2"><polyline points="5,2 10,7 5,12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#b8b8b8" strokeWidth="2.2"><polyline points="5,2 10,7 5,12"/></svg>
           </button>
         </div>
       </div>
@@ -646,8 +646,8 @@ export default function FoodClient({
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                 <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1.5px', lineHeight: 1, color: '#f0f0f0' }}>{ringNum > 9999 ? '9999+' : ringNum}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444' }}>{ringUnit}</span>
-                <span style={{ fontSize: 10, color: '#444', letterSpacing: '-0.2px' }}>{ringCtx}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8' }}>{ringUnit}</span>
+                <span style={{ fontSize: 10, color: '#b8b8b8', letterSpacing: '-0.2px' }}>{ringCtx}</span>
               </div>
             </div>
 
@@ -667,7 +667,7 @@ export default function FoodClient({
                     </div>
                     <div style={{ minWidth: 54, textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: over ? '#ff3b5c' : '#f0f0f0', letterSpacing: '-0.3px', lineHeight: 1.1 }}>{displayVal}g</div>
-                      <div style={{ fontSize: 10, color: '#444', fontWeight: 400 }}>/ {target}g</div>
+                      <div style={{ fontSize: 10, color: '#b8b8b8', fontWeight: 400 }}>/ {target}g</div>
                     </div>
                   </div>
                 )
@@ -681,44 +681,44 @@ export default function FoodClient({
               <>
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1 }}>{targets.calories}</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Target</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Target</div>
                 </div>
                 <div style={{ background: '#1c1c1c', margin: '3px 0' }} />
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1 }}>{Math.round(totals.calories)}</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Eaten</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Eaten</div>
                 </div>
                 <div style={{ background: '#1c1c1c', margin: '3px 0' }} />
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: remaining.calories >= 0 ? '#3ecf8e' : '#ff3b5c' }}>{Math.abs(remaining.calories)}</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Left</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Left</div>
                 </div>
                 <div style={{ background: '#1c1c1c', margin: '3px 0' }} />
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#848484' }}>{Math.round(totals.fiber)}g</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Fiber</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#b8b8b8' }}>{Math.round(totals.fiber)}g</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Fiber</div>
                 </div>
               </>
             ) : (
               <>
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#f5a623' }}>{Math.max(0, remaining.calories)}</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Calories</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Calories</div>
                 </div>
                 <div style={{ background: '#1c1c1c', margin: '3px 0' }} />
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#4a9eff' }}>{Math.max(0, remaining.protein)}g</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Protein</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Protein</div>
                 </div>
                 <div style={{ background: '#1c1c1c', margin: '3px 0' }} />
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#3ecf8e' }}>{Math.max(0, remaining.carbs)}g</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Carbs</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Carbs</div>
                 </div>
                 <div style={{ background: '#1c1c1c', margin: '3px 0' }} />
                 <div style={{ textAlign: 'center', padding: '0 4px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#848484' }}>{Math.max(0, remaining.fat)}g</div>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Fat</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1, color: '#b8b8b8' }}>{Math.max(0, remaining.fat)}g</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Fat</div>
                 </div>
               </>
             )}
@@ -747,8 +747,8 @@ export default function FoodClient({
                     <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.3px', color: '#f0f0f0' }}>{MEAL_CONFIG[meal].label}</div>
                     {hasItems ? (
                       <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 6, fontSize: 12 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#848484', letterSpacing: '-0.3px' }}>{Math.round(mealTotals.calories)}</span>
-                        <span style={{ color: '#444', fontSize: 12 }}>kcal</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#b8b8b8', letterSpacing: '-0.3px' }}>{Math.round(mealTotals.calories)}</span>
+                        <span style={{ color: '#b8b8b8', fontSize: 12 }}>kcal</span>
                         <span style={{ color: '#282828' }}>·</span>
                         <span style={{ fontSize: 11, fontWeight: 600, color: '#4a9eff' }}>{Math.round(mealTotals.protein)}P</span>
                         <span style={{ color: '#282828', fontSize: 10 }}>·</span>
@@ -757,12 +757,12 @@ export default function FoodClient({
                         <span style={{ fontSize: 11, fontWeight: 600, color: '#f5a623' }}>{Math.round(mealTotals.fat)}F</span>
                       </div>
                     ) : (
-                      <div style={{ marginTop: 3, fontSize: 12, color: '#444' }}>Not logged yet</div>
+                      <div style={{ marginTop: 3, fontSize: 12, color: '#b8b8b8' }}>Not logged yet</div>
                     )}
                   </div>
                   <button
                     onClick={() => openModal(meal)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: '1px solid #242424', borderRadius: 9, padding: '7px 12px', color: '#444', fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: '1px solid #242424', borderRadius: 9, padding: '7px 12px', color: '#b8b8b8', fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
                   >
                     <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
                     ADD
@@ -775,7 +775,7 @@ export default function FoodClient({
                     <div style={{ flex: 1, height: 3, background: '#1c1c1c', borderRadius: 2, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${budgetPct}%`, background: mealColor, borderRadius: 2 }} />
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.4px', color: '#444', whiteSpace: 'nowrap', flexShrink: 0 }}>{budgetLabel}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.4px', color: '#b8b8b8', whiteSpace: 'nowrap', flexShrink: 0 }}>{budgetLabel}</span>
                   </div>
                 )}
 
@@ -787,15 +787,15 @@ export default function FoodClient({
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 14, fontWeight: 500, color: '#f0f0f0', letterSpacing: '-0.1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.food_name}</div>
                           <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#848484', letterSpacing: '-0.1px' }}>{log.quantity}g</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#b8b8b8', letterSpacing: '-0.1px' }}>{log.quantity}g</span>
                             <span style={{ fontSize: 10, color: '#282828' }}>·</span>
-                            <span style={{ fontSize: 11, color: '#444', fontWeight: 500 }}><b style={{ fontWeight: 700, color: '#4a9eff' }}>{Math.round(log.protein)}g</b> P</span>
-                            <span style={{ fontSize: 11, color: '#444', fontWeight: 500 }}><b style={{ fontWeight: 700 }}>{Math.round(log.carbs)}g</b> C</span>
-                            <span style={{ fontSize: 11, color: '#444', fontWeight: 500 }}><b style={{ fontWeight: 700 }}>{Math.round(log.fat)}g</b> F</span>
+                            <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 500 }}><b style={{ fontWeight: 700, color: '#4a9eff' }}>{Math.round(log.protein)}g</b> P</span>
+                            <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 500 }}><b style={{ fontWeight: 700 }}>{Math.round(log.carbs)}g</b> C</span>
+                            <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 500 }}><b style={{ fontWeight: 700 }}>{Math.round(log.fat)}g</b> F</span>
                           </div>
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                          {Math.round(log.calories)} <span style={{ fontSize: 10, fontWeight: 400, color: '#444' }}>kcal</span>
+                          {Math.round(log.calories)} <span style={{ fontSize: 10, fontWeight: 400, color: '#b8b8b8' }}>kcal</span>
                         </div>
                         {/* ··· action button */}
                         <div style={{ position: 'relative' }}>
@@ -833,22 +833,22 @@ export default function FoodClient({
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr 1px 1fr', borderTop: '1px solid #0f0f0f', padding: '10px 0 8px', marginTop: 2 }}>
                     <div style={{ textAlign: 'center', padding: '0 4px' }}>
                       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1, color: '#4a9eff' }}>{Math.round(mealTotals.protein)}g</div>
-                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Protein</div>
+                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Protein</div>
                     </div>
                     <div style={{ background: '#111', margin: '2px 0' }} />
                     <div style={{ textAlign: 'center', padding: '0 4px' }}>
                       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1, color: '#3ecf8e' }}>{Math.round(mealTotals.carbs)}g</div>
-                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Carbs</div>
+                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Carbs</div>
                     </div>
                     <div style={{ background: '#111', margin: '2px 0' }} />
                     <div style={{ textAlign: 'center', padding: '0 4px' }}>
                       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1, color: '#f5a623' }}>{Math.round(mealTotals.fat)}g</div>
-                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>Fat</div>
+                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>Fat</div>
                     </div>
                     <div style={{ background: '#111', margin: '2px 0' }} />
                     <div style={{ textAlign: 'center', padding: '0 4px' }}>
                       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1 }}>{Math.round(mealTotals.calories)}</div>
-                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#444', marginTop: 3 }}>kcal</div>
+                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#b8b8b8', marginTop: 3 }}>kcal</div>
                     </div>
                   </div>
                 )}
@@ -863,7 +863,7 @@ export default function FoodClient({
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#181818', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#444" strokeWidth="2.5"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#444' }}>Log {MEAL_CONFIG[meal].label.toLowerCase()}</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#b8b8b8' }}>Log {MEAL_CONFIG[meal].label.toLowerCase()}</span>
                     </button>
                   </div>
                 )}
@@ -875,7 +875,7 @@ export default function FoodClient({
         {/* ── Daily Reflection section break ───────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0 0' }}>
           <div style={{ flex: 1, height: 1, background: '#1c1c1c' }} />
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#444', whiteSpace: 'nowrap' }}>Daily Reflection</div>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#b8b8b8', whiteSpace: 'nowrap' }}>Daily Reflection</div>
           <div style={{ flex: 1, height: 1, background: '#1c1c1c' }} />
         </div>
 
@@ -922,7 +922,7 @@ export default function FoodClient({
               onClick={closeModal}
               style={{ width: 28, height: 28, background: '#181818', border: '1px solid #242424', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#848484" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#b8b8b8" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
               </svg>
             </button>
@@ -991,7 +991,7 @@ export default function FoodClient({
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                           {item.confidence === 'low' && <span style={{ fontSize: 10, color: '#f5a623' }} title="Low confidence">⚠</span>}
-                          <button onClick={() => removeAiItem(item._id)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', lineHeight: 1 }}>
+                          <button onClick={() => removeAiItem(item._id)} style={{ background: 'none', border: 'none', color: '#b8b8b8', cursor: 'pointer', lineHeight: 1 }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
@@ -1000,7 +1000,7 @@ export default function FoodClient({
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                         {([
-                          { label: 'KCAL', field: 'calories' as keyof FoodAIItem, color: '#848484' },
+                          { label: 'KCAL', field: 'calories' as keyof FoodAIItem, color: '#b8b8b8' },
                           { label: 'P', field: 'protein' as keyof FoodAIItem, color: '#4a9eff' },
                           { label: 'C', field: 'carbs' as keyof FoodAIItem, color: '#3ecf8e' },
                           { label: 'F', field: 'fat' as keyof FoodAIItem, color: '#f5a623' },
@@ -1017,19 +1017,19 @@ export default function FoodClient({
                         ))}
                       </div>
                       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 10, color: '#444', letterSpacing: '0.8px' }}>QTY</span>
+                        <span style={{ fontSize: 10, color: '#b8b8b8', letterSpacing: '0.8px' }}>QTY</span>
                         <input
                           type="number"
                           value={item.quantity_g}
                           onChange={e => updateAiItem(item._id, 'quantity_g', e.target.value)}
                           style={{ width: 64, background: '#121212', border: '1px solid #242424', borderRadius: 8, padding: '5px 8px', fontSize: 12, color: '#f0f0f0', fontFamily: 'monospace', outline: 'none' }}
                         />
-                        <span style={{ fontSize: 10, color: '#444' }}>g</span>
+                        <span style={{ fontSize: 10, color: '#b8b8b8' }}>g</span>
                       </div>
                     </div>
                   ))}
                   {aiError && <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', padding: '4px 0' }}>{aiError}</p>}
-                  <button onClick={() => { setAiItems(null); setAiError(null) }} style={{ background: 'none', border: 'none', color: '#444', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>
+                  <button onClick={() => { setAiItems(null); setAiError(null) }} style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>
                     Retake / Edit
                   </button>
                 </div>
@@ -1038,7 +1038,7 @@ export default function FoodClient({
                 /* Loading */
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '48px 0' }}>
                   <div style={{ width: 36, height: 36, border: '2px solid #3ecf8e', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  <p style={{ fontSize: 12, color: '#444', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Analysing your meal…</p>
+                  <p style={{ fontSize: 12, color: '#b8b8b8', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Analysing your meal…</p>
                 </div>
 
               ) : (
@@ -1054,7 +1054,7 @@ export default function FoodClient({
                             onClick={() => { setImagePreview(null); setImageData(null) }}
                             style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: 6, border: 'none', cursor: 'pointer', lineHeight: 1 }}
                           >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#848484" strokeWidth="2.5" strokeLinecap="round">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="2.5" strokeLinecap="round">
                               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
                           </button>
@@ -1065,12 +1065,12 @@ export default function FoodClient({
                           style={{ background: '#181818', border: '1.5px dashed #242424', borderRadius: 16, height: 148, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', width: '100%', fontFamily: 'inherit' }}
                         >
                           <div style={{ width: 40, height: 40, background: '#1e1e1e', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#848484" strokeWidth="1.8" strokeLinecap="round">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.8" strokeLinecap="round">
                               <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
                               <circle cx="12" cy="13" r="4"/>
                             </svg>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: '#444' }}>Take a photo of your meal</div>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: '#b8b8b8' }}>Take a photo of your meal</div>
                           <div style={{ fontSize: 11, color: '#282828' }}>Tap to open camera</div>
                         </button>
                       )}
@@ -1089,7 +1089,7 @@ export default function FoodClient({
                           </svg>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                             Total weight <span style={{ fontSize: 9, fontWeight: 600, color: '#3ecf8e', textTransform: 'none', letterSpacing: '0.3px' }}>↑ improves accuracy</span>
                           </div>
                           <input
@@ -1101,7 +1101,7 @@ export default function FoodClient({
                             style={{ background: 'none', border: 'none', color: '#f0f0f0', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', width: '100%', outline: 'none', caretColor: '#3ecf8e' }}
                           />
                         </div>
-                        <div style={{ fontSize: 12, color: '#444', fontWeight: 600, flexShrink: 0 }}>g</div>
+                        <div style={{ fontSize: 12, color: '#b8b8b8', fontWeight: 600, flexShrink: 0 }}>g</div>
                       </div>
                       {/* Description field */}
                       <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: '11px 14px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -1111,7 +1111,7 @@ export default function FoodClient({
                           </svg>
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#444', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                             Describe your meal <span style={{ fontSize: 9, fontWeight: 600, color: '#3ecf8e', textTransform: 'none' }}>↑ improves accuracy</span>
                           </div>
                           <textarea
@@ -1164,16 +1164,16 @@ export default function FoodClient({
                             }}
                             style={{ width: 38, height: 38, background: micListening ? '#091510' : '#1e1e1e', border: `1px solid ${micListening ? '#3ecf8e' : '#242424'}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#848484" strokeWidth="1.8" strokeLinecap="round">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="1.8" strokeLinecap="round">
                               <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
                               <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/>
                             </svg>
                           </button>
                         </div>
-                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#444', marginBottom: 6 }}>Tap to use as example</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Tap to use as example</div>
                         <button
                           onClick={() => setVoiceText(VOICE_EXAMPLE)}
-                          style={{ fontSize: 12, color: '#444', lineHeight: 1.55, background: '#1e1e1e', border: '1px solid #242424', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontStyle: 'italic', width: '100%' }}
+                          style={{ fontSize: 12, color: '#b8b8b8', lineHeight: 1.55, background: '#1e1e1e', border: '1px solid #242424', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontStyle: 'italic', width: '100%' }}
                         >
                           &ldquo;{VOICE_EXAMPLE}&rdquo;
                           <div style={{ fontSize: 10, color: '#282828', marginTop: 5, fontStyle: 'normal' }}>Tap to copy into the field above ↑</div>
@@ -1199,7 +1199,7 @@ export default function FoodClient({
                           autoFocus
                           style={{ flex: 1, background: 'none', border: 'none', color: '#f0f0f0', fontSize: 15, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }}
                         />
-                        {searching && <span style={{ fontSize: 11, color: '#444', animation: 'pulse 1s ease-in-out infinite' }}>…</span>}
+                        {searching && <span style={{ fontSize: 11, color: '#b8b8b8', animation: 'pulse 1s ease-in-out infinite' }}>…</span>}
                       </div>
 
                       {/* Results */}
@@ -1231,11 +1231,11 @@ export default function FoodClient({
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 14, fontWeight: 500, color: isSelected ? '#3ecf8e' : '#f0f0f0', letterSpacing: '-0.1px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{result.name}</div>
-                                    <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>USDA · per 100g · {result.protein}g P · {result.carbs}g C · {result.fat}g F</div>
+                                    <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2 }}>USDA · per 100g · {result.protein}g P · {result.carbs}g C · {result.fat}g F</div>
                                   </div>
                                   <div style={{ textAlign: 'right', flexShrink: 0, alignSelf: 'center' }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: '#848484' }}>{result.kcalPer100g}</div>
-                                    <div style={{ fontSize: 10, color: '#444' }}>kcal</div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: '#b8b8b8' }}>{result.kcalPer100g}</div>
+                                    <div style={{ fontSize: 10, color: '#b8b8b8' }}>kcal</div>
                                   </div>
                                 </button>
                                 {/* Inline qty row */}
@@ -1263,7 +1263,7 @@ export default function FoodClient({
                         </div>
                       ) : searchQuery && !searching ? (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                          <p style={{ fontSize: 14, color: '#444' }}>No results for &ldquo;{searchQuery}&rdquo;</p>
+                          <p style={{ fontSize: 14, color: '#b8b8b8' }}>No results for &ldquo;{searchQuery}&rdquo;</p>
                           <p style={{ fontSize: 11, color: '#282828', marginTop: 6 }}>Try a simpler name, e.g. &ldquo;chicken breast&rdquo;</p>
                         </div>
                       ) : (
@@ -1282,7 +1282,7 @@ export default function FoodClient({
                         /* Found product */
                         <div style={{ background: '#181818', border: '1px solid #3ecf8e', borderRadius: 16, padding: 16 }}>
                           <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f0f0', marginBottom: 4 }}>{scannedProduct.name}</div>
-                          <div style={{ fontSize: 11, color: '#444', marginBottom: 12 }}>per 100g · {scannedProduct.kcalPer100g} kcal · {scannedProduct.protein}g P · {scannedProduct.carbs}g C · {scannedProduct.fat}g F</div>
+                          <div style={{ fontSize: 11, color: '#b8b8b8', marginBottom: 12 }}>per 100g · {scannedProduct.kcalPer100g} kcal · {scannedProduct.protein}g P · {scannedProduct.carbs}g C · {scannedProduct.fat}g F</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <input
                               type="number"
@@ -1293,7 +1293,7 @@ export default function FoodClient({
                             />
                             <span style={{ fontSize: 12, color: '#3ecf8e', fontWeight: 700 }}>g</span>
                           </div>
-                          <button onClick={() => { setScannedProduct(null); setBarcodeError(null) }} style={{ marginTop: 10, background: 'none', border: 'none', color: '#444', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          <button onClick={() => { setScannedProduct(null); setBarcodeError(null) }} style={{ marginTop: 10, background: 'none', border: 'none', color: '#b8b8b8', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'inherit' }}>
                             Scan again
                           </button>
                         </div>
@@ -1325,7 +1325,7 @@ export default function FoodClient({
                                   <div key={i} style={{ position: 'absolute', width: 20, height: 20, borderStyle: 'solid', borderColor: '#3ecf8e', opacity: 0.7, ...s }} />
                                 ))}
                               </div>
-                              <div style={{ fontSize: 13, fontWeight: 500, color: '#444', position: 'relative', zIndex: 1 }}>Point camera at barcode</div>
+                              <div style={{ fontSize: 13, fontWeight: 500, color: '#b8b8b8', position: 'relative', zIndex: 1 }}>Point camera at barcode</div>
                               <div style={{ fontSize: 11, color: '#282828', position: 'relative', zIndex: 1 }}>Open Food Facts · USDA · 3M+ products</div>
                             </>
                           )}

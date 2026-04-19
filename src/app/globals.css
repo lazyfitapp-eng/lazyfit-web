@@ -161,3 +161,8 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #00FF41;
 }
+
+/* Hide Next.js dev toolbar — prevents overlap during mobile testing */
+nextjs-portal {
+  display: none;
+}

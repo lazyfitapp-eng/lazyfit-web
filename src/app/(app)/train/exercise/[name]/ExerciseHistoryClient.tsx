@@ -178,7 +178,7 @@ function SessionCard({
                   fontSize: 9,
                   fontWeight: 700,
                   letterSpacing: '1px',
-                  color: '#555555',
+                  color: '#999999',
                   background: '#1a1a1a',
                   borderRadius: 5,
                   padding: '2px 6px',
@@ -193,7 +193,7 @@ function SessionCard({
             <span
               style={{
                 fontSize: 11,
-                color: isPR ? 'rgba(62,207,142,0.55)' : '#444444',
+                color: isPR ? 'rgba(62,207,142,0.55)' : '#888888',
                 letterSpacing: '-0.1px',
               }}
             >
@@ -221,7 +221,7 @@ function SessionCard({
                 style={{
                   fontSize: 11,
                   fontWeight: 400,
-                  color: isPR ? 'rgba(62,207,142,0.5)' : '#555555',
+                  color: isPR ? 'rgba(62,207,142,0.5)' : '#999999',
                 }}
               >
                 kg
@@ -286,7 +286,7 @@ function SessionCard({
             const isWarmup = s.setType === 'warmup'
             const isFirstWorking = i === firstWorkingIdx
             const vol = (s.weightKg * s.repsCompleted).toFixed(0)
-            const textColor = isWarmup ? '#333' : isFirstWorking ? '#f0f0f0' : '#848484'
+            const textColor = isWarmup ? '#333' : isFirstWorking ? '#f0f0f0' : '#b8b8b8'
             const setLabelColor = isWarmup ? '#333' : isFirstWorking ? '#3ecf8e' : '#555'
 
             return (
@@ -341,7 +341,7 @@ function EmptyState({ exerciseName }: { exerciseName: string }) {
       <div style={{ fontSize: 36, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-1.5px', marginBottom: 12, lineHeight: 1.1 }}>
         {exerciseName}
       </div>
-      <div style={{ fontSize: 15, color: '#555555' }}>No sessions logged yet.</div>
+      <div style={{ fontSize: 15, color: '#999999' }}>No sessions logged yet.</div>
       <div style={{ fontSize: 13, color: '#3a3a3a', marginTop: 6 }}>
         Complete a workout that includes this exercise to see your progress here.
       </div>
@@ -510,7 +510,7 @@ export default function ExerciseHistoryClient({
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#555555' }}>Your Progress</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: '#999999' }}>Your Progress</span>
         <div
           style={{
             width: 36, height: 36, borderRadius: '50%',
@@ -560,25 +560,25 @@ export default function ExerciseHistoryClient({
                 <span key={i} style={{ display: 'block' }}>{w}</span>
               ))}
             </div>
-            <div className="lfe-a1" style={{ fontSize: 13, color: '#555555', marginBottom: 28 }}>
+            <div className="lfe-a1" style={{ fontSize: 13, color: '#999999', marginBottom: 28 }}>
               {isEarlyPhase ? (
                 <>
-                  <em style={{ color: '#848484', fontStyle: 'normal', fontWeight: 500 }}>
+                  <em style={{ color: '#b8b8b8', fontStyle: 'normal', fontWeight: 500 }}>
                     {sessions.length} session{sessions.length !== 1 ? 's' : ''} logged
                   </em>
                   {' · Started '}
-                  <em style={{ color: '#848484', fontStyle: 'normal', fontWeight: 500 }}>
+                  <em style={{ color: '#b8b8b8', fontStyle: 'normal', fontWeight: 500 }}>
                     {trainingSince}
                   </em>
                 </>
               ) : (
                 <>
                   Training since{' '}
-                  <em style={{ color: '#848484', fontStyle: 'normal', fontWeight: 500 }}>
+                  <em style={{ color: '#b8b8b8', fontStyle: 'normal', fontWeight: 500 }}>
                     {trainingSince}
                   </em>
                   {' · '}
-                  <em style={{ color: '#848484', fontStyle: 'normal', fontWeight: 500 }}>
+                  <em style={{ color: '#b8b8b8', fontStyle: 'normal', fontWeight: 500 }}>
                     {sessions.length} sessions logged
                   </em>
                 </>
@@ -672,10 +672,10 @@ export default function ExerciseHistoryClient({
           <div style={{ padding: '0 20px 24px' }} className="lfe-a4">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 500, color: '#555555', marginBottom: 2 }}>Current est. 1RM</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: '#999999', marginBottom: 2 }}>Current est. 1RM</div>
                 <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-1.8px', lineHeight: 1, color: '#f0f0f0' }}>
                   {currentEst1RM.toFixed(1)}
-                  <span style={{ fontSize: 20, fontWeight: 400, color: '#555555', letterSpacing: '-0.5px' }}> kg</span>
+                  <span style={{ fontSize: 20, fontWeight: 400, color: '#999999', letterSpacing: '-0.5px' }}> kg</span>
                 </div>
               </div>
               {hasProgression ? (
@@ -690,7 +690,7 @@ export default function ExerciseHistoryClient({
                   )}
                 </div>
               ) : (
-                <div style={{ fontSize: 12, color: '#444444', paddingBottom: 6 }}>
+                <div style={{ fontSize: 12, color: '#888888', paddingBottom: 6 }}>
                   PR: {allTimePRVal.toFixed(1)} kg · Current: {currentEst1RM.toFixed(1)} kg
                 </div>
               )}
@@ -768,7 +768,7 @@ export default function ExerciseHistoryClient({
           {/* ── SESSION CHRONICLE ── */}
           <div style={{ padding: '0 20px' }} className="lfe-a6">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#555555' }}>Session Chronicle</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#999999' }}>Session Chronicle</span>
               <button
                 onClick={() => setSortDesc(d => !d)}
                 style={{ fontSize: 12, fontWeight: 500, color: '#3ecf8e', background: 'none', border: 'none', cursor: 'pointer' }}

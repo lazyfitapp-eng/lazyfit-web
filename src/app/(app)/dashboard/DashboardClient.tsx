@@ -72,15 +72,15 @@ function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targe
         <div>
           <div className="leading-none tracking-[-1px]">
             <span className="text-[32px] font-bold text-[#f0f0f0]" style={{ fontStyle: 'normal', fontVariantNumeric: 'normal', fontFeatureSettings: 'normal' }}>{Math.round(total.cal).toLocaleString()}</span>
-            <span className="text-sm font-normal text-[#444] ml-[2px]">kcal</span>
+            <span className="text-sm font-normal text-[#b8b8b8] ml-[2px]">kcal</span>
           </div>
-          <div className="text-[11px] text-[#444] mt-[3px]">
+          <div className="text-[11px] text-[#b8b8b8] mt-[3px]">
             Target: {targets.calories.toLocaleString()} kcal — {remaining.toLocaleString()} remaining
           </div>
         </div>
         <div className="text-right">
           <div className="text-[13px] font-semibold text-[#3ecf8e]">{calPct}%</div>
-          <div className="text-[10px] text-[#383838] mt-[1px]">of target</div>
+          <div className="text-[10px] text-[#b8b8b8] mt-[1px]">of target</div>
         </div>
       </div>
 
@@ -100,11 +100,11 @@ function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targe
               { label: 'Fat',     value: fat,     target: targetFat,     color: '#1a3d2c' },
             ].map(({ label, value, target, color }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '44px', flexShrink: 0, fontSize: '10px', color: '#555555' }}>{label}</span>
+                <span style={{ width: '44px', flexShrink: 0, fontSize: '10px', color: '#999999' }}>{label}</span>
                 <div style={{ flex: 1, backgroundColor: '#1e1e1e', borderRadius: '3px', height: '4px', overflow: 'hidden' }}>
                   <div style={{ width: `${pct(value, target)}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
                 </div>
-                <span style={{ width: '42px', flexShrink: 0, fontSize: '10px', color: '#555555', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value} / {target}g</span>
+                <span style={{ width: '42px', flexShrink: 0, fontSize: '10px', color: '#999999', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value} / {target}g</span>
               </div>
             ))}
           </div>
@@ -132,13 +132,13 @@ function WeighInCard({ weight, trend, weeklyDelta, isToday, onLogWeight }: {
             <span className="text-[34px] font-bold text-[#f0f0f0] tracking-[-1px]">
               {weight ?? '—'}
             </span>
-            {weight && <span className="text-[15px] font-normal text-[#444]">kg</span>}
+            {weight && <span className="text-[15px] font-normal text-[#b8b8b8]">kg</span>}
           </div>
           {weight && trend && (
-            <div className="text-[11px] text-[#444]" style={{ marginTop: '4px' }}>Trend {trend} kg</div>
+            <div className="text-[11px] text-[#b8b8b8]" style={{ marginTop: '4px' }}>Trend {trend} kg</div>
           )}
           {!weight && (
-            <div className="text-[11px] text-[#333] mt-1">
+            <div className="text-[11px] text-[#888888] mt-1">
               {isToday ? 'No entry yet today' : 'No entry this day'}
             </div>
           )}
@@ -156,7 +156,7 @@ function WeighInCard({ weight, trend, weeklyDelta, isToday, onLogWeight }: {
             <span
               style={{
                 backgroundColor: '#1a1a1a',
-                color: '#555555',
+                color: '#999999',
                 borderRadius: '9999px',
                 padding: '3px 8px',
                 fontSize: '11px',
@@ -192,7 +192,7 @@ function MealCard({ meal, logs }: {
            style={{ padding: '13px 16px' }}>
         <div>
           <div className="text-[15px] font-semibold text-[#f0f0f0] leading-none">{meal.label}</div>
-          <div className="text-[10px] text-[#383838]" style={{ marginTop: '1px' }}>{meal.time}</div>
+          <div className="text-[10px] text-[#b8b8b8]" style={{ marginTop: '1px' }}>{meal.time}</div>
         </div>
         <span
           onClick={() => router.push(`/food?meal=${meal.type}`)}
@@ -221,7 +221,7 @@ function MealCard({ meal, logs }: {
       <div className="flex items-start justify-between px-4 pt-3 pb-3">
         <div>
           <div className="text-[15px] font-semibold text-[#f0f0f0] leading-none">{meal.label}</div>
-          <div className="text-[10px] text-[#383838]" style={{ marginTop: '1px' }}>{meal.time}</div>
+          <div className="text-[10px] text-[#b8b8b8]" style={{ marginTop: '1px' }}>{meal.time}</div>
         </div>
         <Link href={`/food?meal=${meal.type}`} className="text-xs font-semibold text-[#3ecf8e]">
           + Add
@@ -241,7 +241,7 @@ function MealCard({ meal, logs }: {
             style={{ paddingLeft: '10px', borderRight: i < arr.length - 1 ? '1px solid #1a1a1a' : 'none' }}
           >
             <div className="text-[14px] font-bold leading-none" style={{ color }}>{val}{label !== 'kcal' ? 'g' : ''}</div>
-            <div className="text-[9px] text-[#383838] uppercase" style={{ letterSpacing: '0.3px', marginTop: '2px' }}>{label}</div>
+            <div className="text-[9px] text-[#b8b8b8] uppercase" style={{ letterSpacing: '0.3px', marginTop: '2px' }}>{label}</div>
           </div>
         ))}
       </div>
@@ -263,7 +263,7 @@ function MiniLineChart({
   if (points.length < 2) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-[10px] text-[#333] tracking-widest font-sans">NO DATA</p>
+        <p className="text-[10px] text-[#888888] tracking-widest font-sans">NO DATA</p>
       </div>
     )
   }
@@ -346,7 +346,7 @@ function ProgressTabContent({
           <p className="text-[11px] font-semibold text-[#f0f0f0] mb-1 flex-shrink-0">Body Composition</p>
           <div className="flex items-center gap-2 mb-2 flex-shrink-0">
             <div className="w-3 h-[2px] bg-[#3ecf8e] opacity-90 rounded" />
-            <span className="text-[9px] text-[#444]">Weight</span>
+            <span className="text-[9px] text-[#b8b8b8]">Weight</span>
           </div>
           <div className="flex-1 min-h-0">
             <MiniLineChart points={recentWeights} color="#3ecf8e" />
@@ -359,9 +359,9 @@ function ProgressTabContent({
           <p className="text-[11px] font-semibold text-[#f0f0f0] mb-1 flex-shrink-0">Nutrition</p>
           <div className="flex items-center gap-2 mb-2 flex-shrink-0">
             <div className="w-3 h-[2px] bg-[#4a9eff] opacity-90 rounded" />
-            <span className="text-[9px] text-[#444]">Logged</span>
+            <span className="text-[9px] text-[#b8b8b8]">Logged</span>
             <div className="w-3 h-[2px] rounded ml-1" style={{ background: 'repeating-linear-gradient(90deg,#444 0 3px,transparent 3px 6px)' }} />
-            <span className="text-[9px] text-[#444]">Target</span>
+            <span className="text-[9px] text-[#b8b8b8]">Target</span>
           </div>
           <div className="flex-1 min-h-0">
             <MiniLineChart points={recentFood} color="#4a9eff" targetValue={targetCalories} />
@@ -446,7 +446,7 @@ export default function DashboardClient({
               label={dateHeader}
               onDateChange={handleDateChange}
             />
-            <Link href="/profile" className="text-[#383838] hover:text-[#f0f0f0] transition-colors p-1">
+            <Link href="/profile" className="text-[#b8b8b8] hover:text-[#f0f0f0] transition-colors p-1">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -471,7 +471,7 @@ export default function DashboardClient({
               className={`pb-[9px] mr-6 text-sm font-medium border-b-2 -mb-px transition-colors font-sans ${
                 activeTab === 'daily-log'
                   ? 'text-[#f0f0f0] border-[#3ecf8e]'
-                  : 'text-[#3a3a3a] border-transparent hover:text-[#888]'
+                  : 'text-[#888888] border-transparent hover:text-[#888]'
               }`}
             >
               Daily log
@@ -481,7 +481,7 @@ export default function DashboardClient({
               className={`pb-[9px] mr-6 text-sm font-medium border-b-2 -mb-px transition-colors font-sans ${
                 activeTab === 'progress'
                   ? 'text-[#f0f0f0] border-[#3ecf8e]'
-                  : 'text-[#3a3a3a] border-transparent hover:text-[#888]'
+                  : 'text-[#888888] border-transparent hover:text-[#888]'
               }`}
             >
               Progress
@@ -506,14 +506,14 @@ export default function DashboardClient({
           />
 
           {/* Section: Today's summary */}
-          <div className="text-[10px] font-bold text-[#484848] uppercase font-sans pt-1 pb-0.5"
+          <div className="text-[10px] font-bold text-[#b8b8b8] uppercase font-sans pt-1 pb-0.5"
                style={{ letterSpacing: '1px' }}>
             Today&apos;s summary
           </div>
           <SummaryCard logs={logs} targets={targets} />
 
           {/* Section: Body */}
-          <div className="text-[10px] font-bold text-[#484848] uppercase font-sans pt-1 pb-0.5"
+          <div className="text-[10px] font-bold text-[#b8b8b8] uppercase font-sans pt-1 pb-0.5"
                style={{ letterSpacing: '1px' }}>
             Body
           </div>
@@ -526,7 +526,7 @@ export default function DashboardClient({
           />
 
           {/* Section: Nutrition */}
-          <div className="text-[10px] font-bold text-[#484848] uppercase font-sans pt-1 pb-0.5"
+          <div className="text-[10px] font-bold text-[#b8b8b8] uppercase font-sans pt-1 pb-0.5"
                style={{ letterSpacing: '1px' }}>
             Nutrition
           </div>
@@ -539,7 +539,7 @@ export default function DashboardClient({
           ))}
 
           {/* Section: Training */}
-          <div className="text-[10px] font-bold text-[#484848] uppercase font-sans pt-1 pb-0.5"
+          <div className="text-[10px] font-bold text-[#b8b8b8] uppercase font-sans pt-1 pb-0.5"
                style={{ letterSpacing: '1px' }}>
             Training
           </div>

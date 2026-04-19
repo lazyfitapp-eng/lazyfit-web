@@ -241,7 +241,7 @@ function CalendarMonth({
             {/* Month header; add top divider between months */}
             {mIdx > 0 && <div style={{ height: 1, background: '#141414', marginBottom: 16 }} />}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: mIdx === monthList.length - 1 ? '#f0f0f0' : '#5a5a5a', letterSpacing: '-0.3px' }}>{MONTHS_FULL[month]}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: mIdx === monthList.length - 1 ? '#f0f0f0' : '#b8b8b8', letterSpacing: '-0.3px' }}>{MONTHS_FULL[month]}</span>
               <span style={{ fontSize: 12, fontWeight: 500, color: '#2e2e2e', letterSpacing: '-0.1px' }}>{year}</span>
             </div>
             {/* Day headers — shown on every month so all grids have identical column structure */}
@@ -393,7 +393,7 @@ function WeekDots({
       {/* Footer */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingTop: 13, borderTop: '1px solid #141414' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#848484' }}>
+          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#b8b8b8' }}>
             {currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks} {currentStreakWeeks === 1 ? 'wk' : 'wks'}
           </div>
           <div style={{ fontSize: 10, fontWeight: 600, color: '#2a2a2a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -429,7 +429,7 @@ function BodyCompChart({
 
   if (wPts.length < 2) {
     return (
-      <div style={{ padding: '12px 18px', fontSize: 12, color: '#848484', lineHeight: 1.5 }}>
+      <div style={{ padding: '12px 18px', fontSize: 12, color: '#b8b8b8', lineHeight: 1.5 }}>
         Log at least 2 weights to see your chart.
       </div>
     )
@@ -584,7 +584,7 @@ function heroContent(
       proof: (
         <>
           Most people never start.{' '}
-          <strong style={{ color: '#848484', fontWeight: 600 }}>You already have.</strong>{' '}
+          <strong style={{ color: '#b8b8b8', fontWeight: 600 }}>You already have.</strong>{' '}
           This screen will look very different in 8 weeks — come back and see.
         </>
       ),
@@ -602,7 +602,7 @@ function heroContent(
       ),
       proof: (
         <>
-          <strong style={{ color: '#848484', fontWeight: 600 }}>{recentPRCount} PRs this month.</strong>{' '}
+          <strong style={{ color: '#b8b8b8', fontWeight: 600 }}>{recentPRCount} PRs this month.</strong>{' '}
           {totalSessions} sessions.{' '}{weeksActive}{' '}weeks without stopping. The data doesn&apos;t lie — and it&apos;s telling a story most people never get to write.
         </>
       ),
@@ -620,7 +620,7 @@ function heroContent(
       ),
       proof: (
         <>
-          <strong style={{ color: '#848484', fontWeight: 600 }}>{totalSessions} sessions logged.</strong>{' '}
+          <strong style={{ color: '#b8b8b8', fontWeight: 600 }}>{totalSessions} sessions logged.</strong>{' '}
           Most people quit in week 3. You&apos;re in the elite {100 - Math.min(95, currentStreakWeeks * 5)}% who keep going.
         </>
       ),
@@ -638,7 +638,7 @@ function heroContent(
     ),
     proof: (
       <>
-        <strong style={{ color: '#848484', fontWeight: 600 }}>{currentStreakWeeks} week streak.</strong>{' '}
+        <strong style={{ color: '#b8b8b8', fontWeight: 600 }}>{currentStreakWeeks} week streak.</strong>{' '}
         Every session is data. Every week logged is proof. Keep building the record.
       </>
     ),
@@ -825,7 +825,7 @@ export default function ProgressClient({
             </div>
             <div style={{ background: '#1a1a1a', width: 1 }} />
             <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#848484', letterSpacing: '-0.8px', lineHeight: 1 }}>{currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#b8b8b8', letterSpacing: '-0.8px', lineHeight: 1 }}>{currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks}</div>
               <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Wk Streak</div>
               <div style={{ display: 'flex', gap: 6, fontSize: 9, color: '#2e2e2e', fontWeight: 500 }}>
                 <span>Best: <span style={{ color: '#444' }}>{bestStreakWeeks} wk{bestStreakWeeks !== 1 ? 's' : ''}</span></span>
@@ -896,7 +896,7 @@ export default function ProgressClient({
                       border: positive ? '1px solid rgba(62,207,142,0.2)' : '1px solid rgba(100,100,100,0.2)',
                       borderRadius: 6, padding: '3px 8px',
                       fontSize: 9, fontWeight: 700,
-                      color: positive ? '#3ecf8e' : '#848484',
+                      color: positive ? '#3ecf8e' : '#b8b8b8',
                       letterSpacing: '0.5px', textTransform: 'uppercase',
                     }}>
                       {trendLabel(heroExercise.trend).text} · Best lift
@@ -923,7 +923,7 @@ export default function ProgressClient({
                     background: positive ? 'rgba(9,21,16,0.7)' : '#141414',
                     border: positive ? '1px solid rgba(62,207,142,0.1)' : '1px solid #1e1e1e',
                   }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.6px', color: positive ? '#3ecf8e' : '#848484' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.6px', color: positive ? '#3ecf8e' : '#b8b8b8' }}>
                       {positive ? '+' : ''}{heroDelta.toFixed(1)} kg
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 500, color: positive ? 'rgba(62,207,142,0.5)' : '#555' }}>since your first session</div>
@@ -1303,7 +1303,7 @@ export default function ProgressClient({
               {coachingCard.headline}
             </div>
             <div
-              style={{ fontSize: 14, color: '#5a5a5a', lineHeight: 1.68, letterSpacing: '-0.2px', marginBottom: 18 }}
+              style={{ fontSize: 14, color: '#b8b8b8', lineHeight: 1.68, letterSpacing: '-0.2px', marginBottom: 18 }}
               dangerouslySetInnerHTML={{ __html: coachingCard.body }}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, borderTop: '1px solid rgba(62,207,142,0.07)' }}>
