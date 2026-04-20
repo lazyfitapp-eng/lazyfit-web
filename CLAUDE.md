@@ -15,6 +15,7 @@ Sprints 1–11 complete. See `CURRENT_STATE.md` for full screen map, what works,
 7. Server components (`page.tsx`) fetch data → pass props to client components (`*Client.tsx`) for UI
 8. Use subagents to keep main context clean — one focused task per subagent
 9. Never mark a task done without proving it works
+10. Never use git worktrees. All work happens directly on the main branch in the primary working directory `C:\Users\Jarvis\Desktop\lazyfit-web`
 
 ## Key References
 - Full app context, philosophy, screens, design system: `CURRENT_STATE.md`
