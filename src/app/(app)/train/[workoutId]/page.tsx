@@ -54,17 +54,19 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
   const exerciseNames = exercises.map(e => e.exercise_name)
   const { data: targetRows } = await supabase
     .from('exercise_targets')
-    .select('exercise_name, set_number, target_weight_kg, target_reps_min, target_reps_max')
+    .select('exercise_name, set_number, target_weight_kg, target_reps_min, target_reps_max, consecutive_max_sessions, consecutive_fail_sessions')
     .eq('user_id', user.id)
     .in('exercise_name', exerciseNames.length > 0 ? exerciseNames : ['__none__'])
 
-  const suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number }>> = {}
+  const suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>> = {}
   for (const row of targetRows ?? []) {
     if (!suggestedTargets[row.exercise_name]) suggestedTargets[row.exercise_name] = {}
     suggestedTargets[row.exercise_name][row.set_number] = {
-      weight: row.target_weight_kg,
-      repsMin: row.target_reps_min,
-      repsMax: row.target_reps_max,
+      weight:          row.target_weight_kg,
+      repsMin:         row.target_reps_min,
+      repsMax:         row.target_reps_max,
+      consecutiveMax:  row.consecutive_max_sessions,
+      consecutiveFail: row.consecutive_fail_sessions,
     }
   }
 

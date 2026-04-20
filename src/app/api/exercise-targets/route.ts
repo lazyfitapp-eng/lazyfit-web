@@ -14,16 +14,18 @@ export async function GET(req: NextRequest) {
   // Query 1: exercise_targets for this user + exercise
   const { data: targetRows } = await supabase
     .from('exercise_targets')
-    .select('set_number, target_weight_kg, target_reps_min, target_reps_max')
+    .select('set_number, target_weight_kg, target_reps_min, target_reps_max, consecutive_max_sessions, consecutive_fail_sessions')
     .eq('user_id', user.id)
     .eq('exercise_name', name)
 
-  const targets: Record<number, { weight: number; repsMin: number; repsMax: number }> = {}
+  const targets: Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }> = {}
   for (const row of targetRows ?? []) {
     targets[row.set_number] = {
-      weight: row.target_weight_kg,
-      repsMin: row.target_reps_min,
-      repsMax: row.target_reps_max,
+      weight:          row.target_weight_kg,
+      repsMin:         row.target_reps_min,
+      repsMax:         row.target_reps_max,
+      consecutiveMax:  row.consecutive_max_sessions,
+      consecutiveFail: row.consecutive_fail_sessions,
     }
   }
 
