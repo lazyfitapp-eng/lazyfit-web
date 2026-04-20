@@ -1,0 +1,40 @@
+// ── Progression configuration ─────────────────────────────────────────────────
+// Single source of truth for exercise type classification, weight increments,
+// and the list of primary compound exercises that receive warm-up sets and
+// the active-workout coach card.
+
+export const EXERCISE_TYPE: Record<string, 'barbell_compound' | 'cable_machine' | 'isolation'> = {
+  'Barbell Bench Press':    'barbell_compound',
+  'Barbell Row':            'barbell_compound',
+  'Overhead Press':         'barbell_compound',
+  'Pull-Up':                'barbell_compound',
+  'Bulgarian Split Squat':  'barbell_compound',
+  'Incline Dumbbell Press': 'barbell_compound',
+  'Cable Row':              'cable_machine',
+  'Machine Row':            'cable_machine',
+  'Leg Press':              'cable_machine',
+  'Leg Extension':          'cable_machine',
+  'Lying Leg Curl':         'cable_machine',
+  'Hip Thrust':             'cable_machine',
+  'Lateral Raise':          'isolation',
+  'Tricep Pushdown':        'isolation',
+  'Bicep Curl':             'isolation',
+  'Face Pull':              'isolation',
+  'Calf Raise':             'isolation',
+}
+
+export const WEIGHT_INCREMENT: Record<'barbell_compound' | 'cable_machine' | 'isolation', number> = {
+  barbell_compound: 2.5,
+  cable_machine:    5.0,
+  isolation:        1.0,
+}
+
+// Exercises that receive warm-up sets and the active-workout coach card.
+// Exact name match — must match exercise_name values stored in the DB.
+export const PRIMARY_COMPOUNDS: string[] = [
+  'Barbell Bench Press',
+  'Overhead Press',
+  'Pull-Up',
+  'Bulgarian Split Squat',
+  'Barbell Row',
+]

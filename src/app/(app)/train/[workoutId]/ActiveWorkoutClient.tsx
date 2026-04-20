@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { computeWarmupSets } from '@/lib/warmup'
+import { EXERCISE_TYPE, WEIGHT_INCREMENT, PRIMARY_COMPOUNDS } from '@/lib/progressionConfig'
 
 // ─── How To Modal ─────────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ interface Props {
   workoutId: string
   routineName: string | null
   initialExercises: WorkoutExercise[]
-  suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number }>>
+  suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>>
   lastSession: Record<string, Record<number, { weight: number; reps: number }>>
 }
 
@@ -185,16 +186,15 @@ function computeFallbackTargets(
   const topSet = workingSets.reduce((best, s) => s.weight > best.weight ? s : best, workingSets[0])
 
   const allHitMax = Object.values(lastSess).every(s => s.reps >= exercise.reps_max)
-  const compoundKeywords = ['bench', 'squat', 'deadlift', 'press', 'row', 'pull', 'chin', 'dip']
-  const isCompound = compoundKeywords.some(k => exercise.exercise_name.toLowerCase().includes(k))
-  const nextWeight = allHitMax ? topSet.weight + (isCompound ? 2.5 : 1.0) : topSet.weight
+  const increment = WEIGHT_INCREMENT[EXERCISE_TYPE[exercise.exercise_name] ?? 'isolation']
+  const nextWeight = allHitMax ? topSet.weight + increment : topSet.weight
 
   const totalSets = exercise.sets_target
   const result: Record<number, { weight: number; repsMin: number; repsMax: number }> = {}
   for (let i = 0; i < totalSets; i++) {
-    const setWeight = i === 0
-      ? nextWeight
-      : Math.round(nextWeight * Math.pow(0.9, i) / 2.5) * 2.5
+    const setWeight = i === 0 ? nextWeight
+      : i === 1 ? Math.round(nextWeight * 0.90 / 2.5) * 2.5
+      :           Math.round(nextWeight * 0.80 / 2.5) * 2.5
     result[i + 1] = { weight: setWeight, repsMin: exercise.reps_min, repsMax: exercise.reps_max }
   }
   return result
@@ -222,7 +222,8 @@ function buildSetsForExercise(
   resolvedTargets: Record<number, { weight: number; repsMin: number; repsMax: number }>
 ): SetState[] {
   const workingSet1 = resolvedTargets[1]
-  const warmups = workingSet1 ? computeWarmupSets(workingSet1.weight) : []
+  const isPrimaryCompound = PRIMARY_COMPOUNDS.includes(exercise.exercise_name)
+  const warmups = (isPrimaryCompound && workingSet1) ? computeWarmupSets(workingSet1.weight) : []
 
   const warmupStates: SetState[] = warmups.map(w => ({
     weight: String(w.weight),
@@ -463,9 +464,10 @@ export default function ActiveWorkoutClient({
   const [showHowToFor, setShowHowToFor] = useState<string | null>(null)
 
   // Dynamic targets fetched client-side when exercises are added mid-workout
-  const [dynamicTargets, setDynamicTargets] = useState<Record<string, Record<number, { weight: number; repsMin: number; repsMax: number }>>>({})
+  const [dynamicTargets, setDynamicTargets] = useState<Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>>>({})
   const [dynamicLastSession, setDynamicLastSession] = useState<Record<string, Record<number, { weight: number; reps: number }>>>({})
   const [fetchingTargetsFor, setFetchingTargetsFor] = useState<Set<string>>(new Set())
+  const [keepSameWeightFor, setKeepSameWeightFor] = useState<Set<string>>(new Set())
 
   // Elapsed timer
   useEffect(() => {
@@ -619,7 +621,7 @@ export default function ActiveWorkoutClient({
       const res = await fetch(`/api/exercise-targets?name=${encodeURIComponent(name)}&workoutId=${workoutId}`)
       if (res.ok) {
         const data: {
-          targets: Record<number, { weight: number; repsMin: number; repsMax: number }>
+          targets: Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>
           lastSession: Record<number, { weight: number; reps: number }>
         } = await res.json()
 
@@ -659,37 +661,68 @@ export default function ActiveWorkoutClient({
     if (user) {
       for (const exercise of exercises) {
         const exerciseSets = sets[exercise.id] ?? []
-        // Only consider working sets for progression — warm-up sets are excluded
+        // Only consider working sets — warm-up sets excluded
         const workingSets = exerciseSets.filter(s => s.logged && s.setType === 'working')
         if (workingSets.length === 0) continue
 
-        const weight = parseFloat(workingSets[0].weight) || 0
-        if (weight === 0) continue
+        const currentWeight = parseFloat(workingSets[0].weight) || 0
+        if (currentWeight === 0) continue
 
-        const allHitMax = workingSets.every(s => parseInt(s.reps) >= exercise.reps_max)
+        // Read counter values from targets loaded at workout start
+        const mergedTargets = suggestedTargets[exercise.exercise_name] ?? dynamicTargets[exercise.exercise_name]
+        let consecMax  = mergedTargets?.[1]?.consecutiveMax  ?? 0
+        let consecFail = mergedTargets?.[1]?.consecutiveFail ?? 0
 
-        let nextWeight = weight
+        // Evaluate today's performance
+        const allHitMax     = workingSets.every(s => parseInt(s.reps) >= exercise.reps_max)
+        const set1FailedMin = parseInt(workingSets[0].reps) < exercise.reps_min
+
         if (allHitMax) {
-          const compoundKeywords = ['bench', 'squat', 'deadlift', 'press', 'row', 'pull', 'chin', 'dip']
-          const isCompound = compoundKeywords.some(k => exercise.exercise_name.toLowerCase().includes(k))
-          nextWeight = weight + (isCompound ? 2.5 : 1.0)
+          consecMax  += 1
+          consecFail  = 0
+        } else if (set1FailedMin) {
+          consecFail += 1
+          consecMax   = 0
+        }
+        // else: no change to either counter
+
+        // "Keep same weight" override — user tapped button in coach card
+        if (keepSameWeightFor.has(exercise.exercise_name)) {
+          consecMax = 0  // prevent bump; consecFail unchanged
         }
 
+        // Determine next session weight
+        let nextWeight = currentWeight
+        if (consecFail >= 3) {
+          nextWeight = Math.round(currentWeight * 0.85 / 2.5) * 2.5
+          consecFail = 0
+          consecMax  = 0
+        } else if (consecMax >= 2) {
+          const increment = WEIGHT_INCREMENT[EXERCISE_TYPE[exercise.exercise_name] ?? 'isolation']
+          nextWeight = currentWeight + increment
+          consecMax  = 0
+        }
+
+        // Upsert all sets with explicit RPT back-offs
         const totalSets = Math.max(workingSets.length, exercise.sets_target)
         for (let i = 0; i < totalSets; i++) {
-          const setWeight = i === 0
-            ? nextWeight
-            : Math.round(nextWeight * Math.pow(0.9, i) / 2.5) * 2.5
+          const setWeight = i === 0 ? nextWeight
+            : i === 1 ? Math.round(nextWeight * 0.90 / 2.5) * 2.5
+            :           Math.round(nextWeight * 0.80 / 2.5) * 2.5
+
           const { error: upsertErr } = await supabase.from('exercise_targets').upsert({
-            user_id: user.id,
-            exercise_name: exercise.exercise_name,
-            set_number: i + 1,
-            target_weight_kg: setWeight,
-            target_reps_min: exercise.reps_min,
-            target_reps_max: exercise.reps_max,
-            updated_at: new Date().toISOString(),
+            user_id:                   user.id,
+            exercise_name:             exercise.exercise_name,
+            set_number:                i + 1,
+            target_weight_kg:          setWeight,
+            target_reps_min:           exercise.reps_min,
+            target_reps_max:           exercise.reps_max,
+            consecutive_max_sessions:  consecMax,
+            consecutive_fail_sessions: consecFail,
+            updated_at:                new Date().toISOString(),
           }, { onConflict: 'user_id,exercise_name,set_number' })
-          if (upsertErr) console.error('exercise_targets upsert failed:', upsertErr.message, upsertErr.code)
+
+          if (upsertErr) throw upsertErr
         }
       }
     }
@@ -793,32 +826,53 @@ export default function ActiveWorkoutClient({
           const targets = mergedSuggestedTargets ?? computeFallbackTargets(exercise, mergedLastSession ?? {})
           const prevSession = mergedLastSession
 
-          // Coach card data
-          const targetSet1 = targets[1]
-          const prevSet1 = prevSession?.[1]
+          // Coach card — only for PRIMARY_COMPOUNDS
+          const showCoachCard = PRIMARY_COMPOUNDS.includes(exercise.exercise_name)
 
-          type CoachStatus = 'up' | 'hold' | 'first' | null
-          let coachStatus: CoachStatus = null
-          let weightDelta = 0
+          // Badge + message derivation (computed here, used in JSX below)
+          const prevSet1    = prevSession?.[1]
+          const targetSet1  = targets?.[1]
+          const targetWeight = targetSet1?.weight
+          const prevWeight   = prevSet1?.weight
+          const consecMax    = (targets?.[1] as { consecutiveMax?: number } | undefined)?.consecutiveMax  ?? 0
+          const consecFail   = (targets?.[1] as { consecutiveFail?: number } | undefined)?.consecutiveFail ?? 0
 
-          if (targetSet1) {
-            if (!prevSet1) {
-              coachStatus = 'first'
+          type CoachBadge = 'level_up' | 'reset' | 'first' | 'lock_in'
+          let badge: CoachBadge = 'lock_in'
+          if (!prevSet1)                                              badge = 'first'
+          else if (targetWeight !== undefined && prevWeight !== undefined && targetWeight > prevWeight) badge = 'level_up'
+          else if (targetWeight !== undefined && prevWeight !== undefined && targetWeight < prevWeight) badge = 'reset'
+          else                                                        badge = 'lock_in'
+
+          const badgeLabel =
+            badge === 'first'    ? 'First Session' :
+            badge === 'level_up' ? '↑ Level Up' :
+            badge === 'reset'    ? '↓ Reset' :
+                                   '→ Lock In'
+
+          const badgeStyle: React.CSSProperties =
+            badge === 'level_up'
+              ? { background: 'rgba(62,207,142,0.1)', border: '1px solid rgba(62,207,142,0.3)', color: '#3ecf8e' }
+              : badge === 'reset'
+              ? { background: 'rgba(255,59,92,0.1)',  border: '1px solid rgba(255,59,92,0.25)',  color: '#ff3b5c' }
+              : { background: '#2a1f00',              border: '1px solid rgba(255,170,0,0.3)',    color: '#FFAA00' }
+
+          let coachMessage: string
+          if (badge === 'first') {
+            coachMessage = "Pick a weight you can control for all 3 sets — this baseline is everything."
+          } else if (badge === 'level_up') {
+            coachMessage = `Two sessions at ${prevWeight}kg. ${targetWeight}kg is loaded — you earned this.`
+          } else if (badge === 'reset') {
+            coachMessage = `Resetting to ${targetWeight}kg. One sharp session here, then back to business.`
+          } else {
+            if (consecFail >= 1) {
+              coachMessage = "This weight is fighting back. Own it before you move on."
+            } else if (consecMax >= 1) {
+              coachMessage = `You hit ${prevWeight}kg last time. One more clean session and the weight goes up.`
             } else {
-              weightDelta = Math.round((targetSet1.weight - prevSet1.weight) * 10) / 10
-              coachStatus = weightDelta > 0 ? 'up' : 'hold'
+              coachMessage = "Hit all sets clean today and you'll unlock the next weight."
             }
           }
-
-          const prevSummary = prevSession
-            ? Object.entries(prevSession)
-                .sort(([a], [b]) => Number(a) - Number(b))
-                .slice(0, 4)
-                .map(([, s]) => `${s.weight}×${s.reps}`)
-                .join('  ·  ')
-            : null
-
-          const showCoachCard = !!(targetSet1 || prevSummary)
 
           return (
             <div key={exercise.id} style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: '12px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
@@ -892,71 +946,31 @@ export default function ActiveWorkoutClient({
                 </div>
               )}
 
-              {/* Coach card */}
+              {/* Coach card — PRIMARY_COMPOUNDS only */}
               {!fetchingTargetsFor.has(exercise.exercise_name) && showCoachCard && (
-                <div style={{ margin: '0 16px 12px', background: '#0d1f17', border: '1px solid #1a3528', borderRadius: '10px', padding: '10px 14px', fontFamily: 'inherit' }}>
-                  {targetSet1 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#3ecf8e', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        COACH — TODAY
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {coachStatus === 'up' && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(62,207,142,0.1)', border: '1px solid rgba(62,207,142,0.3)', color: '#3ecf8e', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px' }}>
-                            ↑ +{weightDelta}kg
-                          </span>
-                        )}
-                        {coachStatus === 'hold' && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#b8b8b8', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px' }}>
-                            → Hold
-                          </span>
-                        )}
-                        {coachStatus === 'first' && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', background: '#2a1f00', border: '1px solid rgba(255,170,0,0.3)', color: '#FFAA00', fontSize: '10px', padding: '2px 8px', borderRadius: '9999px' }}>
-                            First session
-                          </span>
-                        )}
-                        {coachStatus === 'up' && (
-                          <button style={{ background: '#141414', border: 'none', borderRadius: '5px', padding: '3px 8px', fontSize: '11px', color: '#b8b8b8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            Keep same
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {targetSet1 && (
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
-                      {Object.entries(targets)
-                        .sort(([a], [b]) => Number(a) - Number(b))
-                        .slice(0, 3)
-                        .map(([setNumStr, t]) => {
-                          const sn = Number(setNumStr)
-                          return (
-                            <div key={sn} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontSize: '12px', color: '#b8b8b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Set {sn}</span>
-                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#e0f5ed' }}>{t.weight}kg</span>
-                              <span style={{ fontSize: '13px', color: '#b8b8b8' }}>× {t.repsMin}–{t.repsMax}</span>
-                            </div>
-                          )
-                        })}
-                      {Object.keys(targets).length > 3 && (
-                        <span style={{ fontSize: '10px', color: '#b8b8b8', paddingBottom: '2px' }}>
-                          +{Object.keys(targets).length - 3} more
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {targetSet1 && prevSummary && (
-                    <hr style={{ border: 'none', borderTop: '1px solid #1a3528', margin: '8px 0' }} />
-                  )}
-                  {prevSummary && (
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#b8b8b8' }}>Last session: </span>
-                      <span style={{ fontSize: '11px', color: '#5aaa80' }}>{prevSummary}</span>
-                    </div>
-                  )}
-                  {!targetSet1 && !prevSummary && (
-                    <p style={{ fontSize: '11px', color: '#b8b8b8', margin: 0 }}>No history yet — enter a comfortable starting weight.</p>
+                <div style={{ margin: '0 16px 12px', background: '#0d1a0f', border: '1px solid #1a3528', borderLeft: '3px solid #3ecf8e', borderRadius: '10px', padding: '10px 14px', fontFamily: 'inherit' }}>
+                  {/* Header row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#3ecf8e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      COACH — TODAY
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', ...badgeStyle }}>
+                      {badgeLabel}
+                    </span>
+                  </div>
+                  {/* Message */}
+                  <p style={{ fontSize: '14px', color: '#e0e0e0', lineHeight: 1.5, margin: '0 0 8px' }}>
+                    {coachMessage}
+                  </p>
+                  {/* Keep same weight — only for Level Up */}
+                  {badge === 'level_up' && (
+                    <button
+                      onClick={() => setKeepSameWeightFor(prev => new Set([...prev, exercise.exercise_name]))}
+                      disabled={keepSameWeightFor.has(exercise.exercise_name)}
+                      style={{ background: '#141414', border: 'none', borderRadius: '5px', padding: '3px 8px', fontSize: '11px', color: keepSameWeightFor.has(exercise.exercise_name) ? '#3ecf8e' : '#b8b8b8', cursor: keepSameWeightFor.has(exercise.exercise_name) ? 'default' : 'pointer', fontFamily: 'inherit' }}
+                    >
+                      {keepSameWeightFor.has(exercise.exercise_name) ? '✓ Keeping same weight' : 'Keep same weight'}
+                    </button>
                   )}
                 </div>
               )}
@@ -980,7 +994,18 @@ export default function ActiveWorkoutClient({
                 const allWarmupLogged = warmupSets.length > 0 && warmupSets.every(({ s }) => s.logged)
                 const firstUnloggedWarmupIdx = warmupSets.findIndex(({ s }) => !s.logged)
 
-                if (warmupSets.length === 0) return null
+                if (warmupSets.length === 0) {
+                  if (PRIMARY_COMPOUNDS.includes(exercise.exercise_name) && !targets?.[1]) {
+                    return (
+                      <div style={{ padding: '0 16px 8px' }}>
+                        <p style={{ fontSize: '13px', color: '#848484', fontStyle: 'italic', margin: 0 }}>
+                          Log your first set to unlock warm-up targets.
+                        </p>
+                      </div>
+                    )
+                  }
+                  return null
+                }
 
                 return (
                   <div style={{ padding: '0 16px 8px' }}>
@@ -1147,7 +1172,8 @@ export default function ActiveWorkoutClient({
                           : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
 
                         return (
-                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '56px', ...rowStyle }}>
+                          <React.Fragment key={idx}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '56px', ...rowStyle }}>
                             {/* × delete */}
                             <button
                               onClick={() => removeSet(exercise.id, idx)}
@@ -1201,6 +1227,20 @@ export default function ActiveWorkoutClient({
                               />
                             )}
                           </div>
+                          {/* Machine increment note — non-barbell only, small weight jump */}
+                          {workingIdx === 0 && (() => {
+                            const exType = EXERCISE_TYPE[exercise.exercise_name]
+                            const isNonBarbell = exType === 'cable_machine' || exType === 'isolation'
+                            const curW  = targets?.[1]?.weight ?? 0
+                            const prevW = prevSession?.[1]?.weight ?? 0
+                            const diff  = curW - prevW
+                            return (isNonBarbell && diff > 0 && diff < 5) ? (
+                              <p style={{ fontSize: '12px', color: '#848484', margin: '2px 0 4px 56px', fontFamily: 'inherit' }}>
+                                Add smallest plate available
+                              </p>
+                            ) : null
+                          })()}
+                          </React.Fragment>
                         )
                       })}
                     </div>
