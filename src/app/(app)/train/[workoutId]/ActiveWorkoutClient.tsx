@@ -470,6 +470,7 @@ export default function ActiveWorkoutClient({
   const [fetchingTargetsFor, setFetchingTargetsFor] = useState<Set<string>>(new Set())
   const [keepSameWeightFor, setKeepSameWeightFor] = useState<Set<string>>(new Set())
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+  const [editingSet, setEditingSet] = useState<Set<string>>(new Set())
 
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -568,6 +569,46 @@ export default function ActiveWorkoutClient({
       ? (setData.warmupRestSeconds ?? 60)
       : (exercise.rest_seconds || 120)
     setRestTimer({ active: true, seconds: restSecs })
+  }
+
+  const relogSet = async (exercise: WorkoutExercise, setIdx: number) => {
+    const exSets = sets[exercise.id]
+    const setData = exSets[setIdx]
+    const isWarmup = setData.setType === 'warmup'
+
+    const dbSetNumber = isWarmup
+      ? exSets.slice(0, setIdx + 1).filter(s => s.setType === 'warmup').length
+      : exSets.slice(0, setIdx + 1).filter(s => s.setType === 'working').length
+
+    const weight = parseFloat(setData.weight) || 0
+    const reps   = parseInt(setData.reps)    || 0
+    if (weight === 0 || reps === 0) return
+
+    const { error } = await supabase.from('workout_sets').upsert({
+      workout_id:     workoutId,
+      exercise_name:  exercise.exercise_name,
+      set_number:     dbSetNumber,
+      weight_kg:      weight,
+      reps_completed: reps,
+      set_type:       isWarmup ? 'warmup' : 'working',
+    }, { onConflict: 'workout_id,exercise_name,set_number,set_type' })
+
+    if (error) { alert(`Failed to update set: ${error.message}`); return }
+
+    setEditingSet(prev => {
+      const next = new Set(prev)
+      next.delete(`${exercise.id}-${setIdx}`)
+      return next
+    })
+
+    const updatedSets = {
+      ...sets,
+      [exercise.id]: sets[exercise.id].map((s, i) =>
+        i === setIdx ? { ...s, weight: String(weight), reps: String(reps) } : s
+      ),
+    }
+    try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: updatedSets })) } catch {}
+    setSets(updatedSets)
   }
 
   const addSet = (exId: string) => {
@@ -1198,8 +1239,9 @@ export default function ActiveWorkoutClient({
                           : `${exercise.reps_min}–${exercise.reps_max}`
                         const isDone = setData.logged
                         const isActive = !isDone && workingIdx === firstUnloggedWorkingIdx
+                        const isEditing = editingSet.has(`${exercise.id}-${idx}`)
 
-                        const rowStyle: CSSProperties = isDone
+                        const rowStyle: CSSProperties = isDone && !isEditing
                           ? { opacity: 0.35 }
                           : isActive
                             ? { background: '#0d1a12', borderRadius: '9px', borderLeft: '3px solid #3ecf8e', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
@@ -1235,7 +1277,7 @@ export default function ActiveWorkoutClient({
                               inputMode="decimal"
                               value={setData.weight}
                               onChange={e => updateSet(exercise.id, idx, 'weight', e.target.value)}
-                              disabled={setData.logged}
+                              disabled={setData.logged && !isEditing}
                               placeholder={weightPh}
                               style={kgStyle}
                             />
@@ -1245,17 +1287,28 @@ export default function ActiveWorkoutClient({
                               inputMode="numeric"
                               value={setData.reps}
                               onChange={e => updateSet(exercise.id, idx, 'reps', e.target.value)}
-                              disabled={setData.logged}
+                              disabled={setData.logged && !isEditing}
                               placeholder={repsPh}
                               style={repsStyle}
                             />
                             {/* Circle */}
                             {isDone ? (
-                              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#3ecf8e', border: '2px solid #3ecf8e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <button
+                                onClick={() => {
+                                  const key = `${exercise.id}-${idx}`
+                                  if (editingSet.has(key)) {
+                                    relogSet(exercise, idx)
+                                  } else {
+                                    setEditingSet(prev => { const next = new Set(prev); next.add(key); return next })
+                                  }
+                                }}
+                                style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#3ecf8e', border: '2px solid #3ecf8e', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                aria-label={isEditing ? 'Save set' : 'Edit set'}
+                              >
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3.5">
                                   <polyline points="20 6 9 17 4 12" />
                                 </svg>
-                              </div>
+                              </button>
                             ) : (
                               <button
                                 onClick={() => logSet(exercise, idx)}
