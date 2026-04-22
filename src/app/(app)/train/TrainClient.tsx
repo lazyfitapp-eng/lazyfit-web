@@ -61,7 +61,7 @@ const THREE_DAY_TEMPLATE = [
       { exercise_name: 'Barbell Row',           sets_target: 3, reps_min: 5,  reps_max: 8,  rest_seconds: 180, exercise_order: 2 },
       { exercise_name: 'Incline Dumbbell Press',sets_target: 3, reps_min: 8,  reps_max: 12, rest_seconds: 150, exercise_order: 3 },
       { exercise_name: 'Cable Row',             sets_target: 3, reps_min: 10, reps_max: 15, rest_seconds: 120, exercise_order: 4 },
-      { exercise_name: 'Lateral Raise',         sets_target: 3, reps_min: 15, reps_max: 20, rest_seconds: 90,  exercise_order: 5 },
+      { exercise_name: 'Lateral Raise',         sets_target: 3, reps_min: 12, reps_max: 15, rest_seconds: 90,  exercise_order: 5 },
       { exercise_name: 'Tricep Pushdown',       sets_target: 3, reps_min: 10, reps_max: 15, rest_seconds: 90,  exercise_order: 6 },
     ],
   },

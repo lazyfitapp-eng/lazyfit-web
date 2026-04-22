@@ -448,8 +448,9 @@ export default function ActiveWorkoutClient({
   const [exercises, setExercises] = useState<WorkoutExercise[]>(initialExercises)
   const [sets, setSets] = useState<Record<string, SetState[]>>(() =>
     Object.fromEntries(initialExercises.map(ex => {
+      const lastSess = lastSession[ex.exercise_name]
       const resolvedTargets = suggestedTargets[ex.exercise_name] ??
-        computeFallbackTargets(ex, lastSession[ex.exercise_name] ?? {})
+        (lastSess && Object.keys(lastSess).length > 0 ? computeFallbackTargets(ex, lastSess) : {})
       return [ex.id, buildSetsForExercise(ex, resolvedTargets)]
     }))
   )
@@ -631,7 +632,7 @@ export default function ActiveWorkoutClient({
         // Rebuild the full set list with warm-up sets once we have the working weight
         const resolvedTargets = Object.keys(data.targets).length > 0
           ? data.targets
-          : computeFallbackTargets(newEx, data.lastSession ?? {})
+          : (data.lastSession && Object.keys(data.lastSession).length > 0 ? computeFallbackTargets(newEx, data.lastSession) : {})
 
         setSets(prev => {
           // Only rebuild if no sets have been logged yet
@@ -823,7 +824,7 @@ export default function ActiveWorkoutClient({
           const exSets = sets[exercise.id] ?? []
           const mergedSuggestedTargets = suggestedTargets[exercise.exercise_name] ?? dynamicTargets[exercise.exercise_name]
           const mergedLastSession = lastSession[exercise.exercise_name] ?? dynamicLastSession[exercise.exercise_name]
-          const targets = mergedSuggestedTargets ?? computeFallbackTargets(exercise, mergedLastSession ?? {})
+          const targets = mergedSuggestedTargets ?? (mergedLastSession && Object.keys(mergedLastSession).length > 0 ? computeFallbackTargets(exercise, mergedLastSession) : {})
           const prevSession = mergedLastSession
 
           // Coach card — only for PRIMARY_COMPOUNDS
@@ -995,11 +996,11 @@ export default function ActiveWorkoutClient({
                 const firstUnloggedWarmupIdx = warmupSets.findIndex(({ s }) => !s.logged)
 
                 if (warmupSets.length === 0) {
-                  if (PRIMARY_COMPOUNDS.includes(exercise.exercise_name) && !targets?.[1]) {
+                  if (PRIMARY_COMPOUNDS.includes(exercise.exercise_name) && !fetchingTargetsFor.has(exercise.exercise_name)) {
                     return (
                       <div style={{ padding: '0 16px 8px' }}>
                         <p style={{ fontSize: '13px', color: '#848484', fontStyle: 'italic', margin: 0 }}>
-                          Log your first set to unlock warm-up targets.
+                          Complete this session to unlock warm-up weights.
                         </p>
                       </div>
                     )
