@@ -21,6 +21,12 @@ export const EXERCISE_TYPE: Record<string, 'barbell_compound' | 'cable_machine' 
   'Bicep Curl':             'isolation',
   'Face Pull':              'isolation',
   'Calf Raise':             'isolation',
+  'Incline Barbell Press':  'barbell_compound',
+  'Flat Dumbbell Press':    'barbell_compound',
+  'Lat Pulldown':           'cable_machine',
+  'Barbell Squat':          'barbell_compound',
+  'Romanian Deadlift':      'barbell_compound',
+  'Leg Curl':               'cable_machine',
 }
 
 export const WEIGHT_INCREMENT: Record<'barbell_compound' | 'cable_machine' | 'isolation', number> = {
@@ -37,4 +43,5 @@ export const PRIMARY_COMPOUNDS: string[] = [
   'Pull-Up',
   'Bulgarian Split Squat',
   'Barbell Row',
+  'Incline Barbell Press',
 ]
