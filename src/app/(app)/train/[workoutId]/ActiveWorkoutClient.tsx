@@ -469,6 +469,31 @@ export default function ActiveWorkoutClient({
   const [dynamicLastSession, setDynamicLastSession] = useState<Record<string, Record<number, { weight: number; reps: number }>>>({})
   const [fetchingTargetsFor, setFetchingTargetsFor] = useState<Set<string>>(new Set())
   const [keepSameWeightFor, setKeepSameWeightFor] = useState<Set<string>>(new Set())
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Restore draft on mount — merge logged/weight/reps back into initialized sets
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`lazyfit_workout_draft_${workoutId}`)
+      if (!raw) return
+      const parsed: { sets: Record<string, SetState[]> } = JSON.parse(raw)
+      if (!parsed?.sets) return
+      setSets(prev => {
+        const merged: Record<string, SetState[]> = { ...prev }
+        for (const [exId, draftSets] of Object.entries(parsed.sets)) {
+          if (!merged[exId]) continue
+          merged[exId] = merged[exId].map((s, i) => {
+            const d = draftSets[i]
+            if (!d) return s
+            return { ...s, logged: d.logged ?? s.logged, weight: d.weight || s.weight, reps: d.reps || s.reps, isPR: d.isPR ?? s.isPR }
+          })
+        }
+        return merged
+      })
+    } catch {}
+  }, [workoutId])
 
   // Elapsed timer
   useEffect(() => {
@@ -477,10 +502,14 @@ export default function ActiveWorkoutClient({
   }, [startTime])
 
   const updateSet = (exId: string, idx: number, field: 'weight' | 'reps', value: string) => {
-    setSets(prev => ({
-      ...prev,
-      [exId]: prev[exId].map((s, i) => i === idx ? { ...s, [field]: value } : s),
-    }))
+    setSets(prev => {
+      const next = { ...prev, [exId]: prev[exId].map((s, i) => i === idx ? { ...s, [field]: value } : s) }
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+      draftTimerRef.current = setTimeout(() => {
+        try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: next })) } catch {}
+      }, 500)
+      return next
+    })
   }
 
   const logSet = async (exercise: WorkoutExercise, setIdx: number) => {
@@ -519,12 +548,14 @@ export default function ActiveWorkoutClient({
       return prevBest > 0 && curr1RM > prevBest
     })()
 
-    setSets(prev => ({
-      ...prev,
-      [exercise.id]: prev[exercise.id].map((s, i) =>
+    const updatedSets = {
+      ...sets,
+      [exercise.id]: sets[exercise.id].map((s, i) =>
         i === setIdx ? { ...s, logged: true, weight: String(weight), reps: String(reps), isPR } : s
       ),
-    }))
+    }
+    try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: updatedSets })) } catch {}
+    setSets(updatedSets)
 
     if (isPR) {
       playPRSound()
@@ -728,8 +759,16 @@ export default function ActiveWorkoutClient({
       }
     }
 
+    try { localStorage.removeItem(`lazyfit_workout_draft_${workoutId}`) } catch {}
     router.push(`/train/summary/${workoutId}`)
   }, [workoutId, exercises, sets, startTime, supabase, router])
+
+  const discardWorkout = async () => {
+    await supabase.from('workout_sets').delete().eq('workout_id', workoutId)
+    await supabase.from('workouts').delete().eq('id', workoutId)
+    try { localStorage.removeItem(`lazyfit_workout_draft_${workoutId}`) } catch {}
+    router.push('/train')
+  }
 
   const allSetsFlat = Object.values(sets).flat()
   const totalLogged = allSetsFlat.filter(s => s.logged && s.setType === 'working').length
@@ -1276,6 +1315,34 @@ export default function ActiveWorkoutClient({
         >
           {finishing ? 'SAVING WORKOUT...' : 'FINISH WORKOUT'}
         </button>
+
+        {/* Discard workout */}
+        {showDiscardConfirm ? (
+          <div style={{ border: '1px solid rgba(255,59,92,0.3)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '14px', color: '#f0f0f0' }}>Discard this workout? All logged sets will be deleted.</p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowDiscardConfirm(false)}
+                style={{ flex: 1, padding: '10px', background: 'none', border: '1px solid #333', borderRadius: '8px', color: '#b8b8b8', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={discardWorkout}
+                style={{ flex: 1, padding: '10px', background: 'rgba(255,59,92,0.1)', border: '1px solid rgba(255,59,92,0.4)', borderRadius: '8px', color: '#ff3b5c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Yes, Discard
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDiscardConfirm(true)}
+            style={{ background: 'none', border: 'none', color: '#484848', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0', display: 'block', margin: '0 auto' }}
+          >
+            Discard workout
+          </button>
+        )}
       </div>
 
       {/* Session bar — overlays BottomNav (zIndex 50 > BottomNav z-40) */}

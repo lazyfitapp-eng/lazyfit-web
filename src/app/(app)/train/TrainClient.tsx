@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -99,6 +99,25 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
   const [newRoutineName, setNewRoutineName] = useState('')
   const [creatingRoutine, setCreatingRoutine] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [recoveryWorkout, setRecoveryWorkout] = useState<{ workoutId: string } | null>(null)
+
+  // On mount: scan localStorage for any unfinished workout draft and verify it's still open in DB
+  useEffect(() => {
+    const checkDraft = async () => {
+      const key = Object.keys(localStorage).find(k => k.startsWith('lazyfit_workout_draft_'))
+      if (!key) return
+      const workoutId = key.replace('lazyfit_workout_draft_', '')
+      const { data } = await supabase
+        .from('workouts')
+        .select('id, completed_at')
+        .eq('id', workoutId)
+        .eq('user_id', userId)
+        .single()
+      if (!data || data.completed_at) { localStorage.removeItem(key); return }
+      setRecoveryWorkout({ workoutId })
+    }
+    checkDraft()
+  }, [supabase, userId])
 
   const MUSCLE_COLORS = ['#3ecf8e', '#2a6e50', '#1a3d2c']
   const muscleSplit = lastWorkout
@@ -228,6 +247,29 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
       {/* ── Routines tab ──────────────────────────────────────── */}
       {activeTab === 'routines' && (
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
+
+          {/* Unfinished workout recovery banner */}
+          {recoveryWorkout && (
+            <div style={{ background: '#1a0d00', border: '1px solid rgba(245,166,35,0.3)', borderRadius: '12px', padding: '12px 16px', margin: '0 0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <p style={{ margin: 0, fontSize: '14px', color: '#f5a623' }}>
+                You have an unfinished workout. Resume or discard?
+              </p>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <button
+                  onClick={() => router.push(`/train/${recoveryWorkout.workoutId}`)}
+                  style={{ background: '#f5a623', color: '#000', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Resume
+                </button>
+                <button
+                  onClick={() => { localStorage.removeItem(`lazyfit_workout_draft_${recoveryWorkout.workoutId}`); setRecoveryWorkout(null) }}
+                  style={{ background: 'none', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Last session card */}
           {lastWorkout && (
