@@ -529,14 +529,14 @@ export default function ActiveWorkoutClient({
     const weight = parseFloat(setData.weight) || (setTarget?.weight ?? 0)
     const reps = parseInt(setData.reps) || (isWarmup ? parseInt(setData.reps) || 1 : (setTarget?.repsMin ?? exercise.reps_min))
 
-    const { error } = await supabase.from('workout_sets').insert({
+    const { error } = await supabase.from('workout_sets').upsert({
       workout_id: workoutId,
       exercise_name: exercise.exercise_name,
       set_number: dbSetNumber,
       weight_kg: weight,
       reps_completed: reps,
       set_type: isWarmup ? 'warmup' : 'working',
-    })
+    }, { onConflict: 'workout_id,exercise_name,set_number,set_type' })
 
     if (error) { console.error('logSet error:', error.message, error.code, error.details); alert(`Failed to log set: ${error.message}`); return }
 
