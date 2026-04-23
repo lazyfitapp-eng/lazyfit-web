@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
     )
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      console.error('exchangeCodeForSession failed:', error.message, error.status, error.code)
+    }
     if (!error) {
       // Password recovery — redirect to the reset form
       if (type === 'recovery') {
