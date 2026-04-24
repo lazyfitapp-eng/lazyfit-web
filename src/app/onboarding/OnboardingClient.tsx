@@ -173,7 +173,7 @@ function useCountUp(target: number, duration = 1100, delay = 0): number {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function OnboardingClient({ userId }: { userId: string }) {
+export default function OnboardingClient({ userId, email }: { userId: string; email: string }) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -247,6 +247,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
 
       const { error } = await supabase.from('profiles').upsert({
         id: userId,
+        email,
         first_name: form.firstName.trim() || null,
         sex: form.gender,
         date_of_birth: form.dob || null,

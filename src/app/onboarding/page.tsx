@@ -15,5 +15,5 @@ export default async function OnboardingPage() {
 
   if (profile?.onboarding_completed) redirect('/dashboard')
 
-  return <OnboardingClient userId={user.id} />
+  return <OnboardingClient userId={user.id} email={user.email ?? ''} />
 }
