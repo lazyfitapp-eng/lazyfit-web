@@ -249,7 +249,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         id: userId,
         email,
         first_name: form.firstName.trim() || null,
-        sex: form.gender,
+        sex: form.gender.toLowerCase(),
         date_of_birth: form.dob || null,
         age,
         height_cm: parseFloat(form.heightCm) || null,
