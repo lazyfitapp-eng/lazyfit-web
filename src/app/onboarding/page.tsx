@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import BottomNav from '@/components/BottomNav'
+import OnboardingClient from './OnboardingClient'
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function OnboardingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -13,12 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('id', user.id)
     .single()
 
-  if (!profile?.onboarding_completed) redirect('/onboarding')
+  if (profile?.onboarding_completed) redirect('/dashboard')
 
-  return (
-    <div className="min-h-screen bg-black">
-      {children}
-      <BottomNav />
-    </div>
-  )
+  return <OnboardingClient userId={user.id} />
 }
