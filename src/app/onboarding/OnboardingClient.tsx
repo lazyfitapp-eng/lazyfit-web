@@ -90,6 +90,11 @@ function calcAge(dob: string): number {
   return Math.max(0, age)
 }
 
+function parseNumber(value: string): number | null {
+  const parsed = parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function computeMacros(form: FormState): Macros {
   const w = parseFloat(form.weightKg) || 80
   const h = parseFloat(form.heightCm) || 175
@@ -224,7 +229,41 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm(prev => ({ ...prev, [key]: val }))
 
+  const validateStep = (stepToValidate: number): string | null => {
+    if (stepToValidate === 1) {
+      const age = form.dob ? calcAge(form.dob) : null
+      const height = parseNumber(form.heightCm)
+
+      if (age == null || !Number.isFinite(age) || age < 13 || age > 90) {
+        return 'Enter a valid date of birth. Age must be between 13 and 90.'
+      }
+      if (height == null || height < 120 || height > 230) {
+        return 'Enter a valid height between 120 and 230 cm.'
+      }
+    }
+
+    if (stepToValidate === 2) {
+      const weight = parseNumber(form.weightKg)
+
+      if (weight == null || weight < 35 || weight > 250) {
+        return 'Enter a valid weight between 35 and 250 kg.'
+      }
+    }
+
+    return null
+  }
+
+  const validateRequiredInputs = (): string | null =>
+    validateStep(1) ?? validateStep(2)
+
   const goNext = () => {
+    const validationError = validateStep(step)
+    if (validationError) {
+      setSubmitError(validationError)
+      return
+    }
+
+    setSubmitError(null)
     if (step < 5) {
       setStep(s => s + 1)
       setAnimKey(k => k + 1)
@@ -242,6 +281,9 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     setSubmitting(true)
     setSubmitError(null)
     try {
+      const validationError = validateRequiredInputs()
+      if (validationError) throw new Error(validationError)
+
       const bfFinal = form.bodyFatMethod === 'navy' && navyBF != null ? navyBF : form.bodyFatPct
       const age = form.dob ? calcAge(form.dob) : null
 
@@ -779,11 +821,6 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         </div>
       </div>
 
-      {submitError && (
-        <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(255,59,92,0.1)', border: '1px solid rgba(255,59,92,0.3)', borderRadius: 10, fontSize: 13, color: '#ff3b5c' }}>
-          {submitError}
-        </div>
-      )}
     </div>
   )
 
@@ -844,6 +881,11 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
 
       {/* Bottom CTA */}
       <div style={{ padding: '16px 20px 36px', background: `linear-gradient(to top, ${C.bg} 70%, transparent)`, position: 'sticky', bottom: 0 }}>
+        {submitError && (
+          <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(255,59,92,0.1)', border: '1px solid rgba(255,59,92,0.3)', borderRadius: 10, fontSize: 13, color: '#ff3b5c' }}>
+            {submitError}
+          </div>
+        )}
         <button
           onClick={step === 5 ? handleSubmit : goNext}
           disabled={submitting}
