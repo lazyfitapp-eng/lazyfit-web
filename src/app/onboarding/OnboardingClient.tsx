@@ -263,12 +263,20 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         target_protein: macros.protein,
         target_carbs: macros.carbs,
         target_fat: macros.fat,
-        onboarding_completed: true,
+        onboarding_completed: false,
       })
 
       if (error) throw new Error(error.message)
 
       await createDefaultRoutines(supabase, userId)
+
+      const { error: completeError } = await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', userId)
+
+      if (completeError) throw new Error(completeError.message)
+
       router.push('/dashboard')
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Try again.')

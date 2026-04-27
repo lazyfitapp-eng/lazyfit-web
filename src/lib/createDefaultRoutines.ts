@@ -37,18 +37,47 @@ const THREE_DAY_TEMPLATE = [
 export { THREE_DAY_TEMPLATE }
 
 export async function createDefaultRoutines(supabase: SupabaseClient, userId: string): Promise<void> {
-  for (const tpl of THREE_DAY_TEMPLATE) {
-    const { data: routine, error: rErr } = await supabase
-      .from('routines')
-      .insert({ user_id: userId, name: tpl.name })
-      .select('id')
-      .single()
+  const templateNames = THREE_DAY_TEMPLATE.map(tpl => tpl.name)
+  const { data: existingRoutines, error: existingErr } = await supabase
+    .from('routines')
+    .select('id, name')
+    .eq('user_id', userId)
+    .in('name', templateNames)
 
-    if (rErr || !routine) throw new Error(`Failed to create routine "${tpl.name}": ${rErr?.message}`)
+  if (existingErr) throw new Error(`Failed to check default routines: ${existingErr.message}`)
+
+  const routineByName = new Map((existingRoutines ?? []).map(r => [r.name, r.id]))
+
+  for (const tpl of THREE_DAY_TEMPLATE) {
+    let routineId = routineByName.get(tpl.name)
+
+    if (!routineId) {
+      const { data: routine, error: rErr } = await supabase
+        .from('routines')
+        .insert({ user_id: userId, name: tpl.name })
+        .select('id')
+        .single()
+
+      if (rErr || !routine) throw new Error(`Failed to create routine "${tpl.name}": ${rErr?.message}`)
+
+      routineId = routine.id
+    }
+
+    const { data: existingExercises, error: exCheckErr } = await supabase
+      .from('routine_exercises')
+      .select('exercise_name')
+      .eq('routine_id', routineId)
+
+    if (exCheckErr) throw new Error(`Failed to check exercises for "${tpl.name}": ${exCheckErr.message}`)
+
+    const existingExerciseNames = new Set((existingExercises ?? []).map(ex => ex.exercise_name))
+    const exercisesToInsert = tpl.exercises.filter(ex => !existingExerciseNames.has(ex.exercise_name))
+
+    if (exercisesToInsert.length === 0) continue
 
     const { error: eErr } = await supabase
       .from('routine_exercises')
-      .insert(tpl.exercises.map(ex => ({ ...ex, routine_id: routine.id })))
+      .insert(exercisesToInsert.map(ex => ({ ...ex, routine_id: routineId })))
 
     if (eErr) throw new Error(`Failed to insert exercises for "${tpl.name}": ${eErr.message}`)
   }
