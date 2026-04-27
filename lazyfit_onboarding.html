@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LazyFit — Setup</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --bg: #060606;
+  --surface: #0d0d0d;
+  --surface2: #131313;
+  --surface3: #181818;
+  --border: #1e1e1e;
+  --border2: #262626;
+  --text: #f2f2f2;
+  --text2: #c8c8c8;
+  --text3: #888888;
+  --green: #3ecf8e;
+  --green2: #2db87a;
+  --green-glow: rgba(62,207,142,0.15);
+  --green-glow2: rgba(62,207,142,0.06);
+  --green-border: rgba(62,207,142,0.2);
+  --amber: #f5a623;
+  --blue: #4a9eff;
+  --red: #ff3b5c;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+html { background: var(--bg); }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* NOISE TEXTURE OVERLAY */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999; opacity: 0.4;
+}
+
+.app {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ═══════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════ */
+.topbar {
+  padding: 14px 20px 10px;
+  display: flex; align-items: center; gap: 14px;
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(to bottom, var(--bg) 80%, transparent);
+}
+
+.back-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+}
+.back-btn:hover { background: var(--surface3); border-color: var(--border2); }
+.back-btn svg { opacity: 0.5; transition: opacity 0.15s; }
+.back-btn:hover svg { opacity: 0.9; }
+
+.prog-wrap { flex: 1; position: relative; }
+.prog-track {
+  height: 2px; background: var(--border); border-radius: 99px; overflow: visible;
+}
+.prog-fill {
+  height: 100%; background: var(--green);
+  border-radius: 99px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+.prog-fill::after {
+  content: '';
+  position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+.step-count {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 400;
+  color: #aaaaaa; flex-shrink: 0; letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════
+   CONTENT
+═══════════════════════════════════════ */
+.content {
+  flex: 1;
+  padding: 20px 20px 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.content::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════
+   BOTTOM
+═══════════════════════════════════════ */
+.bottom {
+  padding: 16px 20px 36px;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+  position: sticky; bottom: 0;
+}
+
+.cta {
+  width: 100%; height: 56px;
+  background: var(--green);
+  color: #000;
+  font-family: var(--font-body);
+  font-size: 15px; font-weight: 700;
+  border: none; border-radius: 14px;
+  cursor: pointer; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.15s;
+  position: relative; overflow: hidden;
+}
+.cta::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cta:hover { background: var(--green2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(62,207,142,0.25); }
+.cta:active { transform: translateY(0); box-shadow: none; }
+.cta.final { background: var(--green); font-size: 16px; height: 60px; border-radius: 16px; }
+
+/* ═══════════════════════════════════════
+   STEPS
+═══════════════════════════════════════ */
+.step { display: none; padding-bottom: 24px; }
+.step.active {
+  display: block;
+  animation: stepEnter 0.35s cubic-bezier(0.4,0,0.2,1) both;
+}
+@keyframes stepEnter {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* STEP HERO */
+.step-hero { margin-bottom: 30px; }
+
+.eyebrow {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 400;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.eyebrow::before {
+  content: '';
+  width: 20px; height: 1px; background: var(--green); display: block;
+}
+
+.display-title {
+  font-family: var(--font-display);
+  font-size: 52px; line-height: 0.92;
+  color: var(--text); margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.display-title em {
+  font-style: normal;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(62,207,142,0.5);
+}
+
+.hero-sub {
+  font-size: 14px; color: var(--text2); line-height: 1.6;
+  border-left: 2px solid var(--border2);
+  padding-left: 14px;
+  font-style: italic;
+}
+.hero-sub strong { color: var(--text); font-style: normal; font-weight: 600; }
+
+/* ═══════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════ */
+.field-label {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: #999999; margin-bottom: 8px;
+}
+
+.inp {
+  width: 100%; height: 52px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text);
+  font-family: var(--font-body); font-size: 16px; font-weight: 500;
+  padding: 0 14px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none; margin-bottom: 16px;
+}
+.inp:focus { border-color: var(--green); background: #0f1a14; }
+.inp::placeholder { color: var(--text3); }
+
+.inp-wrap { position: relative; margin-bottom: 16px; }
+.inp-wrap .inp { padding-right: 48px; margin-bottom: 0; }
+.unit {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text3);
+  pointer-events: none;
+}
+
+.date-inp {
+  width: 100%; height: 52px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text);
+  font-family: var(--font-body); font-size: 16px;
+  padding: 0 14px; outline: none; margin-bottom: 16px;
+  color-scheme: dark; -webkit-appearance: none;
+}
+.date-inp:focus { border-color: var(--green); }
+
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+
+/* GENDER */
+.gender-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.gender-btn {
+  flex: 1; height: 52px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text2);
+  font-family: var(--font-body); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.gender-btn.on {
+  background: var(--green-glow); border-color: var(--green);
+  color: var(--green);
+}
+
+/* ═══════════════════════════════════════
+   STEP 2 — BODY
+═══════════════════════════════════════ */
+.method-pills { display: flex; gap: 6px; margin-bottom: 18px; }
+.method-pill {
+  flex: 1; height: 36px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text2);
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.method-pill.on {
+  background: var(--green-glow); border-color: var(--green-border);
+  color: var(--green);
+}
+
+/* BF REFERENCE STRIP */
+.bf-refs {
+  display: flex; gap: 6px; overflow-x: auto;
+  scrollbar-width: none; margin-bottom: 14px;
+}
+.bf-refs::-webkit-scrollbar { display: none; }
+
+.bf-ref {
+  flex-shrink: 0; width: 72px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 6px;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.bf-ref.on { border-color: var(--green); background: var(--green-glow); }
+
+.bf-ref-pct {
+  font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+  color: var(--text2); margin-bottom: 6px;
+}
+.bf-ref.on .bf-ref-pct { color: var(--green); }
+
+/* SVG body silhouette */
+.bf-figure {
+  width: 44px; height: 56px; margin: 0 auto 6px;
+}
+
+.bf-ref-lbl { font-size: 9px; color: #888888; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* SLIDER */
+.slider-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.bf-slider {
+  flex: 1; -webkit-appearance: none; height: 3px;
+  border-radius: 99px; background: var(--border2); outline: none; cursor: pointer;
+}
+.bf-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px;
+  border-radius: 50%; background: var(--bg);
+  border: 2px solid var(--green); cursor: pointer;
+  box-shadow: 0 0 0 4px var(--green-glow), 0 0 12px rgba(62,207,142,0.3);
+  transition: box-shadow 0.15s;
+}
+.bf-slider::-webkit-slider-thumb:active {
+  box-shadow: 0 0 0 6px var(--green-glow), 0 0 20px rgba(62,207,142,0.4);
+}
+.bf-val {
+  font-family: var(--font-mono); font-size: 15px; font-weight: 500;
+  color: var(--green); min-width: 40px; text-align: right;
+}
+
+/* NAVY */
+.navy-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-left: 2px solid var(--green); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.navy-card p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.navy-card strong { color: var(--text); font-weight: 600; }
+.navy-card .measure-tip {
+  font-size: 11px; color: var(--text3); margin-top: 4px;
+  font-style: italic;
+}
+
+.navy-result {
+  background: var(--green-glow); border: 1px solid var(--green-border);
+  border-radius: 10px; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.navy-result span { font-size: 13px; color: var(--text2); }
+.navy-num {
+  font-family: var(--font-mono); font-size: 24px; font-weight: 500;
+  color: var(--green);
+}
+
+/* ═══════════════════════════════════════
+   STEP 3 — ACTIVITY
+═══════════════════════════════════════ */
+.sec-label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: #999999; margin-bottom: 10px; margin-top: 22px;
+}
+.sec-label:first-child { margin-top: 0; }
+
+.radio-card {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.radio-card.on { background: var(--green-glow); border-color: var(--green); }
+
+.radio-indicator {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border2); flex-shrink: 0;
+  margin-top: 2px; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.radio-card.on .radio-indicator { border-color: var(--green); background: var(--green); }
+.radio-dot { width: 7px; height: 7px; border-radius: 50%; background: #000; opacity: 0; transition: opacity 0.15s; }
+.radio-card.on .radio-dot { opacity: 1; }
+
+.rc-body { flex: 1; }
+.rc-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.radio-card.on .rc-title { color: var(--green); }
+.rc-desc { font-size: 12px; color: var(--text2); line-height: 1.4; }
+
+.steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.step-tile {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 14px;
+  cursor: pointer; transition: all 0.15s;
+}
+.step-tile.on { background: var(--green-glow); border-color: var(--green); }
+.st-num {
+  font-family: var(--font-mono); font-size: 15px; font-weight: 500;
+  color: var(--text); margin-bottom: 2px;
+}
+.step-tile.on .st-num { color: var(--green); }
+.st-lbl { font-size: 11px; color: var(--text2); }
+
+/* ═══════════════════════════════════════
+   STEP 4 — GOAL
+═══════════════════════════════════════ */
+.goal-card {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 18px 18px 16px;
+  margin-bottom: 10px; cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  position: relative; overflow: hidden;
+}
+.goal-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(62,207,142,0.3), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+.goal-card.on::before { opacity: 1; }
+.goal-card.on {
+  background: var(--green-glow); border-color: var(--green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(62,207,142,0.08);
+}
+
+.gc-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.gc-name {
+  font-family: var(--font-display); font-size: 28px;
+  letter-spacing: 0.04em; color: var(--text);
+  line-height: 1;
+}
+.goal-card.on .gc-name { color: var(--green); }
+.gc-tag {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 400;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 6px;
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text3); margin-top: 4px;
+}
+.goal-card.on .gc-tag {
+  background: rgba(62,207,142,0.1); border-color: var(--green-border);
+  color: var(--green);
+}
+
+.gc-truth {
+  font-size: 13px; color: var(--text2); line-height: 1.55;
+  margin-bottom: 12px; font-style: italic;
+}
+.gc-truth strong { color: var(--text); font-style: normal; }
+
+.gc-stats { display: flex; gap: 20px; }
+.gc-stat {}
+.gc-stat-val {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 400;
+  color: var(--text2);
+}
+.goal-card.on .gc-stat-val { color: var(--green); }
+.gc-stat-lbl { font-size: 10px; color: #999999; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1px; }
+
+/* ═══════════════════════════════════════
+   STEP 5 — REVEAL
+═══════════════════════════════════════ */
+.reveal-hero {
+  padding: 8px 0 28px; text-align: left;
+  position: relative;
+}
+
+.reveal-greeting {
+  font-family: var(--font-display);
+  font-size: 64px; line-height: 0.88;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+}
+.reveal-greeting .name-line { color: var(--green); display: block; }
+.reveal-greeting .program-line { color: var(--text); display: block; }
+
+.reveal-tagline {
+  font-size: 13px; color: var(--text2); line-height: 1.6;
+  font-style: italic;
+  border-left: 2px solid var(--border2); padding-left: 12px;
+}
+
+/* NUMBERS BLOCK */
+.numbers-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+  position: relative; overflow: hidden;
+}
+.numbers-block::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--green) 50%, transparent 100%);
+  opacity: 0.4;
+}
+
+.nb-label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: #999999; margin-bottom: 14px;
+}
+
+.calorie-line {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.cal-label { font-size: 13px; color: #c0c0c0; }
+.cal-val {
+  font-family: var(--font-mono); font-size: 18px; font-weight: 400;
+  color: var(--text);
+}
+.cal-val.hero { font-size: 22px; color: var(--green); }
+.cal-sentence {
+  font-size: 13px; color: #aaaaaa; margin-bottom: 16px;
+  line-height: 1.5; font-style: italic;
+}
+
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+.macro-trio { display: flex; gap: 8px; }
+.macro-cell {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 8px; text-align: center;
+}
+.mc-val {
+  font-family: var(--font-mono); font-size: 22px; font-weight: 400;
+  margin-bottom: 2px; display: block;
+}
+.mc-val.p { color: var(--green); }
+.mc-val.c { color: var(--blue); }
+.mc-val.f { color: var(--amber); }
+.mc-lbl { font-size: 10px; color: #999999; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ROUTINE BLOCK */
+.routine-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+}
+.rb-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.rb-title {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: #999999;
+}
+.rb-badge {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--green); background: var(--green-glow);
+  border: 1px solid var(--green-border);
+  border-radius: 6px; padding: 2px 8px;
+}
+
+.week-viz { display: flex; gap: 4px; margin-bottom: 16px; }
+.week-day {
+  flex: 1; height: 32px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; color: var(--text3);
+  letter-spacing: 0.06em; transition: all 0.3s;
+}
+.week-day.active {
+  background: var(--green-glow); border-color: var(--green-border);
+  color: var(--green); font-weight: 500;
+}
+
+.session-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.session-row:last-child { margin-bottom: 0; }
+.sess-letter {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--green-glow); border: 1px solid var(--green-border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 18px; color: var(--green);
+  flex-shrink: 0; letter-spacing: 0.05em;
+}
+.sess-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.sess-desc { font-size: 11px; color: #aaaaaa; }
+
+/* FINAL LINE */
+.final-truth {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px; margin-bottom: 4px;
+}
+.ft-quote {
+  font-size: 14px; color: var(--text2); line-height: 1.7;
+  font-style: italic; position: relative;
+}
+.ft-quote::before {
+  content: '"';
+  font-family: 'Georgia', serif; font-size: 48px;
+  color: var(--text3); position: absolute;
+  top: -8px; left: -6px; line-height: 1; pointer-events: none;
+}
+.ft-quote span { padding-left: 28px; display: block; }
+.ft-author {
+  font-family: var(--font-mono); font-size: 10px;
+  color: #888888; letter-spacing: 0.1em; text-transform: uppercase;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.ft-author::before { content: ''; width: 16px; height: 1px; background: var(--green); }
+
+/* COUNTER ANIMATION */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.count-in { animation: countUp 0.4s ease both; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.45s; }
+.delay-5 { animation-delay: 0.6s; }
+.delay-6 { animation-delay: 0.75s; }
+
+/* GLOWING ACTIVE STATE */
+@keyframes pulseGreen {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); }
+  50% { box-shadow: 0 0 0 6px rgba(62,207,142,0.08); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <button class="back-btn" id="back-btn" onclick="prev()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <div class="prog-wrap">
+      <div class="prog-track">
+        <div class="prog-fill" id="prog" style="width:20%"></div>
+      </div>
+    </div>
+    <span class="step-count" id="step-count">01 / 05</span>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- ══════════════════════════════
+         STEP 1 — WHO YOU ARE
+    ══════════════════════════════ -->
+    <div class="step active" id="s1">
+      <div class="step-hero">
+        <div class="eyebrow">Step 1 — Identity</div>
+        <div class="display-title">YOU'RE<br><em>SERIOUS.</em><br>SO ARE WE.</div>
+        <div class="hero-sub">
+          Most fitness apps give you <strong>90 days of confusion</strong> and hope you figure it out.
+          LazyFit gives you <strong>3 workouts a week</strong> and makes every single one count.
+        </div>
+      </div>
+
+      <div class="field-label">First name</div>
+      <input class="inp" type="text" id="i-name" placeholder="Your name" autocomplete="given-name">
+
+      <div class="field-label">Gender</div>
+      <div class="gender-row">
+        <button class="gender-btn on" id="g-m" onclick="setGender('male')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="14" r="5"/><path d="M19 5l-5.5 5.5M19 5h-5M19 5v5"/></svg>
+          Male
+        </button>
+        <button class="gender-btn" id="g-f" onclick="setGender('female')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/></svg>
+          Female
+        </button>
+      </div>
+
+      <div class="field-label">Date of birth</div>
+      <input class="date-inp" type="date" id="i-dob" value="1992-06-15">
+
+      <div class="field-label">Height</div>
+      <div class="inp-wrap">
+        <input class="inp" type="number" id="i-height" placeholder="175" style="margin-bottom:0">
+        <span class="unit">cm</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         STEP 2 — BODY
+    ══════════════════════════════ -->
+    <div class="step" id="s2">
+      <div class="step-hero">
+        <div class="eyebrow">Step 2 — Body</div>
+        <div class="display-title">HONEST<br>NUMBERS<br><em>ONLY.</em></div>
+        <div class="hero-sub">
+          <strong>This is the part nobody likes.</strong> But your body composition is the difference between targets that work and months of spinning your wheels.
+        </div>
+      </div>
+
+      <div class="field-label">Current weight</div>
+      <div class="inp-wrap">
+        <input class="inp" type="number" id="i-weight" placeholder="80" style="margin-bottom:0">
+        <span class="unit">kg</span>
+      </div>
+
+      <div class="field-label" style="margin-top:18px">Body fat estimate</div>
+      <div class="method-pills">
+        <button class="method-pill on" id="t-vis" onclick="setMethod('visual')">Visual</button>
+        <button class="method-pill" id="t-nav" onclick="setMethod('navy')">Navy Method ↗</button>
+      </div>
+
+      <!-- VISUAL -->
+      <div id="sec-visual">
+        <div class="bf-refs" id="bf-refs"></div>
+        <div class="slider-wrap">
+          <input type="range" class="bf-slider" min="5" max="40" value="18" id="bf-range" oninput="onSlide(this.value)">
+          <span class="bf-val" id="bf-val">18%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">5%</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">Very lean → High</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">40%</span>
+        </div>
+      </div>
+
+      <!-- NAVY -->
+      <div id="sec-navy" style="display:none">
+        <div class="navy-card">
+          <p><strong>US Navy Formula</strong> — used to assess military recruits since 1984. Accurate to within 3% of DEXA scans for most people.</p>
+          <p class="measure-tip">Neck: measure at the narrowest point, below the larynx. Waist: measure at the narrowest point, usually above the navel.</p>
+        </div>
+        <div class="row">
+          <div>
+            <div class="field-label">Neck circumference</div>
+            <div class="inp-wrap">
+              <input class="inp" type="number" id="i-neck" placeholder="38" oninput="calcNavy()" style="margin-bottom:0">
+              <span class="unit">cm</span>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Waist circumference</div>
+            <div class="inp-wrap">
+              <input class="inp" type="number" id="i-waist" placeholder="85" oninput="calcNavy()" style="margin-bottom:0">
+              <span class="unit">cm</span>
+            </div>
+          </div>
+        </div>
+        <div class="navy-result" id="navy-res" style="display:none">
+          <span>Calculated body fat</span>
+          <span class="navy-num" id="navy-num">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         STEP 3 — ACTIVITY
+    ══════════════════════════════ -->
+    <div class="step" id="s3">
+      <div class="step-hero">
+        <div class="eyebrow">Step 3 — Daily Life</div>
+        <div class="display-title">HOW YOU<br><em>MOVE.</em></div>
+        <div class="hero-sub">
+          Outside the gym. <strong>Most people get this wrong</strong> — either overestimating or underestimating. Check your Health app for your actual step count before you answer.
+        </div>
+      </div>
+
+      <div class="sec-label">Your job</div>
+      <div class="radio-card on" onclick="setJob(this,'desk')" data-j="desk">
+        <div class="radio-indicator"><div class="radio-dot"></div></div>
+        <div class="rc-body">
+          <div class="rc-title">Desk job</div>
+          <div class="rc-desc">Office, remote work, studying — mostly sitting throughout the day.</div>
+        </div>
+      </div>
+      <div class="radio-card" onclick="setJob(this,'feet')" data-j="feet">
+        <div class="radio-indicator"><div class="radio-dot"></div></div>
+        <div class="rc-body">
+          <div class="rc-title">On your feet</div>
+          <div class="rc-desc">Retail, teaching, healthcare — standing and moving most of the day.</div>
+        </div>
+      </div>
+      <div class="radio-card" onclick="setJob(this,'labor')" data-j="labor">
+        <div class="radio-indicator"><div class="radio-dot"></div></div>
+        <div class="rc-body">
+          <div class="rc-title">Physical labor</div>
+          <div class="rc-desc">Construction, warehouse, trades — physically demanding from start to finish.</div>
+        </div>
+      </div>
+
+      <div class="sec-label">Daily steps — outside the gym</div>
+      <div class="steps-grid">
+        <div class="step-tile" onclick="setSteps(this,'lt5k')" data-s="lt5k">
+          <div class="st-num">&lt; 5,000</div>
+          <div class="st-lbl">Mostly sedentary</div>
+        </div>
+        <div class="step-tile on" onclick="setSteps(this,'5-10k')" data-s="5-10k">
+          <div class="st-num">5 – 10k</div>
+          <div class="st-lbl">Lightly active</div>
+        </div>
+        <div class="step-tile" onclick="setSteps(this,'10-15k')" data-s="10-15k">
+          <div class="st-num">10 – 15k</div>
+          <div class="st-lbl">Moderately active</div>
+        </div>
+        <div class="step-tile" onclick="setSteps(this,'gt15k')" data-s="gt15k">
+          <div class="st-num">&gt; 15k</div>
+          <div class="st-lbl">Very active</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         STEP 4 — GOAL
+    ══════════════════════════════ -->
+    <div class="step" id="s4">
+      <div class="step-hero">
+        <div class="eyebrow">Step 4 — Commitment</div>
+        <div class="display-title">WHAT<br>DO YOU<br><em>WANT?</em></div>
+        <div class="hero-sub">
+          <strong>Be honest with yourself here.</strong> Pick the goal for where you are right now — not where you want to be. You can change this in 8 weeks.
+        </div>
+      </div>
+
+      <div class="goal-card on" onclick="setGoal(this,'recomp')" data-g="recomp">
+        <div class="gc-head">
+          <div class="gc-name">RECOMP</div>
+          <div class="gc-tag">Recommended</div>
+        </div>
+        <div class="gc-truth">
+          Build muscle and lose fat simultaneously. <strong>You'll never look worse.</strong> Progress is slower but the direction never reverses. Best for most people reading this.
+        </div>
+        <div class="gc-stats">
+          <div class="gc-stat"><div class="gc-stat-val">Maintenance</div><div class="gc-stat-lbl">Calories</div></div>
+          <div class="gc-stat"><div class="gc-stat-val">Slow & permanent</div><div class="gc-stat-lbl">Rate</div></div>
+        </div>
+      </div>
+
+      <div class="goal-card" onclick="setGoal(this,'cut')" data-g="cut">
+        <div class="gc-head">
+          <div class="gc-name">CUT</div>
+          <div class="gc-tag">−400 kcal</div>
+        </div>
+        <div class="gc-truth">
+          Lose fat, keep muscle. <strong>Training will feel harder on a deficit.</strong> The result is worth it — but only if you're consistent. Best if you're above 15% body fat.
+        </div>
+        <div class="gc-stats">
+          <div class="gc-stat"><div class="gc-stat-val">Deficit</div><div class="gc-stat-lbl">Calories</div></div>
+          <div class="gc-stat"><div class="gc-stat-val">~0.5kg/week</div><div class="gc-stat-lbl">Target loss</div></div>
+        </div>
+      </div>
+
+      <div class="goal-card" onclick="setGoal(this,'bulk')" data-g="bulk">
+        <div class="gc-head">
+          <div class="gc-name">LEAN BULK</div>
+          <div class="gc-tag">+250 kcal</div>
+        </div>
+        <div class="gc-truth">
+          Maximum muscle with minimum fat gain. <strong>You will gain some fat — that's the deal.</strong> Worth it only if you're already lean. Under 15% body fat.
+        </div>
+        <div class="gc-stats">
+          <div class="gc-stat"><div class="gc-stat-val">Surplus</div><div class="gc-stat-lbl">Calories</div></div>
+          <div class="gc-stat"><div class="gc-stat-val">~0.2kg/week</div><div class="gc-stat-lbl">Target gain</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         STEP 5 — REVEAL
+    ══════════════════════════════ -->
+    <div class="step" id="s5">
+
+      <div class="reveal-hero">
+        <div class="reveal-greeting">
+          <span class="name-line" id="r-name-line">TUDOR.</span>
+          <span class="program-line">YOUR<br>PROGRAM.</span>
+        </div>
+        <div class="reveal-tagline">
+          Built for your body. Calibrated to your goal. No guesswork left.
+        </div>
+      </div>
+
+      <div class="numbers-block">
+        <div class="nb-label">Daily targets</div>
+        <div class="calorie-line count-in delay-1">
+          <span class="cal-label">Estimated TDEE</span>
+          <span class="cal-val" id="r-tdee">—</span>
+        </div>
+        <div class="calorie-line count-in delay-2">
+          <span class="cal-label">Your daily calories</span>
+          <span class="cal-val hero" id="r-cals">—</span>
+        </div>
+        <div class="cal-sentence count-in delay-3" id="r-sentence">—</div>
+        <div class="divider"></div>
+        <div class="macro-trio count-in delay-4">
+          <div class="macro-cell">
+            <span class="mc-val p" id="r-protein">—</span>
+            <span class="mc-lbl">Protein</span>
+          </div>
+          <div class="macro-cell">
+            <span class="mc-val c" id="r-carbs">—</span>
+            <span class="mc-lbl">Carbs</span>
+          </div>
+          <div class="macro-cell">
+            <span class="mc-val f" id="r-fat">—</span>
+            <span class="mc-lbl">Fat</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="routine-block count-in delay-5">
+        <div class="rb-head">
+          <span class="rb-title">Your routine</span>
+          <span class="rb-badge">3× per week</span>
+        </div>
+        <div class="week-viz" id="week-viz">
+          <div class="week-day" id="wd-mon">MON</div>
+          <div class="week-day" id="wd-tue">TUE</div>
+          <div class="week-day" id="wd-wed">WED</div>
+          <div class="week-day" id="wd-thu">THU</div>
+          <div class="week-day" id="wd-fri">FRI</div>
+          <div class="week-day" id="wd-sat">SAT</div>
+          <div class="week-day" id="wd-sun">SUN</div>
+        </div>
+        <div class="session-row">
+          <div class="sess-letter">A</div>
+          <div>
+            <div class="sess-name">Upper A</div>
+            <div class="sess-desc">Incline Press · Lat Pulldown · Cable Row · Lateral Raise · Triceps</div>
+          </div>
+        </div>
+        <div class="session-row">
+          <div class="sess-letter">L</div>
+          <div>
+            <div class="sess-name">Lower A</div>
+            <div class="sess-desc">Bulgarian Split Squat · Hip Thrust · Leg Curl · Leg Extension · Calves</div>
+          </div>
+        </div>
+        <div class="session-row">
+          <div class="sess-letter">B</div>
+          <div>
+            <div class="sess-name">Upper B</div>
+            <div class="sess-desc">OHP · Pull-Up · Machine Row · Face Pull · Bicep Curl</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="final-truth count-in delay-6">
+        <div class="ft-quote">
+          <span>The hard part isn't the program. It's showing up three times a week and doing what you said you'd do.</span>
+        </div>
+        <div class="ft-author">LazyFit Adaptive Coach</div>
+      </div>
+
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- BOTTOM -->
+  <div class="bottom">
+    <button class="cta" id="cta-btn" onclick="next()">
+      <span id="cta-lbl">Continue</span>
+      <svg id="cta-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+let step = 1;
+let gender = 'male';
+let bfMethod = 'visual';
+let bfVal = 18;
+let job = 'desk';
+let steps = '5-10k';
+let goal = 'recomp';
+
+// ── BF REFERENCE DATA ──
+const bfData = [
+  { pct: 8,  label: 'Elite', desc: 'Visible abs,\nveins everywhere' },
+  { pct: 12, label: 'Lean', desc: 'Visible abs,\nsome vascularity' },
+  { pct: 15, label: 'Athletic', desc: 'Some ab\ndefinition' },
+  { pct: 18, label: 'Average', desc: 'Flat stomach,\nno definition' },
+  { pct: 22, label: 'Above avg', desc: 'Slight belly,\nno definition' },
+  { pct: 28, label: 'High', desc: 'Visible belly,\nsoft all over' },
+  { pct: 35, label: 'Very high', desc: 'Significant\nbelly fat' },
+];
+
+function silhouetteSVG(pct) {
+  const fatness = Math.max(0, Math.min(1, (pct - 8) / 30));
+  const w = 16 + fatness * 12;
+  const belly = 12 + fatness * 16;
+  const color = pct <= 12 ? '#3ecf8e' : pct <= 18 ? '#7a7a7a' : '#4a4a4a';
+  return `<svg viewBox="0 0 44 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="22" cy="8" rx="7" ry="7.5" fill="${color}" opacity="0.7"/>
+    <path d="M${22-w/2} 18 Q${22-belly/2} 32 ${22-w/2+2} 48 L${22+w/2-2} 48 Q${22+belly/2} 32 ${22+w/2} 18 Z" fill="${color}" opacity="0.5"/>
+    <rect x="${22-w/2+1}" y="46" width="${w/2-2}" height="10" rx="3" fill="${color}" opacity="0.4"/>
+    <rect x="${22+2}" y="46" width="${w/2-2}" height="10" rx="3" fill="${color}" opacity="0.4"/>
+  </svg>`;
+}
+
+function buildBFRefs() {
+  const el = document.getElementById('bf-refs');
+  el.innerHTML = bfData.map(d => {
+    const on = bfVal >= d.pct && bfVal < (bfData[bfData.findIndex(x => x.pct === d.pct)+1]?.pct || 99);
+    return `<div class="bf-ref ${on?'on':''}" onclick="pickBF(${d.pct})">
+      <div class="bf-ref-pct">${d.pct}%</div>
+      <div class="bf-figure">${silhouetteSVG(d.pct)}</div>
+      <div class="bf-ref-lbl">${d.label}</div>
+    </div>`;
+  }).join('');
+}
+
+function pickBF(pct) {
+  bfVal = pct;
+  document.getElementById('bf-range').value = pct;
+  document.getElementById('bf-val').textContent = pct + '%';
+  buildBFRefs();
+}
+
+function onSlide(v) {
+  bfVal = parseInt(v);
+  document.getElementById('bf-val').textContent = v + '%';
+  buildBFRefs();
+}
+
+function setMethod(m) {
+  bfMethod = m;
+  document.getElementById('t-vis').classList.toggle('on', m==='visual');
+  document.getElementById('t-nav').classList.toggle('on', m==='navy');
+  document.getElementById('sec-visual').style.display = m==='visual' ? 'block' : 'none';
+  document.getElementById('sec-navy').style.display = m==='navy' ? 'block' : 'none';
+}
+
+function calcNavy() {
+  const neck = parseFloat(document.getElementById('i-neck').value);
+  const waist = parseFloat(document.getElementById('i-waist').value);
+  const h = parseFloat(document.getElementById('i-height').value) || 175;
+  if (!neck || !waist || waist <= neck) return;
+  let bf;
+  if (gender === 'male') {
+    bf = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450;
+  } else {
+    const hip = 95;
+    bf = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(h)) - 450;
+  }
+  bf = Math.max(5, Math.min(50, Math.round(bf * 10) / 10));
+  bfVal = Math.round(bf);
+  document.getElementById('navy-num').textContent = bf + '%';
+  document.getElementById('navy-res').style.display = 'flex';
+}
+
+function setGender(g) {
+  gender = g;
+  document.getElementById('g-m').classList.toggle('on', g==='male');
+  document.getElementById('g-f').classList.toggle('on', g==='female');
+}
+
+function setJob(el, v) {
+  job = v;
+  document.querySelectorAll('[data-j]').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function setSteps(el, v) {
+  steps = v;
+  document.querySelectorAll('[data-s]').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function setGoal(el, v) {
+  goal = v;
+  document.querySelectorAll('[data-g]').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// ── TDEE CALC ──
+function calcTDEE() {
+  const w = parseFloat(document.getElementById('i-weight').value) || 80;
+  const h = parseFloat(document.getElementById('i-height').value) || 175;
+  const dob = document.getElementById('i-dob').value;
+  const age = dob ? Math.floor((Date.now() - new Date(dob)) / 31557600000) : 30;
+
+  // Mifflin-St Jeor
+  const bmr = gender === 'male'
+    ? 10*w + 6.25*h - 5*age + 5
+    : 10*w + 6.25*h - 5*age - 161;
+
+  const jm = { desk: 1.2, feet: 1.375, labor: 1.55 }[job] || 1.2;
+  const sm = { lt5k: 0, '5-10k': 0.05, '10-15k': 0.1, gt15k: 0.175 }[steps] || 0.05;
+  const tdee = Math.round(bmr * (jm + sm));
+  const adj = { recomp: 0, cut: -400, bulk: 250 }[goal] || 0;
+  const cals = Math.max(1200, tdee + adj);
+  const protein = Math.round(w * 2.2);
+  const fat = Math.round(cals * 0.25 / 9);
+  const carbs = Math.max(0, Math.round((cals - protein*4 - fat*9) / 4));
+  return { tdee, cals, protein, fat, carbs };
+}
+
+// ── REVEAL ──
+const ctaLabels = {
+  1: 'Tell me more →',
+  2: 'Lock in my numbers →',
+  3: 'Set my activity →',
+  4: 'Set my goal →',
+  5: "I'm ready."
+};
+
+function animateCount(el, target, suffix, duration) {
+  const start = performance.now();
+  const startVal = 0;
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(startVal + (target - startVal) * eased) + suffix;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function populateReveal() {
+  const name = document.getElementById('i-name').value.trim();
+  document.getElementById('r-name-line').textContent = (name || 'YOUR') + '.';
+
+  const { tdee, cals, protein, fat, carbs } = calcTDEE();
+
+  // Animate numbers
+  setTimeout(() => {
+    const tdeeEl = document.getElementById('r-tdee');
+    const calsEl = document.getElementById('r-cals');
+    const protEl = document.getElementById('r-protein');
+    const carbEl = document.getElementById('r-carbs');
+    const fatEl = document.getElementById('r-fat');
+
+    animateCount(tdeeEl, tdee, ' kcal', 800);
+    setTimeout(() => animateCount(calsEl, cals, ' kcal', 800), 150);
+    setTimeout(() => { protEl.textContent = protein + 'g'; }, 600);
+    setTimeout(() => { carbEl.textContent = carbs + 'g'; }, 750);
+    setTimeout(() => { fatEl.textContent = fat + 'g'; }, 900);
+  }, 200);
+
+  const sentences = {
+    recomp: `That's maintenance — your body will recompose at ${Math.round(tdee/7)} kcal per day average.`,
+    cut: `That's a 400 kcal deficit. At this rate, you'll lose ~0.5kg per week.`,
+    bulk: `That's a 250 kcal surplus. Expect ~0.2kg of lean mass per week.`
+  };
+  document.getElementById('r-sentence').textContent = sentences[goal];
+
+  // Animate week viz — M/W/F default
+  setTimeout(() => {
+    ['wd-mon','wd-wed','wd-fri'].forEach(id => {
+      document.getElementById(id).classList.add('active');
+    });
+  }, 1000);
+}
+
+// ── NAV ──
+function next() {
+  if (step === 5) { alert('🏆 Onboarding complete — this is a mockup!'); return; }
+  document.getElementById('s'+step).classList.remove('active');
+  step++;
+  document.getElementById('s'+step).classList.add('active');
+  updateNav();
+  document.getElementById('content').scrollTop = 0;
+  if (step === 5) populateReveal();
+}
+
+function prev() {
+  if (step === 1) return;
+  document.getElementById('s'+step).classList.remove('active');
+  step--;
+  document.getElementById('s'+step).classList.add('active');
+  updateNav();
+  document.getElementById('content').scrollTop = 0;
+}
+
+function updateNav() {
+  document.getElementById('prog').style.width = (step/5*100) + '%';
+  document.getElementById('step-count').textContent = String(step).padStart(2,'0') + ' / 05';
+  document.getElementById('back-btn').style.opacity = step === 1 ? '0.2' : '1';
+  document.getElementById('back-btn').style.pointerEvents = step === 1 ? 'none' : 'auto';
+
+  const isLast = step === 5;
+  document.getElementById('cta-lbl').textContent = ctaLabels[step] || 'Continue';
+  document.getElementById('cta-arrow').style.display = isLast ? 'none' : 'inline';
+  if (isLast) document.getElementById('cta-btn').classList.add('final');
+  else document.getElementById('cta-btn').classList.remove('final');
+}
+
+// ── INIT ──
+buildBFRefs();
+updateNav();
+</script>
+</body>
+</html>

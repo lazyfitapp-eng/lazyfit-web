@@ -1,5 +1,5 @@
 # LazyFit — Current State Document
-*Last updated: April 17, 2026 — Sprints 1–12 complete; Dashboard/Train/History/ActiveWorkout redesigned with SF Pro Display + inline styles + #3ecf8e accent*
+*Last updated: April 20, 2026 — Sprints 1–13 complete; Profile screen fully rebuilt; global contrast/readability pass complete across all components*
 
 ---
 
@@ -353,6 +353,7 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 - Currently: GIF API returns null (free tier limitation) → shows YouTube card
 
 **Status:** ✅ Functional. Rest timer has boxing bell sound. Warm-ups auto-generate. Progression engine works. UI fully rebuilt.
+Readability fixes complete — all text colors updated, font sizes increased throughout (column headers, set labels, inputs, buttons). Completed warmup rows (W2, W3) display reps as plain `<div>` elements (not disabled inputs) to avoid browser UA dimming.
 ⚠️ Exercise GIFs not showing (ExerciseDB paid tier required — plan: shoot own YouTube demos)
 
 ---
@@ -422,16 +423,23 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 ### SCREEN 12 — Profile
 **Route:** `/profile`
-**File:** `src/app/(app)/profile/page.tsx`
-**Type:** Server component (read-only)
+**Files:** `src/app/(app)/profile/page.tsx` → `ProfileClient.tsx`
+**Type:** Server page + Client component
 
 **What it shows:**
-- Account: email, subscription status
-- Daily targets: calories, protein, carbs, fat
-- Body stats: goal (cut/bulk/recomp), weight, height, age, sex
-- "Profile editing coming soon" message
+- **Identity header** — first_name + last_name (falls back to email); Founding Member badge (amber `#f5a623`) for beta users
+- **Goal selector** — 3 cards: Cut / Recomp / Lean Bulk; tap → confirm modal with macro diff table + coach-voice quote; animated kcal count-up on switch
+- **Nutrition card** — goal-colored background; large kcal; confidence bar; protein/carbs/fat grid
+- **Training days stepper** — −/number/+ (1–7)
+- **Units toggle** — kg / lbs segmented control; stored in `preferred_units`
+- **Body section** — tappable rows for Age, Sex, Height; each opens bottom edit drawer; Activity level row with 5-segment bar; Body fat row (US Navy method — shows "+ Log neck" CTA until neck_cm logged)
+- **Account section** — Privacy Policy link; Sign out; Delete account (confirm modal → hard delete all user data)
 
-**Status:** ⚠️ Read-only. Editing not implemented. Placeholder.
+**Macro calculation:** Mifflin-St Jeor BMR × activity multiplier (sedentary 1.2 → athlete 1.9). Cut −400 kcal / Recomp maintenance / Lean Bulk +250 kcal.
+
+**DB columns added:** `first_name`, `last_name`, `preferred_units` (text, default 'kg'), `body_fat_pct` (numeric), `neck_cm` (numeric). `activity_level` (text: sedentary/light/moderate/very_active/athlete) already existed.
+
+**Status:** ✅ Complete. All sections interactive. Goal switching with macro recalculation works. Edit drawers + activity sheet working. Delete account working.
 
 ---
 
@@ -439,10 +447,14 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 ### Navigation
 ```
-src/components/BottomNav.tsx        ← Fixed mobile nav bar
-  Icons: HOME · FOOD · (FAB) · TRAIN · PROGRESS
-  Active state: #00FF41 green, bg-[#001a0d]
-  FAB center button: START (on train page) / LOG (elsewhere)
+src/components/BottomNav.tsx        ← Fixed mobile nav bar (fully rebuilt — inline styles only)
+  Tabs: Home (/dashboard) · Food (/food) · FAB (center) · Train (/train) · Progress (/progress)
+  Active state: color #3ecf8e, fontWeight 600, opacity 1
+  Inactive state: color #888888, opacity 0.6
+  FAB: background #3ecf8e, borderRadius 50%, 48×48px, marginTop -20px, border 3px solid #090909
+  FAB behavior: dispatches lazyfit:open-food-modal on /food; navigates to /train otherwise
+  Hidden on all /train/ subroutes (active workout)
+  Zero Tailwind color classes — all inline styles
 ```
 
 ### Shared Components
@@ -538,7 +550,7 @@ src/lib/
 | Progress charts | Weight trend (EMA), calorie adherence |
 | How To modal | Written instructions + muscle info (GIFs pending) |
 | Progress screen | Full rebuild complete ✅ |
-| Profile screen | Mockup approved, build pending |
+| Profile screen | Fully interactive — goal switching, macro calc, edit drawers, activity sheet ✅ |
 
 ---
 
@@ -547,8 +559,10 @@ src/lib/
 | Issue | Location | Impact | Fix |
 |-------|----------|--------|-----|
 | Exercise GIFs not showing | `/api/exercise-media` | Medium — How To shows YouTube card instead | Shoot own videos for LazyFit YouTube channel (best long-term), OR pay $10 one-time ExerciseDB |
-| Profile editing | `/profile` | Medium — read-only, "coming soon" | Profile screen designed — see CLAUDE.md Profile Screen section for full spec. first_name + last_name columns need adding to profiles table. |
-| Onboarding flow | None exists | High — new users have no guided setup | Build onboarding wizard (TDEE calc, goals, body stats) |
+| Workout auto-save | `ActiveWorkoutClient.tsx` | High — in-progress workout lost on accidental navigation | localStorage auto-save on every set log + recovery prompt on next visit to /train |
+| Coach card rebuild | `ActiveWorkoutClient.tsx` | Medium — currently shows redundant set info; ↑/→ Hold badge triggers lack clear rules | Rewrite progression logic with explicit scientific rules; clean up coach card UI |
+| Routine overhaul | `TrainClient.tsx` + `routine_exercises` | Medium — exercise selection, rep ranges, and progression algorithm need science-based defaults | Full routine rebuild with RPT structure, deload logic, and auto-progression |
+| Onboarding flow | None exists | High — new users have no guided setup | Build onboarding wizard (TDEE calc, goals, body stats) — deferred post-MVP |
 | Weekly check-in | `WeeklyCheckin.tsx` | Medium — UI exists, adaptive calorie loop not wired | Connect to `suggestCalorieTarget()` in `trendWeight.ts` |
 | Subscription / paywall | `profiles.subscription_status` | High for monetization — field exists, no enforcement | Build paywall + Stripe/payment integration |
 | Manual food search | `FoodClient.tsx` | Medium — AI works, manual search is placeholder | Integrate Open Food Facts API or USDA |
@@ -617,6 +631,44 @@ Static HTML mockups used as pixel-perfect design references for rebuilt screens.
 | `C:\Users\Jarvis\Desktop\lazyfit_active_workout_final.html` | Active Workout | Implemented ✅ |
 | `lazyfit_exercise_history.html` | Exercise History | Implemented ✅ |
 | `lazyfit_progress.html` | Progress | Implemented ✅ |
-| `lazyfit_profile.html` | Profile | Mockup approved, pending build |
+| `lazyfit_profile.html` | Profile | Implemented ✅ |
 
 These files define the exact colors, spacing, grid layout, and component patterns used in the rebuilt screens. When making future UI changes to these screens, treat these HTML files as the source of truth for visual intent.
+
+---
+
+## 12. Global Contrast & Readability Pass (April 2026)
+
+A systematic multi-round pass was applied across all components to fix unreadable text on dark backgrounds. All hardcoded dark hex values were replaced with the current floor values:
+
+| Old value | Replaced with | Role |
+|-----------|--------------|------|
+| `#444`, `#484848`, `#555`, `#383838` | `#b8b8b8` | Secondary text, labels |
+| `#333`, `#3a3a3a`, `#2e2e2e`, `#666` | `#888888` | Dim text, separators |
+| `#2a2a2a` (text only) | `#888888` | Ghost text — backgrounds/borders left untouched |
+
+**Files updated:** `DashboardClient.tsx`, `FoodClient.tsx`, `FoodAIModal.tsx`, `ProgressClient.tsx`, `ActiveWorkoutClient.tsx`, `WorkoutHistory.tsx`, `TrainClient.tsx`, `ExerciseHistoryClient.tsx`, `ExerciseProgressChart.tsx`, `WeeklyCheckin.tsx`, `WeighInModal.tsx`, `SurveyModal.tsx`, `ProfileClient.tsx`, auth pages, `muscleMap.ts`.
+
+**Additional size/readability fixes in `ActiveWorkoutClient.tsx`:** Column headers, set labels, input font sizes, button sizes all increased. Completed warmup reps now render as plain `<div>` elements (not disabled inputs) to bypass browser UA color overrides.
+
+**Color floor going forward:**
+- Secondary text minimum: `#b8b8b8`
+- Dim/ghost text minimum: `#888888`
+- Never use values below `#888888` for any readable text
+
+---
+
+## 13. Backlog — Post-MVP
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| Workout auto-save | 🔴 High | localStorage save on every set; recovery prompt on /train if draft exists |
+| Coach card rebuild | 🟡 Medium | Clear ↑/→ Hold rules; remove redundant set display |
+| Routine overhaul | 🟡 Medium | Science-based exercise selection, RPT structure, deload logic |
+| Onboarding wizard | 🟡 Medium | Multi-step: TDEE → goal → body stats → first routine. Deferred post-launch |
+| Adaptive TDEE algorithm | 🟢 Post-launch | MacroFactor-style: logged weight + food → reverse-engineer real TDEE |
+| AI Coach chat tab | 🟢 Post-launch | Separate tab, rule-based at launch |
+| Waist logging | 🟢 Post-launch | Required for US Navy body fat method in profile |
+| Backdated weight entry | 🟢 Post-launch | Let users log past weigh-ins |
+| Manual food search | 🟢 Post-launch | Open Food Facts or USDA API |
+| Paywall / Stripe | 🔴 High (post-beta) | subscription_status field exists; no enforcement yet |

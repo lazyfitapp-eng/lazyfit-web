@@ -17,6 +17,10 @@ Sprints 1–11 complete. See `CURRENT_STATE.md` for full screen map, what works,
 9. Never mark a task done without proving it works
 10. Never use git worktrees. All work happens directly on the main branch in the primary working directory `C:\Users\Jarvis\Desktop\lazyfit-web`
 
+## Working Directory Rules
+- Never use git worktrees. All work happens directly on the main branch in the primary working directory `C:\Users\Jarvis\Desktop\lazyfit-web`.
+- The shell CWD resets to `C:\Users\Jarvis\Desktop\lazyfit` after every bash tool call. Prepend `cd /c/Users/Jarvis/Desktop/lazyfit-web &&` to every bash command in every session. File read/edit tools require absolute paths to `C:\Users\Jarvis\Desktop\lazyfit-web\...`.
+
 ## Key References
 - Full app context, philosophy, screens, design system: `CURRENT_STATE.md`
 - Coding gotchas and learned patterns: `tasks/lessons.md`
