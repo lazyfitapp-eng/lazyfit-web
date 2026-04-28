@@ -523,11 +523,14 @@ export default function ActiveWorkoutClient({
       ? exSets.slice(0, setIdx + 1).filter(s => s.setType === 'warmup').length
       : exSets.slice(0, setIdx + 1).filter(s => s.setType === 'working').length
 
-    // Resolve weight/reps from input or suggestion
-    const mergedSuggestedTargets = suggestedTargets[exercise.exercise_name] ?? dynamicTargets[exercise.exercise_name]
-    const setTarget = !isWarmup ? mergedSuggestedTargets?.[dbSetNumber] : undefined
-    const weight = parseFloat(setData.weight) || (setTarget?.weight ?? 0)
-    const reps = parseInt(setData.reps) || (isWarmup ? parseInt(setData.reps) || 1 : (setTarget?.repsMin ?? exercise.reps_min))
+    // Require explicit user input; placeholders/suggestions are not saved automatically.
+    const weight = parseFloat(setData.weight)
+    const reps = parseInt(setData.reps)
+
+    if (!Number.isFinite(weight) || weight <= 0 || !Number.isFinite(reps) || reps <= 0) {
+      alert('Enter both weight and reps before logging this set.')
+      return
+    }
 
     const { error } = await supabase.from('workout_sets').upsert({
       workout_id: workoutId,
