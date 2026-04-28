@@ -723,15 +723,20 @@ export default function ActiveWorkoutClient({
   const finishWorkout = useCallback(async () => {
     setFinishing(true)
     const durationMinutes = Math.round((Date.now() - startTime) / 60000)
+    const loggedWorkingSets = Object.values(sets).flat().filter(s => s.logged && s.setType === 'working')
 
-    await supabase.from('workouts').update({
-      completed_at: new Date().toISOString(),
-      duration_minutes: durationMinutes,
-    }).eq('id', workoutId)
+    if (loggedWorkingSets.length === 0) {
+      alert('Log at least one working set before finishing the workout.')
+      setFinishing(false)
+      return
+    }
 
     // Progression engine — update exercise_targets for next session
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) throw userError
+      if (!user) throw new Error('You must be logged in to finish a workout.')
+
       for (const exercise of exercises) {
         const exerciseSets = sets[exercise.id] ?? []
         // Only consider working sets — warm-up sets excluded
@@ -798,11 +803,21 @@ export default function ActiveWorkoutClient({
           if (upsertErr) throw upsertErr
         }
       }
-    }
+      const { error: completeError } = await supabase.from('workouts').update({
+        completed_at: new Date().toISOString(),
+        duration_minutes: durationMinutes,
+      }).eq('id', workoutId)
 
-    try { localStorage.removeItem(`lazyfit_workout_draft_${workoutId}`) } catch {}
-    router.push(`/train/summary/${workoutId}`)
-  }, [workoutId, exercises, sets, startTime, supabase, router])
+      if (completeError) throw completeError
+
+      try { localStorage.removeItem(`lazyfit_workout_draft_${workoutId}`) } catch {}
+      router.push(`/train/summary/${workoutId}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not finish workout. Try again.'
+      alert(`Could not finish workout: ${message}`)
+      setFinishing(false)
+    }
+  }, [workoutId, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, keepSameWeightFor])
 
   const discardWorkout = async () => {
     await supabase.from('workout_sets').delete().eq('workout_id', workoutId)
