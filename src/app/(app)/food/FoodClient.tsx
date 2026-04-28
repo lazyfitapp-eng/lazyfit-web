@@ -80,6 +80,13 @@ function toBase64(file: File): Promise<string> {
   })
 }
 
+function timestampForSelectedDate(date: string): string {
+  const now = new Date()
+  const selected = new Date(`${date}T00:00:00`)
+  selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
+  return selected.toISOString()
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DayNote sub-component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -383,6 +390,7 @@ export default function FoodClient({
     if (!aiItems?.length) return
     setCtaLoading(true)
     try {
+      const loggedAt = timestampForSelectedDate(date)
       const rows = aiItems.map(item => ({
         user_id: userId,
         food_id: `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -393,7 +401,7 @@ export default function FoodClient({
         fat: Math.round(item.fat * 10) / 10,
         quantity: item.quantity_g,
         meal_type: modalMeal,
-        logged_at: new Date().toISOString(),
+        logged_at: loggedAt,
       }))
       const { data, error } = await supabase.from('food_logs').insert(rows).select()
       if (error) throw new Error(error.message)
@@ -413,6 +421,7 @@ export default function FoodClient({
     try {
       const qty = parseFloat(selectedQty) || 100
       const factor = qty / 100
+      const loggedAt = timestampForSelectedDate(date)
       const entry = {
         user_id: userId,
         food_id: `usda-${selectedResult.fdcId}`,
@@ -424,7 +433,7 @@ export default function FoodClient({
         fiber: Math.round((selectedResult.fiber ?? 0) * factor * 10) / 10,
         quantity: qty,
         meal_type: modalMeal,
-        logged_at: new Date().toISOString(),
+        logged_at: loggedAt,
       }
       const { data, error } = await supabase.from('food_logs').insert(entry).select().single()
       if (error) throw new Error(error.message)
@@ -444,6 +453,7 @@ export default function FoodClient({
     try {
       const qty = parseFloat(scannedQty) || 100
       const factor = qty / 100
+      const loggedAt = timestampForSelectedDate(date)
       const entry = {
         user_id: userId,
         food_id: `usda-${scannedProduct.fdcId}`,
@@ -455,7 +465,7 @@ export default function FoodClient({
         fiber: Math.round((scannedProduct.fiber ?? 0) * factor * 10) / 10,
         quantity: qty,
         meal_type: modalMeal,
-        logged_at: new Date().toISOString(),
+        logged_at: loggedAt,
       }
       const { data, error } = await supabase.from('food_logs').insert(entry).select().single()
       if (error) throw new Error(error.message)
