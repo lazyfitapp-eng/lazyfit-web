@@ -647,7 +647,33 @@ export default function ActiveWorkoutClient({
     })
   }
 
-  const removeSet = (exId: string, idx: number) => {
+  const removeSet = async (exId: string, idx: number) => {
+    const exercise = exercises.find(e => e.id === exId)
+    const exSets = sets[exId] ?? []
+    const setData = exSets[idx]
+
+    if (!setData) return
+
+    if (setData.logged && exercise) {
+      const isWarmup = setData.setType === 'warmup'
+      const dbSetNumber = isWarmup
+        ? exSets.slice(0, idx + 1).filter(s => s.setType === 'warmup').length
+        : exSets.slice(0, idx + 1).filter(s => s.setType === 'working').length
+
+      const { error } = await supabase
+        .from('workout_sets')
+        .delete()
+        .eq('workout_id', workoutId)
+        .eq('exercise_name', exercise.exercise_name)
+        .eq('set_number', dbSetNumber)
+        .eq('set_type', isWarmup ? 'warmup' : 'working')
+
+      if (error) {
+        alert(`Failed to delete set: ${error.message}`)
+        return
+      }
+    }
+
     setSets(prev => ({
       ...prev,
       [exId]: prev[exId].filter((_, i) => i !== idx),
