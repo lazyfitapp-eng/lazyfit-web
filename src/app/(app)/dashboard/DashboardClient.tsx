@@ -28,7 +28,7 @@ interface FoodLog {
   carbs: number
   fat: number
   meal_type: string
-  quantity_g: number | null
+  quantity: number | null
 }
 
 interface Props {
@@ -392,7 +392,7 @@ export default function DashboardClient({
     startTransition(async () => {
       const { data } = await supabase
         .from('food_logs')
-        .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity_g')
+        .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity')
         .eq('user_id', userId)
         .gte('logged_at', `${date}T00:00:00`)
         .lte('logged_at', `${date}T23:59:59`)

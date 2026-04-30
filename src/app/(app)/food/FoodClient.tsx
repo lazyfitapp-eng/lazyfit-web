@@ -103,6 +103,11 @@ function DayNote({ userId, date, initialNote }: { userId: string; date: string; 
   const [note, setNote] = useState(initialNote)
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    setNote(initialNote)
+    setSaving(false)
+  }, [date, initialNote])
+
   const handleBlur = async () => {
     setSaving(true)
     await supabase
@@ -939,7 +944,7 @@ export default function FoodClient({
 
         {/* ── Day note ──────────────────────────────────────────────────── */}
         <div style={{ marginTop: 10, marginBottom: 100 }}>
-          <DayNote userId={userId} date={date} initialNote={dayNote} />
+          <DayNote key={date} userId={userId} date={date} initialNote={dayNote} />
         </div>
       </div>
 

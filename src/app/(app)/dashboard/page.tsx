@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase
       .from('food_logs')
-      .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity_g')
+      .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity')
       .eq('user_id', user.id)
       .gte('logged_at', `${today}T00:00:00`)
       .lte('logged_at', `${today}T23:59:59`),
