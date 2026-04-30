@@ -13,6 +13,7 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [linkInvalid, setLinkInvalid] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -28,6 +29,7 @@ export default function ResetPasswordPage() {
 
       if (resetError || authErrorCode) {
         if (!cancelled) {
+          setLinkInvalid(true)
           setError(
             authErrorCode === 'otp_expired' || resetError === 'reset_link_invalid'
               ? 'This reset link is invalid, expired, or was already used. Request a new password reset link.'
@@ -42,6 +44,7 @@ export default function ResetPasswordPage() {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
           if (!cancelled) {
+            setLinkInvalid(true)
             setError('This reset link is invalid or expired. Request a new password reset link.')
             setReady(false)
           }
@@ -63,6 +66,7 @@ export default function ResetPasswordPage() {
 
         if (error) {
           if (!cancelled) {
+            setLinkInvalid(true)
             setError('This reset link is invalid or expired. Request a new password reset link.')
             setReady(false)
           }
@@ -76,6 +80,7 @@ export default function ResetPasswordPage() {
       if (!cancelled) {
         setReady(Boolean(data.session))
         if (!data.session) {
+          setLinkInvalid(true)
           setError('Open the reset link from your email, or request a new password reset link.')
         }
       }
@@ -191,9 +196,18 @@ export default function ResetPasswordPage() {
             disabled={!ready || loading || success}
             className="w-full py-3 mt-2 border border-primary text-primary text-sm font-bold tracking-widest rounded hover:bg-primary hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {!ready ? 'CHECKING LINK...' : loading ? 'SAVING...' : 'SET PASSWORD'}
+            {linkInvalid ? 'RESET LINK INVALID' : !ready ? 'CHECKING LINK...' : loading ? 'SAVING...' : 'SET PASSWORD'}
           </button>
         </form>
+
+        {linkInvalid && (
+          <a
+            href="/login"
+            className="block w-full mt-4 text-center text-xs text-primary tracking-widest hover:underline"
+          >
+            BACK TO LOGIN
+          </a>
+        )}
       </div>
     </div>
   )
