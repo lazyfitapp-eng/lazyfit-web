@@ -10,6 +10,7 @@ export interface FoodAIItem {
   fat: number
   quantity_g: number
   confidence: 'high' | 'medium' | 'low'
+  assumption?: string
 }
 
 export async function POST(req: NextRequest) {
@@ -35,9 +36,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Provide image or text' }, { status: 400 })
   }
 
-  const systemPrompt = `You are a nutrition expert. Analyze the food shown/described and return ONLY a valid JSON array.
-Each element must have: name (string), calories (number, kcal), protein (number, g), carbs (number, g), fat (number, g), quantity_g (number), confidence ("high"|"medium"|"low").
-Estimate realistic portions. If multiple foods are visible, return one entry per distinct food item.
+  const systemPrompt = `You are a careful nutrition expert. Analyze the food shown/described and return ONLY a valid JSON array.
+Each element must have: name (string), calories (number, kcal), protein (number, g), carbs (number, g), fat (number, g), quantity_g (number), confidence ("high"|"medium"|"low"). You may include assumption (string) when relevant.
+Do not invent oil, butter, sauce, dressing, mayo, cream, or ghee quantities. If the user mentions one of these without a quantity, do not add hidden calories for it; set confidence to "low" and mention the missing quantity in assumption.
+When added oils or sauces have a quantity, separate them as their own food items.
+If the user says "cooked chicken breast" with grams, treat the grams as cooked weight.
+If raw/cooked/dry/boiled state is unclear for rice, pasta, meat, fish, or potato, use the most reasonable assumption, set confidence to "medium" or "low", and mention the assumption.
+Estimate realistic portions only when the user has not provided quantity. If multiple foods are visible, return one entry per distinct food item.
 Return ONLY the JSON array, no markdown, no explanation.`
 
   const userText = [

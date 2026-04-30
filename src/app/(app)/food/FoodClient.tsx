@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { detectFoodAmbiguity, type FoodAmbiguityIssue } from '@/lib/foodAmbiguity'
 import type { USDAResult } from '@/app/api/food-search/route'
 import type { FoodAIItem } from '@/app/api/food-ai/route'
 
@@ -85,6 +86,12 @@ function timestampForSelectedDate(date: string): string {
   const selected = new Date(`${date}T00:00:00`)
   selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
   return selected.toISOString()
+}
+
+function parsePositiveQuantity(value: string | number): number | null {
+  if (typeof value === 'string' && value.trim() === '') return null
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -176,7 +183,7 @@ export default function FoodClient({
   const [searchResults, setSearchResults] = useState<USDAResult[]>([])
   const [searching, setSearching] = useState(false)
   const [selectedResult, setSelectedResult] = useState<USDAResult | null>(null)
-  const [selectedQty, setSelectedQty] = useState('100')
+  const [selectedQty, setSelectedQty] = useState('')
   const [searchError, setSearchError] = useState<string | null>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -186,13 +193,14 @@ export default function FoodClient({
   const rafRef = useRef<number | null>(null)
   const [scannerActive, setScannerActive] = useState(false)
   const [scannedProduct, setScannedProduct] = useState<USDAResult | null>(null)
-  const [scannedQty, setScannedQty] = useState('100')
+  const [scannedQty, setScannedQty] = useState('')
   const [barcodeError, setBarcodeError] = useState<string | null>(null)
 
   // ── AI items (shared photo + voice) ────────────────────────────────────────
   const [aiItems, setAiItems] = useState<EditableAIItem[] | null>(null)
   const [analysing, setAnalysing] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [aiWarnings, setAiWarnings] = useState<FoodAmbiguityIssue[]>([])
 
   // ── Action menu (···) ───────────────────────────────────────────────────────
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
@@ -246,9 +254,9 @@ export default function FoodClient({
       setMethodTab('photo')
       setImagePreview(null); setImageData(null); setPhotoWeight(''); setPhotoDesc('')
       setVoiceText(''); setMicListening(false); setMicError(null)
-      setSearchQuery(''); setSearchResults([]); setSelectedResult(null); setSelectedQty('100'); setSearchError(null)
-      setScannedProduct(null); setScannedQty('100'); setBarcodeError(null)
-      setAiItems(null); setAiError(null)
+      setSearchQuery(''); setSearchResults([]); setSelectedResult(null); setSelectedQty(''); setSearchError(null)
+      setScannedProduct(null); setScannedQty(''); setBarcodeError(null)
+      setAiItems(null); setAiError(null); setAiWarnings([])
       setCtaLoading(false)
     }, 300)
   }, [stopScanner])
@@ -343,10 +351,24 @@ export default function FoodClient({
 
   // ── Analyse (photo + voice) ─────────────────────────────────────────────────
   const handleAnalyse = async () => {
-    if (!imageData && !voiceText.trim()) {
+    const descriptionText = methodTab === 'photo' ? photoDesc.trim() : voiceText.trim()
+    const analysisText = methodTab === 'photo'
+      ? [photoWeight && `Total meal weight: ${photoWeight}g`, photoDesc].filter(Boolean).join('. ')
+      : voiceText.trim()
+
+    if (!imageData && !descriptionText) {
       setAiError(methodTab === 'photo' ? 'Take a photo or add a description first.' : 'Describe your meal first.')
       return
     }
+
+    const ambiguityIssues = detectFoodAmbiguity(analysisText)
+    const blockingIssue = ambiguityIssues.find(issue => issue.blocking)
+    if (blockingIssue) {
+      setAiWarnings([])
+      setAiError(blockingIssue.message)
+      return
+    }
+    setAiWarnings(ambiguityIssues)
     setAnalysing(true); setAiError(null); setCtaLoading(true)
     try {
       const res = await fetch('/api/food-ai', {
@@ -354,9 +376,7 @@ export default function FoodClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: imageData ?? undefined,
-          text: methodTab === 'photo'
-            ? [photoWeight && `Total meal weight: ${photoWeight}g`, photoDesc].filter(Boolean).join('. ') || undefined
-            : voiceText.trim() || undefined,
+          text: analysisText || undefined,
           meal_type: modalMeal,
         }),
       })
@@ -388,8 +408,19 @@ export default function FoodClient({
   // ── Log AI items ────────────────────────────────────────────────────────────
   const handleLogAiItems = async () => {
     if (!aiItems?.length) return
+    const blockingWarning = aiWarnings.find(issue => issue.blocking)
+    if (blockingWarning) {
+      setAiError(blockingWarning.message)
+      return
+    }
     setCtaLoading(true)
     try {
+      const invalidItem = aiItems.find(item => parsePositiveQuantity(item.quantity_g) === null)
+      if (invalidItem) {
+        setAiError('Enter a valid quantity greater than 0g for every item.')
+        return
+      }
+      setAiError(null)
       const loggedAt = timestampForSelectedDate(date)
       const rows = aiItems.map(item => ({
         user_id: userId,
@@ -399,7 +430,7 @@ export default function FoodClient({
         protein: Math.round(item.protein * 10) / 10,
         carbs: Math.round(item.carbs * 10) / 10,
         fat: Math.round(item.fat * 10) / 10,
-        quantity: item.quantity_g,
+        quantity: parsePositiveQuantity(item.quantity_g) as number,
         meal_type: modalMeal,
         logged_at: loggedAt,
       }))
@@ -419,7 +450,12 @@ export default function FoodClient({
     if (!selectedResult) return
     setCtaLoading(true)
     try {
-      const qty = parseFloat(selectedQty) || 100
+      const qty = parsePositiveQuantity(selectedQty)
+      if (qty === null) {
+        setSearchError('Enter a valid quantity greater than 0g.')
+        return
+      }
+      setSearchError(null)
       const factor = qty / 100
       const loggedAt = timestampForSelectedDate(date)
       const entry = {
@@ -451,7 +487,12 @@ export default function FoodClient({
     if (!scannedProduct) return
     setCtaLoading(true)
     try {
-      const qty = parseFloat(scannedQty) || 100
+      const qty = parsePositiveQuantity(scannedQty)
+      if (qty === null) {
+        setBarcodeError('Enter a valid quantity greater than 0g.')
+        return
+      }
+      setBarcodeError(null)
       const factor = qty / 100
       const loggedAt = timestampForSelectedDate(date)
       const entry = {
@@ -990,6 +1031,15 @@ export default function FoodClient({
               {/* ── AI items edit view ── */}
               {aiItems ? (
                 <div style={{ padding: '16px 0 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {aiWarnings.length > 0 && (
+                    <div style={{ background: '#1a1305', border: '1px solid rgba(245,166,35,0.35)', borderRadius: 12, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {aiWarnings.map((warning, i) => (
+                        <p key={`${warning.message}-${i}`} style={{ margin: 0, fontSize: 12, color: '#f5a623', lineHeight: 1.45 }}>
+                          {warning.message}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   {aiItems.map(item => (
                     <div key={item._id} style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
@@ -1039,7 +1089,7 @@ export default function FoodClient({
                     </div>
                   ))}
                   {aiError && <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', padding: '4px 0' }}>{aiError}</p>}
-                  <button onClick={() => { setAiItems(null); setAiError(null) }} style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>
+                  <button onClick={() => { setAiItems(null); setAiError(null); setAiWarnings([]) }} style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>
                     Retake / Edit
                   </button>
                 </div>
@@ -1225,7 +1275,8 @@ export default function FoodClient({
                                 <button
                                   onClick={() => {
                                     setSelectedResult(isSelected ? null : result)
-                                    setSelectedQty('100')
+                                    setSelectedQty('')
+                                    setSearchError(null)
                                   }}
                                   style={{
                                     display: 'flex', alignItems: 'center', padding: '11px 14px', gap: 12,
@@ -1255,7 +1306,7 @@ export default function FoodClient({
                                       type="number"
                                       inputMode="decimal"
                                       value={selectedQty}
-                                      onChange={e => setSelectedQty(e.target.value)}
+                                      onChange={e => { setSelectedQty(e.target.value); setSearchError(null) }}
                                       autoFocus
                                       placeholder="Enter weight…"
                                       style={{ flex: 1, background: '#121212', border: '1px solid #183525', borderRadius: 10, padding: '9px 12px', color: '#f0f0f0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }}
@@ -1266,6 +1317,9 @@ export default function FoodClient({
                               </div>
                             )
                           })}
+                          {searchError && (
+                            <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', padding: '10px 14px' }}>{searchError}</p>
+                          )}
                         </div>
                       ) : searchError ? (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -1298,7 +1352,8 @@ export default function FoodClient({
                               type="number"
                               inputMode="decimal"
                               value={scannedQty}
-                              onChange={e => setScannedQty(e.target.value)}
+                              onChange={e => { setScannedQty(e.target.value); setBarcodeError(null) }}
+                              placeholder="Enter weightâ€¦"
                               style={{ flex: 1, background: '#121212', border: '1px solid #183525', borderRadius: 10, padding: '9px 12px', color: '#f0f0f0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
                             />
                             <span style={{ fontSize: 12, color: '#3ecf8e', fontWeight: 700 }}>g</span>
