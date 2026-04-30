@@ -221,8 +221,15 @@ export default function FoodClient({
     const d = new Date(date + 'T12:00:00')
     d.setDate(d.getDate() + delta)
     const next = d.toISOString().split('T')[0]
+    setLogs([])
+    setActionMenuId(null)
     router.push(next === today ? '/food' : `/food?date=${next}`)
   }
+
+  useEffect(() => {
+    setLogs(initialLogs)
+    setActionMenuId(null)
+  }, [date, initialLogs])
 
   // ── FAB event listener ──────────────────────────────────────────────────────
   useEffect(() => {
