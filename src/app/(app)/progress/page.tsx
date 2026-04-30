@@ -256,7 +256,6 @@ export default async function ProgressPage() {
       const current1RM = sessions[sessions.length - 1].best1RM
       const delta = current1RM - first1RM
       const sessionCount = sessions.length
-      console.log(`[delta] ${name}: first=${first1RM.toFixed(1)} current=${current1RM.toFixed(1)} delta=${delta.toFixed(1)} sessions=${sessionCount}`)
 
       let trend: ExerciseSummary['trend'] = 'baseline'
       if (sessionCount >= MIN_SESSIONS_FOR_TREND) {

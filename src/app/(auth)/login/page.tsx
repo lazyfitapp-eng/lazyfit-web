@@ -13,6 +13,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [resetMode, setResetMode] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,6 +50,32 @@ export default function LoginPage() {
       setGoogleLoading(false)
     }
     // On success Supabase redirects the browser — no further action needed
+  }
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setResetSent(false)
+
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      setError('Enter your email first.')
+      return
+    }
+
+    setResetLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    setResetLoading(false)
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    setResetSent(true)
   }
 
   return (
@@ -97,7 +126,7 @@ export default function LoginPage() {
         </div>
 
         {/* Email/password form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={resetMode ? handlePasswordReset : handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs tracking-widest text-muted-foreground mb-2">
               EMAIL
@@ -113,33 +142,70 @@ export default function LoginPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-xs tracking-widest text-muted-foreground mb-2">
-              PASSWORD
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
-              placeholder="••••••••"
-            />
-          </div>
+          {!resetMode && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs tracking-widest text-muted-foreground">
+                  PASSWORD
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetMode(true)
+                    setError(null)
+                    setResetSent(false)
+                  }}
+                  className="text-[10px] tracking-widest text-primary hover:underline"
+                >
+                  FORGOT?
+                </button>
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
+                placeholder="password"
+              />
+            </div>
+          )}
 
           {error && (
             <p className="text-xs text-[#FF0040] py-2">{error}</p>
           )}
 
+          {resetSent && (
+            <p className="text-xs text-primary py-2">
+              Reset link sent. Check your email.
+            </p>
+          )}
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={resetMode ? resetLoading : loading}
             className="w-full py-3 mt-2 border border-primary text-primary text-sm font-bold tracking-widest rounded hover:bg-primary hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {loading ? 'ENTERING...' : 'ENTER THE MATRIX'}
+            {resetMode
+              ? (resetLoading ? 'SENDING...' : 'SEND RESET LINK')
+              : (loading ? 'ENTERING...' : 'ENTER THE MATRIX')}
           </button>
         </form>
+
+        {resetMode && (
+          <button
+            type="button"
+            onClick={() => {
+              setResetMode(false)
+              setError(null)
+              setResetSent(false)
+            }}
+            className="w-full mt-4 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Back to login
+          </button>
+        )}
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
           No account?{' '}

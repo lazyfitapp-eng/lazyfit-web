@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import MatrixRain from '@/components/MatrixRain'
@@ -10,7 +10,83 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const prepareRecoverySession = async () => {
+      setError(null)
+      const supabase = createClient()
+      const params = new URLSearchParams(window.location.search)
+      const resetError = params.get('error')
+      const authErrorCode = params.get('error_code')
+      const authErrorDescription = params.get('error_description')
+      const code = params.get('code')
+
+      if (resetError || authErrorCode) {
+        if (!cancelled) {
+          setError(
+            authErrorCode === 'otp_expired' || resetError === 'reset_link_invalid'
+              ? 'This reset link is invalid, expired, or was already used. Request a new password reset link.'
+              : authErrorDescription || 'Password reset failed. Request a new password reset link.'
+          )
+          setReady(false)
+        }
+        return
+      }
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          if (!cancelled) {
+            setError('This reset link is invalid or expired. Request a new password reset link.')
+            setReady(false)
+          }
+          return
+        }
+
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+
+        if (error) {
+          if (!cancelled) {
+            setError('This reset link is invalid or expired. Request a new password reset link.')
+            setReady(false)
+          }
+          return
+        }
+
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+
+      const { data } = await supabase.auth.getSession()
+      if (!cancelled) {
+        setReady(Boolean(data.session))
+        if (!data.session) {
+          setError('Open the reset link from your email, or request a new password reset link.')
+        }
+      }
+    }
+
+    prepareRecoverySession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,8 +111,12 @@ export default function ResetPasswordPage() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    setSuccess(true)
+    setLoading(false)
+    window.setTimeout(() => {
+      router.push('/dashboard')
+      router.refresh()
+    }, 1200)
   }
 
   return (
@@ -72,6 +152,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              disabled={!ready || success}
               autoComplete="new-password"
               className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
               placeholder="min. 6 characters"
@@ -88,6 +169,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setConfirm(e.target.value)}
               required
               minLength={6}
+              disabled={!ready || success}
               autoComplete="new-password"
               className="w-full bg-[#0a0a0a] border border-[#222222] rounded px-4 py-3 text-sm text-white placeholder-[#b8b8b8] focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_#00FF41] transition-all"
               placeholder="repeat password"
@@ -98,12 +180,18 @@ export default function ResetPasswordPage() {
             <p className="text-xs text-[#FF0040] py-2">{error}</p>
           )}
 
+          {success && (
+            <p className="text-xs text-primary py-2">
+              Password updated. Redirecting...
+            </p>
+          )}
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={!ready || loading || success}
             className="w-full py-3 mt-2 border border-primary text-primary text-sm font-bold tracking-widest rounded hover:bg-primary hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {loading ? 'SAVING...' : 'SET PASSWORD'}
+            {!ready ? 'CHECKING LINK...' : loading ? 'SAVING...' : 'SET PASSWORD'}
           </button>
         </form>
       </div>

@@ -1365,7 +1365,7 @@ export default function FoodClient({
                               inputMode="decimal"
                               value={scannedQty}
                               onChange={e => { setScannedQty(e.target.value); setBarcodeError(null) }}
-                              placeholder="Enter weightâ€¦"
+                              placeholder="Enter weight..."
                               style={{ flex: 1, background: '#121212', border: '1px solid #183525', borderRadius: 10, padding: '9px 12px', color: '#f0f0f0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
                             />
                             <span style={{ fontSize: 12, color: '#3ecf8e', fontWeight: 700 }}>g</span>
