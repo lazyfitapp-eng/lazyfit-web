@@ -40,6 +40,12 @@ function formatVolume(sets: WorkoutSet[]) {
   return Math.round(total).toLocaleString()
 }
 
+function formatKg(value: number) {
+  return `${Math.round(value).toLocaleString()} kg`
+}
+
+const ESTIMATED_RM_TOLERANCE = 0.5
+
 function bestSetByExercise(sets: WorkoutSet[]): Record<string, { weight: number; reps: number; rm: number }> {
   const best: Record<string, { weight: number; reps: number; rm: number }> = {}
   for (const s of sets) {
@@ -123,7 +129,10 @@ export default function SummaryClient({
   const isToday = completedAt ? new Date(completedAt).toDateString() === new Date().toDateString() : false
   const exerciseNames = [...new Set(sets.map(s => s.exercise_name))]
   const muscleSplit = computeMuscleSplit(sets)
+  const showMuscleSplit = muscleSplit.length > 0 && !(muscleSplit.length === 1 && muscleSplit[0].muscle === 'Other' && muscleSplit[0].pct >= 95)
+  const rawTotalVolume = sets.reduce((sum, s) => sum + s.weight_kg * s.reps_completed, 0)
   const totalVolume = formatVolume(sets)
+  const totalVolumeLabel = formatKg(rawTotalVolume)
   const totalSets = sets.filter(s => s.set_type !== 'warmup').length
   const todayBest = bestSetByExercise(sets)
 
@@ -135,15 +144,65 @@ export default function SummaryClient({
     return prev > 0 && best.rm > prev
   })
 
+  const comparableExercises = exerciseNames.filter(name => prevBestWeight[name] != null && todayBest[name])
+  const progressedExercises = comparableExercises.filter(name => {
+    const historicalRm = allTimeBest[name]
+    if (historicalRm > 0) {
+      return todayBest[name].rm > historicalRm + ESTIMATED_RM_TOLERANCE
+    }
+    return todayBest[name].weight > prevBestWeight[name] + 0.01
+  })
+  const dippedExercises = comparableExercises.filter(name => {
+    const historicalRm = allTimeBest[name]
+    if (historicalRm > 0) {
+      return todayBest[name].rm < historicalRm - ESTIMATED_RM_TOLERANCE
+    }
+    return todayBest[name].weight < prevBestWeight[name] - 0.01
+  })
+  const baselineExercises = exerciseNames.filter(name => todayBest[name] && !allTimeBest[name] && !prevBestWeight[name])
+  const isLowData = sessionCount <= 1 || comparableExercises.length === 0
+  const summaryMode: 'baseline' | 'consistency' | 'progress' | 'regression' =
+    prs.length > 0 || progressedExercises.length > 0 ? 'progress'
+    : isLowData ? 'baseline'
+    : dippedExercises.length > 0 ? 'regression'
+    : 'consistency'
+  const highlightExercise = prs[0] ?? progressedExercises[0] ?? dippedExercises[0] ?? exerciseNames[0]
+  const highlightLabel = highlightExercise ?? 'This workout'
+
+  const heroCopy = (() => {
+    const workoutTitle = `${routineName ?? 'Custom Workout'} Complete`
+    if (summaryMode === 'baseline') {
+      return { label: 'BASELINE CREATED', title: workoutTitle, subtitle: 'First signal logged.' }
+    }
+    if (summaryMode === 'progress') {
+      return {
+        label: prs.length > 0 ? 'NEW PERSONAL RECORD' : 'PROGRESS MADE',
+        title: workoutTitle,
+        subtitle: prs.length > 0 && highlightExercise ? `${highlightExercise} hit a new best.` : 'Progress made.',
+      }
+    }
+    if (summaryMode === 'regression') {
+      return { label: 'HOLD THE LINE', title: workoutTitle, subtitle: 'Repeat the target next time.' }
+    }
+    return { label: 'CONSISTENCY WIN', title: workoutTitle, subtitle: 'You showed up.' }
+  })()
+
   // Per-exercise delta vs previous workout
   function getDelta(name: string): { type: 'up' | 'build' | 'down'; label: string } {
     const prev = prevBestWeight[name]
-    const todayW = todayBest[name]?.weight
-    if (!prev || todayW == null) return { type: 'build', label: '→ Build' }
-    const diff = Math.round((todayW - prev) * 100) / 100
+    const best = todayBest[name]
+    if (!prev || !best) return { type: 'build', label: 'Baseline' }
+    const historicalRm = allTimeBest[name]
+    if (historicalRm > 0) {
+      const rmDiff = best.rm - historicalRm
+      if (rmDiff > ESTIMATED_RM_TOLERANCE) return { type: 'up', label: 'New best' }
+      if (rmDiff < -ESTIMATED_RM_TOLERANCE) return { type: 'down', label: 'Hold' }
+      return { type: 'build', label: 'Same target' }
+    }
+    const diff = Math.round((best.weight - prev) * 100) / 100
     if (diff > 0.01) return { type: 'up', label: `↑ +${diff}kg` }
     if (diff < -0.01) return { type: 'down', label: `↓ ${Math.abs(diff)}kg` }
-    return { type: 'build', label: '→ Build' }
+    return { type: 'build', label: 'Same target' }
   }
 
   // Coach badge per exercise (next session target)
@@ -172,6 +231,67 @@ export default function SummaryClient({
   }
 
   // ── Actions ──────────────────────────────────────────────
+
+  function getTargetAction(name: string): { label: 'Build' | 'Hold' | 'Repeat' | 'Increase'; reason: string; tone: 'green' | 'amber' } {
+    const nextTarget = targets[name]?.[1]
+    const workingSets = sets.filter(s => s.exercise_name === name && s.set_type !== 'warmup')
+    const best = todayBest[name]
+    const prev = prevBestWeight[name]
+    if (!nextTarget || !best || !prev) {
+      return { label: 'Repeat', tone: 'amber', reason: 'First comparable session. Lock in clean reps before progressing.' }
+    }
+    const historicalRm = allTimeBest[name]
+    if (historicalRm > 0 && best.rm < historicalRm - ESTIMATED_RM_TOLERANCE) {
+      return { label: 'Hold', tone: 'amber', reason: 'Estimated strength dipped. Repeat the target before increasing load.' }
+    }
+    if (best.weight < prev - 0.01) {
+      return { label: 'Hold', tone: 'amber', reason: 'Today dipped. Repeat the target before increasing load.' }
+    }
+    const allHitMax = workingSets.length > 0 && workingSets.every(s => s.reps_completed >= nextTarget.repsMax)
+    const currentWeight = workingSets[0]?.weight_kg ?? nextTarget.weight
+    if (allHitMax && nextTarget.weight > currentWeight + 0.01) {
+      return { label: 'Increase', tone: 'green', reason: 'You earned the top of the range.' }
+    }
+    return { label: 'Build', tone: 'amber', reason: "You're inside the target range. Earn the top end before adding load." }
+  }
+
+  const coachMessage = (() => {
+    if (summaryMode === 'baseline') {
+      return `Baseline created. This is your starting point for this workout.\n\nRepeat it 2-3 more times and LazyFit will know whether you're building, holding, or regressing.\n\nNext time: match today first. Clean reps before heavier weight.`
+    }
+    if (summaryMode === 'progress') {
+      const name = highlightExercise ?? 'A key lift'
+      if (prs.length > 0) {
+        return `${name} moved.\n\nYou beat your last comparable session and set a new best set today.\n\nNext time: stay in the target rep range. If you hit the top again, LazyFit will push the load.`
+      }
+      return `${name} moved.\n\nYou beat your last comparable session today.\n\nNext time: stay in the target rep range and earn the top end before adding load.`
+    }
+    if (summaryMode === 'regression') {
+      return `Hold the line.\n\nToday was below your last comparable session, but one weaker workout is not a trend.\n\nNext time: repeat the same target and win the range before adding load.`
+    }
+    return `You completed the work.\n\nNot every session needs a PR. Repeating clean reps is how the trend gets built.\n\nNext time: attack the same target and look for one stronger rep.`
+  })()
+
+  const statCards = [
+    {
+      val: totalSets,
+      label: 'sets completed',
+    },
+    {
+      val: totalVolumeLabel,
+      label: 'total volume',
+    },
+    summaryMode === 'progress'
+      ? {
+          val: prs.length > 0 ? prs.length : progressedExercises.length,
+          label: prs.length > 0 ? 'new PR' : 'lift progressed',
+        }
+      : summaryMode === 'baseline'
+        ? { val: baselineExercises.length || exerciseNames.length, label: 'baseline lift' }
+        : summaryMode === 'regression'
+          ? { val: dippedExercises.length, label: 'lift dipped' }
+          : { val: comparableExercises.length, label: 'same target' },
+  ]
 
   const handleDone = () => {
     setShowCompletion(true)
@@ -365,10 +485,7 @@ export default function SummaryClient({
             fontSize: 11, fontWeight: 700, letterSpacing: '2.2px', textTransform: 'uppercase',
             color: T.accent, opacity: 0.7, marginBottom: 10,
           }}>
-            {prs.length > 0
-              ? `${prs.length} New Personal Record${prs.length !== 1 ? 's' : ''}`
-              : sessionCount >= 10 ? 'Consistency Wins'
-              : 'Getting Stronger'}
+            {heroCopy.label}
           </div>
 
           {/* PR number — large green number only when PRs exist */}
@@ -390,45 +507,28 @@ export default function SummaryClient({
 
           {/* Workout name — always the main headline */}
           <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1.2px', lineHeight: 1.05, color: T.text }}>
-            {routineName ?? 'Custom Workout'} — Complete
+            {heroCopy.title}
           </div>
 
           {/* Date + time subtitle */}
           <div style={{ fontSize: 13, color: T.text2, marginTop: 4, letterSpacing: '-0.1px', lineHeight: 1.4 }}>
-            {completedAt ? `${formatWorkoutDate(completedAt)}, ${formatTime(completedAt)}` : ''}
-            {prs.length > 0 ? <> &nbsp;·&nbsp; <strong style={{ color: T.accent, fontWeight: 700 }}>Strongest session yet</strong></> : null}
+            <strong style={{ color: summaryMode === 'regression' ? T.amber : T.accent, fontWeight: 700 }}>{heroCopy.subtitle}</strong>
+            {completedAt ? <> &nbsp;·&nbsp; {formatWorkoutDate(completedAt)}, {formatTime(completedAt)}</> : null}
           </div>
         </div>
 
         {/* Stat pills */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, position: 'relative', zIndex: 1 }}>
-          {[
-            {
-              val: durationMinutes ?? '—',
-              delta: sessionCount === 1 ? 'Your baseline' : 'This session',
-              label: 'Minutes',
-            },
-            { val: totalSets, delta: 'All completed', label: 'Sets' },
-            {
-              val: totalVolume,
-              delta: Object.keys(prevBestWeight).length > 0 ? 'vs last session' : 'Total lifted',
-              label: 'kg Volume',
-            },
-          ].map((stat) => (
+          {statCards.map((stat) => (
             <div key={stat.label} style={{
               background: 'rgba(255,255,255,0.03)',
               border: `1px solid ${T.border2}`,
-              borderRadius: 14, padding: '12px 8px', textAlign: 'center',
+              borderRadius: 14, padding: '13px 8px', textAlign: 'center',
             }}>
-              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.8px', lineHeight: 1, color: T.text }}>
+              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.6px', lineHeight: 1.05, color: T.text }}>
                 {stat.val}
               </div>
-              {stat.delta && (
-                <div style={{ fontSize: 10, fontWeight: 700, color: T.accent, marginTop: 2, letterSpacing: '-0.1px' }}>
-                  {stat.delta}
-                </div>
-              )}
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.7px', textTransform: 'uppercase', color: T.text3, marginTop: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0', color: T.text2, marginTop: 6, lineHeight: 1.2 }}>
                 {stat.label}
               </div>
             </div>
@@ -509,47 +609,50 @@ export default function SummaryClient({
               </div>
               <div>
                 <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: T.accent, opacity: 0.65 }}>Coach</div>
-                <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.3px', color: T.text, marginTop: 1 }}>Next Session Targets</div>
+                <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.3px', color: T.text, marginTop: 1 }}>Coach Verdict</div>
               </div>
             </div>
 
             {/* Coach message */}
-            <div style={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(242,242,242,0.65)', marginBottom: 16, letterSpacing: '-0.1px' }}>
-              {buildCoachMessage()}
-              {prs.length > 0 && (
-                <span style={{ display: 'block', marginTop: 10, fontSize: 14, fontWeight: 700, color: T.text, letterSpacing: '-0.2px' }}>
-                  Next session: attack it again. →
-                </span>
-              )}
+            <div style={{ fontSize: 15, lineHeight: 1.65, color: 'rgba(242,242,242,0.88)', marginBottom: 18, letterSpacing: '0', whiteSpace: 'pre-line' }}>
+              {coachMessage}
             </div>
 
             {/* Per-exercise target rows */}
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.9px', textTransform: 'uppercase', color: T.accent, opacity: 0.9, marginBottom: 9 }}>
+              Next Session Targets
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {exerciseNames.map(name => {
                 const nextTarget = targets[name]?.[1]
                 if (!nextTarget) return null
-                const badge = getCoachBadge(name)
+                const action = getTargetAction(name)
                 return (
                   <div key={name} style={{
-                    display: 'flex', alignItems: 'center', padding: '9px 12px', gap: 8,
+                    display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', padding: '12px', gap: 10,
                     background: 'rgba(62,207,142,0.04)',
                     border: '1px solid rgba(62,207,142,0.08)',
                     borderRadius: 10,
                   }}>
-                    <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: T.text2, lineHeight: 1.35 }}>
-                      {name}
+                    <div style={{ flex: '1 1 170px', minWidth: 0, lineHeight: 1.35 }}>
+                      <div style={{ fontSize: 13, fontWeight: 750, color: T.text }}>
+                        {name}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'rgba(242,242,242,0.72)', marginTop: 4, lineHeight: 1.45 }}>
+                        Reason: {action.reason}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: T.accent, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: T.accent, flexShrink: 0, whiteSpace: 'nowrap' }}>
                       {nextTarget.weight}kg × {nextTarget.repsMin}–{nextTarget.repsMax}
                     </div>
                     <div style={{
-                      fontSize: 9, fontWeight: 800, letterSpacing: '0.3px',
-                      padding: '2px 7px', borderRadius: 5, flexShrink: 0,
-                      ...(badge.type === 'up'
+                      fontSize: 10, fontWeight: 800, letterSpacing: '0.2px',
+                      padding: '4px 8px', borderRadius: 6, flexShrink: 0,
+                      ...(action.tone === 'green'
                         ? { background: T.accentBg, color: T.accent,  border: `1px solid ${T.accentBd}` }
                         : { background: '#1a1200',  color: T.amber,   border: `1px solid ${T.amberBd}` }),
                     }}>
-                      {badge.label}
+                      {action.label}
                     </div>
                   </div>
                 )
@@ -563,7 +666,7 @@ export default function SummaryClient({
       {exerciseNames.length > 0 && (
         <div className="lf-a3" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', margin: '24px 0 10px' }}>
           <div style={{ flex: 1, height: 1, background: T.border }} />
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: T.text3, whiteSpace: 'nowrap' }}>Exercise Detail</div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.9px', textTransform: 'uppercase', color: T.text2, whiteSpace: 'nowrap' }}>Exercise Detail</div>
           <div style={{ flex: 1, height: 1, background: T.border }} />
         </div>
       )}
@@ -577,12 +680,14 @@ export default function SummaryClient({
 
           const exBest = todayBest[name]
           const isPR   = exBest && allTimeBest[name] > 0 && exBest.rm > allTimeBest[name]
+          const isBaseline = exBest && !allTimeBest[name] && !prevBestWeight[name]
           const delta  = getDelta(name)
 
           const isPrimary     = idx === 0
           const isPrimaryBack = idx === 1
           const showWarmup    = idx < 2 && warmupSets.length > 0
           const backoffSets   = workingSets.slice(1)
+          const showBackoffSets = backoffOpen[name] ?? workingSets.length <= 4
 
           const cardStyle: React.CSSProperties = {
             borderRadius: 20, overflow: 'hidden', position: 'relative',
@@ -618,13 +723,24 @@ export default function SummaryClient({
                       display: 'inline-flex', alignItems: 'center', gap: 3,
                       background: T.accentBg, border: `1px solid ${T.accentBd}`,
                       borderRadius: 6, padding: '2px 7px',
-                      fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
+                      fontSize: 10, fontWeight: 800, letterSpacing: '0.4px',
                       color: T.accent, textTransform: 'uppercase', flexShrink: 0,
                     }}>
                       <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2.8">
                         <polyline points="1,5 3.5,8 9,2" />
                       </svg>
                       PR
+                    </span>
+                  )}
+                  {!isPR && isBaseline && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      background: '#1a1200', border: `1px solid ${T.amberBd}`,
+                      borderRadius: 6, padding: '2px 7px',
+                      fontSize: 10, fontWeight: 800, letterSpacing: '0.4px',
+                      color: T.amber, textTransform: 'uppercase', flexShrink: 0,
+                    }}>
+                      Baseline
                     </span>
                   )}
                 </div>
@@ -642,7 +758,7 @@ export default function SummaryClient({
                     <span style={{ fontSize: 13, fontWeight: 600, color: T.text2 }}>
                       × {exBest.reps} reps
                     </span>
-                    <span style={{ fontSize: 11, color: T.text3 }}>
+                      <span style={{ fontSize: 12, color: T.text2 }}>
                       Est. 1RM: {exBest.rm.toFixed(1)}
                     </span>
                     {/* Delta badge */}
@@ -689,11 +805,11 @@ export default function SummaryClient({
                   {warmupOpen[name] && (
                     <div style={{ padding: '4px 16px 8px', background: 'rgba(245,166,35,0.03)', borderTop: `1px solid ${T.amberBg}` }}>
                       {warmupSets.map((s, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 11 }}>
-                          <span style={{ fontSize: 9, fontWeight: 800, color: T.amber, width: 18, flexShrink: 0, opacity: 0.7 }}>W{i + 1}</span>
-                          <span style={{ color: T.text3 }}>{s.weight_kg}kg</span>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', fontSize: 12 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: T.amber, width: 18, flexShrink: 0, opacity: 0.85 }}>W{i + 1}</span>
+                          <span style={{ color: T.text2 }}>{s.weight_kg}kg</span>
                           <span style={{ color: T.text4 }}> × </span>
-                          <span style={{ color: T.text3 }}>{s.reps_completed}</span>
+                          <span style={{ color: T.text2 }}>{s.reps_completed}</span>
                         </div>
                       ))}
                     </div>
@@ -705,11 +821,11 @@ export default function SummaryClient({
               {workingSets.length > 0 && (
                 <div style={{ paddingBottom: 6 }}>
                   {/* Column headers */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '22px 90px 1fr 64px', padding: '5px 16px', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '22px 90px 1fr 64px', padding: '6px 16px', gap: 8 }}>
                     {['#', 'Weight', 'Reps', 'Est. 1RM'].map((h, i) => (
                       <div key={h} style={{
-                        fontSize: 9, fontWeight: 700, letterSpacing: '0.7px',
-                        textTransform: 'uppercase', color: T.text3,
+                        fontSize: 10, fontWeight: 800, letterSpacing: '0.4px',
+                        textTransform: 'uppercase', color: T.text2,
                         textAlign: i === 2 ? 'center' : i === 3 ? 'right' : 'left',
                       }}>{h}</div>
                     ))}
@@ -745,7 +861,7 @@ export default function SummaryClient({
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           padding: '8px 16px 10px', gap: 5,
-                          fontSize: 11, fontWeight: 600, color: T.text3,
+                          fontSize: 12, fontWeight: 650, color: T.text2,
                           cursor: 'pointer',
                           background: 'none', border: 'none', borderTop: '1px solid #0c0c0c',
                           width: '100%', fontFamily: font,
@@ -759,10 +875,10 @@ export default function SummaryClient({
                         >
                           <polyline points="2,3 5,7 8,3" />
                         </svg>
-                        {backoffSets.length} more set{backoffSets.length !== 1 ? 's' : ''}
+                        {showBackoffSets ? 'Hide' : 'Show'} {backoffSets.length} more set{backoffSets.length !== 1 ? 's' : ''}
                       </button>
 
-                      {backoffOpen[name] && backoffSets.map((s, i) => {
+                      {showBackoffSets && backoffSets.map((s, i) => {
                         const rm = epley1RM(s.weight_kg, s.reps_completed)
                         return (
                           <div key={i} style={{
@@ -770,10 +886,10 @@ export default function SummaryClient({
                             padding: '9px 16px', gap: 8, alignItems: 'center',
                             borderTop: '1px solid #0c0c0c',
                           }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: T.text3 }}>{s.set_number}</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: T.text2 }}>{s.set_number}</div>
                             <div style={{ fontSize: 14, fontWeight: 700, color: T.text, letterSpacing: '-0.3px' }}>{s.weight_kg}kg</div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: T.text2, textAlign: 'center' }}>{s.reps_completed}</div>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: T.text3, textAlign: 'right', letterSpacing: '-0.1px' }}>{rm.toFixed(1)}</div>
+                            <div style={{ fontSize: 12, fontWeight: 650, color: T.text2, textAlign: 'right', letterSpacing: '-0.1px' }}>{rm.toFixed(1)}</div>
                           </div>
                         )
                       })}
@@ -787,7 +903,7 @@ export default function SummaryClient({
       </div>
 
       {/* ── Section divider: Muscle Split ── */}
-      {muscleSplit.length > 0 && (
+      {showMuscleSplit && (
         <div className="lf-a6" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', margin: '24px 0 10px' }}>
           <div style={{ flex: 1, height: 1, background: T.border }} />
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: T.text3, whiteSpace: 'nowrap' }}>Muscle Split</div>
@@ -796,7 +912,7 @@ export default function SummaryClient({
       )}
 
       {/* ── Muscle split card ── */}
-      {muscleSplit.length > 0 && (
+      {showMuscleSplit && (
         <div className="lf-a6" style={{ padding: '0 16px' }}>
           <div style={{ background: T.card, border: `1px solid ${T.border2}`, borderRadius: 20, padding: '16px 18px' }}>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: T.text3, marginBottom: 12 }}>
@@ -826,23 +942,6 @@ export default function SummaryClient({
       <div className="lf-a7" style={{ padding: '24px 16px 32px' }}>
         {/* Divider */}
         <div style={{ height: 1, background: T.border, marginBottom: 20 }} />
-
-        {/* Share button */}
-        <button style={{
-          width: '100%', padding: 12,
-          background: 'none', border: `1px solid ${T.border2}`,
-          borderRadius: 13, fontFamily: font,
-          fontSize: 12, fontWeight: 600, color: T.text3,
-          cursor: 'pointer', marginBottom: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-          letterSpacing: '-0.1px',
-        }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-          Share this session
-        </button>
 
         {/* Save as Routine (only if no existing routine and not yet saved) */}
         {!routineId && !savedRoutine && (

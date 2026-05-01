@@ -2,6 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import FoodClient from './FoodClient'
 
+function isValidDateParam(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T12:00:00`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().split('T')[0] === value
+}
+
 export default async function FoodPage({
   searchParams,
 }: {
@@ -13,7 +19,7 @@ export default async function FoodPage({
 
   const { date: rawDate } = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate ?? '') ? rawDate! : today
+  const date = isValidDateParam(rawDate) ? rawDate : today
 
   const [{ data: foodLogs }, { data: profile }, { data: dayNoteRow }] = await Promise.all([
     supabase

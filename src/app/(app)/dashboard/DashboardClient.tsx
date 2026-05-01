@@ -127,7 +127,7 @@ function WeighInCard({ weight, trend, weeklyDelta, isToday, onLogWeight }: {
     <div className="bg-[#141414] border border-[#1e1e1e] rounded-xl font-sans" style={{ padding: '14px 16px' }}>
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[11px] text-[#555]" style={{ marginBottom: '4px' }}>Weight</div>
+          <div className="text-[11px] font-semibold text-[#b8b8b8]" style={{ marginBottom: '4px' }}>Weight</div>
           <div className="flex items-baseline gap-[2px]" style={{ lineHeight: 1 }}>
             <span className="text-[34px] font-bold text-[#f0f0f0] tracking-[-1px]">
               {weight ?? '—'}
@@ -175,11 +175,18 @@ function WeighInCard({ weight, trend, weeklyDelta, isToday, onLogWeight }: {
 
 // ─── MealCard ────────────────────────────────────────────────────────────────
 
-function MealCard({ meal, logs }: {
+function MealCard({ meal, logs, selectedDate, today }: {
   meal: typeof MEALS[number]
   logs: FoodLog[]
+  selectedDate: string
+  today: string
 }) {
   const router = useRouter()
+  const foodHref = (() => {
+    const params = new URLSearchParams({ meal: meal.type })
+    if (selectedDate !== today) params.set('date', selectedDate)
+    return `/food?${params.toString()}`
+  })()
   const total = logs.reduce(
     (acc, l) => ({ cal: acc.cal + (l.calories ?? 0), p: acc.p + (l.protein ?? 0), c: acc.c + (l.carbs ?? 0), f: acc.f + (l.fat ?? 0) }),
     { cal: 0, p: 0, c: 0, f: 0 }
@@ -195,7 +202,7 @@ function MealCard({ meal, logs }: {
           <div className="text-[10px] text-[#b8b8b8]" style={{ marginTop: '1px' }}>{meal.time}</div>
         </div>
         <span
-          onClick={() => router.push(`/food?meal=${meal.type}`)}
+          onClick={() => router.push(foodHref)}
           style={{
             backgroundColor: '#133d25',
             color: '#3ecf8e',
@@ -223,7 +230,7 @@ function MealCard({ meal, logs }: {
           <div className="text-[15px] font-semibold text-[#f0f0f0] leading-none">{meal.label}</div>
           <div className="text-[10px] text-[#b8b8b8]" style={{ marginTop: '1px' }}>{meal.time}</div>
         </div>
-        <Link href={`/food?meal=${meal.type}`} className="text-xs font-semibold text-[#3ecf8e]">
+        <Link href={foodHref} className="text-xs font-semibold text-[#3ecf8e]">
           + Add
         </Link>
       </div>
@@ -537,6 +544,8 @@ export default function DashboardClient({
               key={meal.type}
               meal={meal}
               logs={logsByMeal[meal.type]}
+              selectedDate={selectedDate}
+              today={today}
             />
           ))}
 

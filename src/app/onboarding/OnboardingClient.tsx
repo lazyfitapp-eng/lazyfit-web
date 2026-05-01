@@ -374,7 +374,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     <div style={{ paddingBottom: 24 }}>
       {stepHero(
         'Step 1 — Identity',
-        <>YOU&apos;RE<br /><span style={{ color: 'transparent', WebkitTextStroke: `1px ${C.greenBorder}` }}>SERIOUS.</span><br />SO ARE WE.</>,
+        <>YOU&apos;RE<br /><span style={{ color: 'rgba(62,207,142,0.18)', WebkitTextStroke: '1.4px rgba(62,207,142,0.85)', textShadow: '0 0 18px rgba(62,207,142,0.28)' }}>SERIOUS.</span><br />SO ARE WE.</>,
         <><strong style={{ color: C.text, fontStyle: 'normal' }}>Most fitness apps give you 90 days of confusion</strong> and hope you figure it out. LazyFit gives you <strong style={{ color: C.text, fontStyle: 'normal' }}>3 workouts a week</strong> and makes every single one count.</>
       )}
 
@@ -446,7 +446,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     <div style={{ paddingBottom: 24 }}>
       {stepHero(
         'Step 2 — Body',
-        <>HONEST<br />NUMBERS<br /><span style={{ color: 'transparent', WebkitTextStroke: `1px ${C.greenBorder}` }}>ONLY.</span></>,
+        <>HONEST<br />NUMBERS<br /><span style={{ color: 'rgba(62,207,142,0.18)', WebkitTextStroke: '1.4px rgba(62,207,142,0.85)', textShadow: '0 0 18px rgba(62,207,142,0.28)' }}>ONLY.</span></>,
         <><strong style={{ color: C.text, fontStyle: 'normal' }}>This is the part nobody likes.</strong> But your body composition is the difference between targets that work and months of spinning your wheels.</>
       )}
 
@@ -673,7 +673,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     <div style={{ paddingBottom: 24 }}>
       {stepHero(
         'Step 4 — Commitment',
-        <>WHAT<br />DO YOU<br /><span style={{ color: 'transparent', WebkitTextStroke: `1px ${C.greenBorder}` }}>WANT?</span></>,
+        <>WHAT<br />DO YOU<br /><span style={{ color: 'rgba(62,207,142,0.18)', WebkitTextStroke: '1.4px rgba(62,207,142,0.85)', textShadow: '0 0 18px rgba(62,207,142,0.28)' }}>WANT?</span></>,
         <><strong style={{ color: C.text, fontStyle: 'normal' }}>Be honest with yourself here.</strong> Pick the goal for where you are right now — not where you want to be. You can change this in 8 weeks.</>
       )}
 
