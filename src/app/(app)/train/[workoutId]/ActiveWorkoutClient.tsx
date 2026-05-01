@@ -936,7 +936,7 @@ export default function ActiveWorkoutClient({
       </div>
 
       {/* Scrollable body */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '16px', paddingBottom: '160px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '16px', paddingBottom: 'calc(160px + env(safe-area-inset-bottom, 0px))', overflowX: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
         {exercises.length === 0 && (
           <div style={{ textAlign: 'center', padding: '64px 0' }}>
             <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>No exercises yet.</p>
@@ -1443,7 +1443,7 @@ export default function ActiveWorkoutClient({
       </div>
 
       {/* Session bar — overlays BottomNav (zIndex 50 > BottomNav z-40) */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0d0d0d', borderTop: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', paddingLeft: '20px', paddingRight: '20px', paddingBottom: 'env(safe-area-inset-bottom, 20px)', zIndex: 50, fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0d0d0d', borderTop: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: '10px', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', zIndex: 50, fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif', maxWidth: '100vw', overflow: 'hidden' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
           <span style={{ fontSize: '13px', color: '#b8b8b8' }}>Elapsed</span>
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#f0f0f0' }}>{formatTime(elapsed)}</span>

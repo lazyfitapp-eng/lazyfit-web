@@ -102,10 +102,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   html {
     @apply font-mono;
     background-color: #000000;
+    overflow-x: hidden;
   }
 }
 
@@ -166,4 +170,9 @@
 /* Hide Next.js dev toolbar — prevents overlap during mobile testing */
 nextjs-portal {
   display: none;
+}
+
+body.lazyfit-checkin-open [data-lazyfit-bottom-nav],
+body.lazyfit-checkin-open [data-lazyfit-bottom-nav-spacer] {
+  display: none !important;
 }

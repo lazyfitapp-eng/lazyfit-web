@@ -501,6 +501,8 @@ export default function DashboardClient({
             targetCalories={targets.calories}
             avgProtein={checkin.avgProtein}
             targetProtein={targets.protein}
+            targetCarbs={targets.carbs}
+            targetFat={targets.fat}
             workoutsThisWeek={checkin.workoutsThisWeek}
             targetDaysPerWeek={targets.trainingDaysPerWeek}
           />

@@ -967,10 +967,11 @@ export default function FoodClient({
             width: '100%', maxWidth: 430, margin: '0 auto',
             background: '#111', border: '1px solid #242424',
             borderRadius: '26px 26px 0 0',
-            maxHeight: '86vh',
+            maxHeight: 'min(88dvh, 720px)',
             display: 'flex', flexDirection: 'column',
             transform: modalOpen ? 'translateY(0)' : 'translateY(100%)',
             transition: 'transform 0.3s cubic-bezier(.32,.72,0,1)',
+            overflow: 'hidden',
           }}
         >
           {/* Handle */}
@@ -1418,7 +1419,7 @@ export default function FoodClient({
           </div>
 
           {/* Pinned CTA */}
-          <div style={{ padding: '12px 20px 20px', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
+          <div style={{ padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
             <button
               onClick={handleCTA}
               disabled={ctaLoading || analysing}

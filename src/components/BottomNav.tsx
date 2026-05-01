@@ -118,8 +118,8 @@ export default function BottomNav() {
 
   return (
     <>
-      <div style={{ height: 80 }} />
-      <nav style={{
+      <div data-lazyfit-bottom-nav-spacer style={{ height: 80 }} />
+      <nav data-lazyfit-bottom-nav style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
@@ -127,10 +127,12 @@ export default function BottomNav() {
         zIndex: 50,
         background: '#090909',
         borderTop: '1px solid #1a1a1a',
-        padding: '8px 0 20px',
+        padding: '8px 0 calc(14px + env(safe-area-inset-bottom, 0px))',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
+        width: '100%',
+        maxWidth: '100vw',
       }}>
         {NAV_ITEMS.map(item => <NavItem key={item.href} {...item} />)}
         <FABButton />

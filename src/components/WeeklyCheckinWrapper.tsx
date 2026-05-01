@@ -19,6 +19,8 @@ interface Props {
   targetCalories: number
   avgProtein: number
   targetProtein: number
+  targetCarbs: number
+  targetFat: number
   workoutsThisWeek: number
   targetDaysPerWeek: number
 }
@@ -44,7 +46,11 @@ export default function WeeklyCheckinWrapper(props: Props) {
         <WeeklyCheckin
           {...props}
           key="checkin"
-          onComplete={() => { setOpen(false); setIsDue(false) }}
+          onClose={() => setOpen(false)}
+          onComplete={() => {
+            setOpen(false)
+            setIsDue(false)
+          }}
         />
       )}
     </>

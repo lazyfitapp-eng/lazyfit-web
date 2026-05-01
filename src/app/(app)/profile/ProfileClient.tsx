@@ -767,8 +767,8 @@ export default function ProfileClient({ user, profile }: Props) {
 
       {/* Edit Drawer */}
       {editDrawer && (
-        <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 430, height: '100vh', background: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'flex-end' }}>
-          <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px 40px', width: '100%', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
+        <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 'min(430px, 100vw)', height: '100dvh', background: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'flex-end', overflow: 'hidden' }}>
+          <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px calc(28px + env(safe-area-inset-bottom, 0px))', width: '100%', maxHeight: '88dvh', overflowY: 'auto', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
             <div style={{ width: 36, height: 4, background: '#2a2a2a', borderRadius: 2, margin: '0 auto 20px' }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 16 }}>
               {editDrawer === 'dob' ? 'Edit date of birth' : editDrawer === 'sex' ? 'Edit sex' : editDrawer === 'height' ? 'Edit height' : editDrawer === 'weight' ? 'Edit weight' : 'Edit calories / macros'}
@@ -861,8 +861,8 @@ export default function ProfileClient({ user, profile }: Props) {
 
       {/* Choice Sheet */}
       {choiceSheet && (
-        <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 430, height: '100vh', background: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'flex-end' }}>
-          <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px 40px', width: '100%', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
+        <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 'min(430px, 100vw)', height: '100dvh', background: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'flex-end', overflow: 'hidden' }}>
+          <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px calc(28px + env(safe-area-inset-bottom, 0px))', width: '100%', maxHeight: '88dvh', overflowY: 'auto', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
             <div style={{ width: 36, height: 4, background: '#2a2a2a', borderRadius: 2, margin: '0 auto 20px' }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 4 }}>{choiceSheet === 'job' ? 'Job activity' : 'Daily steps'}</div>
             <div style={{ fontSize: 13, color: '#b8b8b8', marginBottom: 20 }}>{choiceSheet === 'job' ? 'Used to estimate daily calorie needs.' : 'Used to adjust your calorie target.'}</div>
@@ -891,8 +891,8 @@ export default function ProfileClient({ user, profile }: Props) {
 
       {/* Goal Confirm Modal */}
       {confirmModalOpen && pendingGoalData && (
-        <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 430, height: '100vh', background: 'rgba(0,0,0,0.9)', zIndex: 200, alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#0e0e0e', borderRadius: 20, padding: '24px 20px 20px', width: 'calc(100% - 48px)', border: '1px solid #1a1a1a', animation: 'scaleIn 0.2s ease-out' }}>
+        <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 'min(430px, 100vw)', height: '100dvh', background: 'rgba(0,0,0,0.9)', zIndex: 200, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '16px' }}>
+          <div style={{ background: '#0e0e0e', borderRadius: 20, padding: '24px 20px 20px', width: '100%', maxHeight: '90dvh', overflowY: 'auto', border: '1px solid #1a1a1a', animation: 'scaleIn 0.2s ease-out' }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: '#f0f0f0', marginBottom: 6 }}>Switch to {pendingGoalData.label}?</div>
             <div style={{ fontSize: 13, color: '#b8b8b8', marginBottom: 16 }}>Here&apos;s exactly what changes on your plan:</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>

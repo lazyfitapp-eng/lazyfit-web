@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const CHECKIN_KEY = 'lf_checkin_week'
@@ -13,8 +14,11 @@ interface Props {
   targetCalories: number
   avgProtein: number
   targetProtein: number
+  targetCarbs: number
+  targetFat: number
   workoutsThisWeek: number
   targetDaysPerWeek: number
+  onClose?: () => void
   onComplete?: () => void
 }
 
@@ -87,28 +91,42 @@ export default function WeeklyCheckin({
   targetCalories,
   avgProtein,
   targetProtein,
+  targetCarbs,
+  targetFat,
   workoutsThisWeek,
   targetDaysPerWeek,
+  onClose,
   onComplete,
 }: Props) {
   const supabase = createClient()
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [accepted, setAccepted] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // Step 1 — exercise stats (fetched lazily)
   const [exerciseStats, setExerciseStats] = useState<ExerciseStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
+  const [statsError, setStatsError] = useState<string | null>(null)
 
   // Step 2 — daily food adherence (fetched lazily)
   const [dailyData, setDailyData] = useState<DayData[]>([])
   const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set())
   const [loadingDays, setLoadingDays] = useState(false)
+  const [daysError, setDaysError] = useState<string | null>(null)
 
   // Step 3 — baseline choice
   const [baselineChoice, setBaselineChoice] = useState<'logged' | 'target' | 'custom'>('logged')
   const [customCalories, setCustomCalories] = useState('')
+
+  useEffect(() => {
+    document.body.classList.add('lazyfit-checkin-open')
+    return () => {
+      document.body.classList.remove('lazyfit-checkin-open')
+    }
+  }, [])
 
   const weightDelta =
     currentWeight && prevWeight
@@ -145,12 +163,27 @@ export default function WeeklyCheckin({
 
   const suggestedTarget = baselineCalories + suggestion
 
+  const macroTargetsForCalories = (calories: number) => {
+    const protein = Math.max(0, Math.round(targetProtein))
+    const fat = Math.max(0, Math.round(targetFat))
+    const carbsFromCalories = Math.round((calories - protein * 4 - fat * 9) / 4)
+    const carbs = Math.max(0, carbsFromCalories)
+
+    return {
+      target_calories: calories,
+      target_protein: protein,
+      target_carbs: Number.isFinite(carbs) ? carbs : targetCarbs,
+      target_fat: fat,
+    }
+  }
+
   // Fetch exercise stats when entering step 1
   useEffect(() => {
     if (step !== 1 || exerciseStats !== null || loadingStats) return
     setLoadingStats(true)
     ;(async () => {
-      const { data: workouts } = await supabase
+      setStatsError(null)
+      const { data: workouts, error: workoutsError } = await supabase
         .from('workouts')
         .select('id')
         .eq('user_id', userId)
@@ -158,13 +191,20 @@ export default function WeeklyCheckin({
         .order('completed_at', { ascending: false })
         .limit(2)
 
+      if (workoutsError) {
+        setStatsError(workoutsError.message)
+        setExerciseStats({ progressed: 0, regressed: 0, held: 0 })
+        setLoadingStats(false)
+        return
+      }
+
       if (!workouts || workouts.length < 2) {
         setExerciseStats({ progressed: 0, regressed: 0, held: 0 })
         setLoadingStats(false)
         return
       }
 
-      const [{ data: sets1 }, { data: sets2 }] = await Promise.all([
+      const [{ data: sets1, error: sets1Error }, { data: sets2, error: sets2Error }] = await Promise.all([
         supabase
           .from('workout_sets')
           .select('exercise_name, weight_kg')
@@ -174,6 +214,13 @@ export default function WeeklyCheckin({
           .select('exercise_name, weight_kg')
           .eq('workout_id', workouts[1].id),
       ])
+
+      if (sets1Error || sets2Error) {
+        setStatsError(sets1Error?.message ?? sets2Error?.message ?? 'Could not load exercise progress.')
+        setExerciseStats({ progressed: 0, regressed: 0, held: 0 })
+        setLoadingStats(false)
+        return
+      }
 
       const toAvgByExercise = (
         rows: { exercise_name: string; weight_kg: number }[]
@@ -214,12 +261,21 @@ export default function WeeklyCheckin({
       const today = new Date().toISOString().split('T')[0]
       const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
 
-      const { data: logs } = await supabase
+      setDaysError(null)
+      const { data: logs, error: logsError } = await supabase
         .from('food_logs')
         .select('logged_at, calories')
         .eq('user_id', userId)
         .gte('logged_at', `${sevenDaysAgo}T00:00:00`)
         .lte('logged_at', `${today}T23:59:59`)
+
+      if (logsError) {
+        setDaysError(logsError.message)
+        setDailyData([])
+        setSelectedDays(new Set())
+        setLoadingDays(false)
+        return
+      }
 
       const byDate: Record<string, number> = {}
       for (const log of logs ?? []) {
@@ -244,14 +300,21 @@ export default function WeeklyCheckin({
     localStorage.setItem(CHECKIN_KEY, String(getWeekNumber()))
     setDone(true)
     onComplete?.()
+    if (accepted) router.refresh()
   }
 
   const acceptSuggestion = async () => {
     setSaving(true)
-    await supabase
+    setSaveError(null)
+    const { error } = await supabase
       .from('profiles')
-      .update({ target_calories: suggestedTarget })
+      .update(macroTargetsForCalories(suggestedTarget))
       .eq('id', userId)
+    if (error) {
+      setSaveError(error.message)
+      setSaving(false)
+      return
+    }
     setSaving(false)
     setAccepted(true)
     setStep(5)
@@ -267,11 +330,26 @@ export default function WeeklyCheckin({
   const TOTAL = 6
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end">
-      <div className="w-full bg-[#0d0d0d] border-t border-[#1a1a1a] rounded-t-2xl max-h-[88vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose?.() }}
+    >
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative w-full sm:max-w-[460px] bg-[#0d0d0d] border border-[#242424] rounded-t-2xl sm:rounded-2xl max-h-[88dvh] sm:max-h-[760px] flex flex-col shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+        <div className="flex items-center justify-center pt-3 pb-1 flex-shrink-0 relative">
           <div className="w-10 h-1 bg-[#222] rounded-full" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close weekly check-in"
+            className="absolute right-4 top-2 w-8 h-8 rounded-full text-[#b8b8b8] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+          >
+            <span className="text-xl leading-none">×</span>
+          </button>
         </div>
 
         {/* Progress pills */}
@@ -288,24 +366,26 @@ export default function WeeklyCheckin({
           </div>
         )}
 
-        <div className="overflow-y-auto flex-1 px-5 pb-10">
+        <div className="overflow-y-auto flex-1 px-5 sm:px-6 pb-[calc(96px+env(safe-area-inset-bottom,0px))]">
 
           {/* ── Step 0: Weight Review ─────────────────────────────────── */}
           {step === 0 && (
-            <div className="space-y-5 pt-3">
+            <div className="space-y-6 pt-4">
               <div>
-                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 1 OF {TOTAL}</p>
-                <h2 className="text-lg font-bold text-white">Weight Review</h2>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 1 OF {TOTAL}</p>
+                <h2 className="text-2xl font-bold text-white">Weight Review</h2>
+                <p className="text-sm text-[#b8b8b8] mt-2 leading-relaxed">Review your weekly weight trend, then continue.</p>
               </div>
 
-              <div className="bg-[#111] rounded-xl p-4 flex items-center justify-around">
-                <div className="text-center">
-                  <p className="text-[10px] text-[#b8b8b8] tracking-widest mb-1">LAST WEEK</p>
-                  <p className="text-2xl font-bold font-mono text-white">{prevWeight ?? '—'}</p>
-                  {prevWeight && <p className="text-xs text-[#b8b8b8]">kg</p>}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-[#2a2a2a] bg-[#151515] p-3 text-center">
+                  <p className="text-[11px] font-semibold text-[#b8b8b8] mb-2">Last week</p>
+                  <p className="text-3xl font-bold font-mono text-white leading-none">{prevWeight ?? '—'}</p>
+                  {prevWeight && <p className="text-sm text-[#b8b8b8] mt-1">kg</p>}
                 </div>
-                <div className="text-center">
-                  <p className={`text-2xl font-bold font-mono ${
+                <div className="rounded-xl border border-[#2a2a2a] bg-[#151515] p-3 text-center">
+                  <p className="text-[11px] font-semibold text-[#b8b8b8] mb-2">Change</p>
+                  <p className={`text-3xl font-bold font-mono leading-none ${
                     weightDelta === null ? 'text-[#888888]'
                     : weightDelta > 0 ? 'text-[#FF0040]'
                     : weightDelta < 0 ? 'text-primary'
@@ -313,58 +393,63 @@ export default function WeeklyCheckin({
                   }`}>
                     {weightDelta === null ? '—' : `${weightDelta > 0 ? '+' : ''}${weightDelta}`}
                   </p>
-                  <p className="text-[10px] text-[#b8b8b8]">kg change</p>
+                  <p className="text-sm text-[#b8b8b8] mt-1">kg</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-[#b8b8b8] tracking-widest mb-1">THIS WEEK</p>
-                  <p className="text-2xl font-bold font-mono text-white">{currentWeight ?? '—'}</p>
-                  {currentWeight && <p className="text-xs text-[#b8b8b8]">kg</p>}
+                <div className="rounded-xl border border-[#2a2a2a] bg-[#151515] p-3 text-center">
+                  <p className="text-[11px] font-semibold text-[#b8b8b8] mb-2">This week</p>
+                  <p className="text-3xl font-bold font-mono text-white leading-none">{currentWeight ?? '—'}</p>
+                  {currentWeight && <p className="text-sm text-[#b8b8b8] mt-1">kg</p>}
                 </div>
               </div>
 
               {!currentWeight && (
-                <p className="text-xs text-[#555] text-center">Log your weight to get full check-in insights.</p>
+                <p className="text-sm text-[#b8b8b8] text-center">Log your weight to get full check-in insights.</p>
               )}
 
               <button
                 onClick={() => setStep(1)}
-                className="w-full py-3 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
+                className="w-full py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
               >
-                NEXT
+                CONTINUE
               </button>
             </div>
           )}
 
           {/* ── Step 1: Exercise Progress ─────────────────────────────── */}
           {step === 1 && (
-            <div className="space-y-5 pt-3">
+            <div className="space-y-6 pt-4">
               <div>
-                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 2 OF {TOTAL}</p>
-                <h2 className="text-lg font-bold text-white">Exercise Progress</h2>
-                <p className="text-xs text-[#555] mt-1">Compared to your previous session.</p>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 2 OF {TOTAL}</p>
+                <h2 className="text-2xl font-bold text-white">Exercise Progress</h2>
+                <p className="text-sm text-[#b8b8b8] mt-2 leading-relaxed">Compared to your previous session.</p>
               </div>
 
               {loadingStats ? (
-                <div className="bg-[#111] rounded-xl p-8 text-center">
-                  <p className="text-xs text-[#b8b8b8] tracking-widest animate-pulse">LOADING...</p>
+                <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-8 text-center">
+                  <p className="text-sm text-[#b8b8b8] font-semibold tracking-widest animate-pulse">LOADING...</p>
                 </div>
               ) : exerciseStats ? (
                 <div className="space-y-3">
+                  {statsError && (
+                    <p className="text-sm text-[#FFAA00] text-center">
+                      Couldn&apos;t load exercise details, so this step is using a safe empty summary.
+                    </p>
+                  )}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-[#111] rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold font-mono text-primary">{exerciseStats.progressed}</p>
-                      <p className="text-[10px] text-[#555] tracking-widest mt-1.5">PROGRESSED</p>
+                    <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-4 text-center">
+                      <p className="text-4xl font-bold font-mono text-primary">{exerciseStats.progressed}</p>
+                      <p className="text-[11px] font-semibold text-[#b8b8b8] mt-2">Progressed</p>
                     </div>
-                    <div className="bg-[#111] rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold font-mono text-[#FF0040]">{exerciseStats.regressed}</p>
-                      <p className="text-[10px] text-[#555] tracking-widest mt-1.5">REGRESSED</p>
+                    <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-4 text-center">
+                      <p className="text-4xl font-bold font-mono text-[#FF0040]">{exerciseStats.regressed}</p>
+                      <p className="text-[11px] font-semibold text-[#b8b8b8] mt-2">Regressed</p>
                     </div>
-                    <div className="bg-[#111] rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold font-mono text-[#555]">{exerciseStats.held}</p>
-                      <p className="text-[10px] text-[#555] tracking-widest mt-1.5">HELD</p>
+                    <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-4 text-center">
+                      <p className="text-4xl font-bold font-mono text-[#b8b8b8]">{exerciseStats.held}</p>
+                      <p className="text-[11px] font-semibold text-[#b8b8b8] mt-2">Held</p>
                     </div>
                   </div>
-                  <p className="text-xs text-[#555] text-center py-1">
+                  <p className="text-sm text-[#b8b8b8] text-center py-1 leading-relaxed">
                     {exerciseStats.progressed + exerciseStats.regressed + exerciseStats.held === 0
                       ? 'Complete at least 2 workouts to see progress comparisons.'
                       : exerciseStats.progressed > exerciseStats.regressed
@@ -379,13 +464,13 @@ export default function WeeklyCheckin({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(0)}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
+                  className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-3 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
+                  className="flex-1 py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
                 >
                   NEXT
                 </button>
@@ -395,17 +480,21 @@ export default function WeeklyCheckin({
 
           {/* ── Step 2: Nutrition Adherence ───────────────────────────── */}
           {step === 2 && (
-            <div className="space-y-5 pt-3">
+            <div className="space-y-6 pt-4">
               <div>
-                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 3 OF {TOTAL}</p>
-                <h2 className="text-lg font-bold text-white">Nutrition Adherence</h2>
-                <p className="text-xs text-[#555] mt-1">Deselect any days you know were inaccurate.</p>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 3 OF {TOTAL}</p>
+                <h2 className="text-2xl font-bold text-white">Nutrition Adherence</h2>
+                <p className="text-sm text-[#b8b8b8] mt-2 leading-relaxed">Deselect any days you know were inaccurate.</p>
               </div>
 
               {loadingDays ? (
-                <div className="bg-[#111] rounded-xl p-8 text-center">
-                  <p className="text-xs text-[#b8b8b8] tracking-widest animate-pulse">LOADING...</p>
+                <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-8 text-center">
+                  <p className="text-sm text-[#b8b8b8] font-semibold tracking-widest animate-pulse">LOADING...</p>
                 </div>
+              ) : daysError ? (
+                <p className="text-sm text-[#FFAA00] text-center py-6">
+                  Couldn&apos;t load food log details. You can still continue using your current calorie target.
+                </p>
               ) : (
                 <>
                   <div className="flex flex-wrap gap-2">
@@ -425,14 +514,14 @@ export default function WeeklyCheckin({
                           }}
                           className={`px-3 py-2 rounded-xl text-center transition-all min-w-[70px] ${
                             !day.logged
-                              ? 'bg-[#0d0d0d] border border-[#1a1a1a] cursor-default'
+                              ? 'bg-[#111] border border-[#242424] cursor-default'
                               : isSelected
                               ? 'bg-primary/10 border border-primary'
-                              : 'bg-[#0d0d0d] border border-[#222]'
+                              : 'bg-[#151515] border border-[#333]'
                           }`}
                         >
-                          <p className={`text-[10px] tracking-widest ${
-                            !day.logged ? 'text-[#888888]' : isSelected ? 'text-primary' : 'text-[#555]'
+                          <p className={`text-[11px] font-semibold ${
+                            !day.logged ? 'text-[#888888]' : isSelected ? 'text-primary' : 'text-[#b8b8b8]'
                           }`}>
                             {formatDay(day.date)}
                           </p>
@@ -452,8 +541,8 @@ export default function WeeklyCheckin({
                   </div>
 
                   {selectedDays.size > 0 && (
-                    <div className="bg-[#111] rounded-xl p-4 flex items-center justify-between">
-                      <p className="text-[10px] text-[#b8b8b8] tracking-widest">
+                    <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-4 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-[#b8b8b8]">
                         AVG ({selectedDays.size} {selectedDays.size === 1 ? 'DAY' : 'DAYS'})
                       </p>
                       <p className="text-xl font-bold font-mono text-white">
@@ -464,7 +553,7 @@ export default function WeeklyCheckin({
                   )}
 
                   {selectedDays.size === 0 && (
-                    <p className="text-xs text-[#555] text-center py-2">
+                    <p className="text-sm text-[#b8b8b8] text-center py-2">
                       No days selected — we'll use your target calories as the baseline.
                     </p>
                   )}
@@ -474,13 +563,13 @@ export default function WeeklyCheckin({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
+                  className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  className="flex-1 py-3 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
+                  className="flex-1 py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
                 >
                   NEXT
                 </button>
@@ -490,11 +579,11 @@ export default function WeeklyCheckin({
 
           {/* ── Step 3: Calorie Baseline ──────────────────────────────── */}
           {step === 3 && (
-            <div className="space-y-5 pt-3">
+            <div className="space-y-6 pt-4">
               <div>
-                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 4 OF {TOTAL}</p>
-                <h2 className="text-lg font-bold text-white">Calorie Baseline</h2>
-                <p className="text-xs text-[#555] mt-1">What should we base your adjustment on?</p>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 4 OF {TOTAL}</p>
+                <h2 className="text-2xl font-bold text-white">Calorie Baseline</h2>
+                <p className="text-sm text-[#b8b8b8] mt-2 leading-relaxed">What should we base your adjustment on?</p>
               </div>
 
               <div className="space-y-2">
@@ -504,14 +593,14 @@ export default function WeeklyCheckin({
                   className={`w-full flex items-center justify-between px-4 py-4 rounded-xl border transition-all ${
                     baselineChoice === 'logged'
                       ? 'border-primary bg-primary/5'
-                      : 'border-[#222] bg-[#111]'
+                      : 'border-[#2a2a2a] bg-[#151515]'
                   }`}
                 >
                   <div className="text-left">
                     <p className={`text-sm font-semibold ${baselineChoice === 'logged' ? 'text-primary' : 'text-white'}`}>
                       Logged
                     </p>
-                    <p className="text-[11px] text-[#555] mt-0.5">
+                    <p className="text-sm text-[#b8b8b8] mt-1">
                       From your food log — {loggedAvg} kcal avg
                     </p>
                   </div>
@@ -526,14 +615,14 @@ export default function WeeklyCheckin({
                   className={`w-full flex items-center justify-between px-4 py-4 rounded-xl border transition-all ${
                     baselineChoice === 'target'
                       ? 'border-primary bg-primary/5'
-                      : 'border-[#222] bg-[#111]'
+                      : 'border-[#2a2a2a] bg-[#151515]'
                   }`}
                 >
                   <div className="text-left">
                     <p className={`text-sm font-semibold ${baselineChoice === 'target' ? 'text-primary' : 'text-white'}`}>
                       Target
                     </p>
-                    <p className="text-[11px] text-[#555] mt-0.5">
+                    <p className="text-sm text-[#b8b8b8] mt-1">
                       Your current goal — {targetCalories} kcal
                     </p>
                   </div>
@@ -548,7 +637,7 @@ export default function WeeklyCheckin({
                   className={`px-4 py-4 rounded-xl border transition-all cursor-pointer ${
                     baselineChoice === 'custom'
                       ? 'border-primary bg-primary/5'
-                      : 'border-[#222] bg-[#111]'
+                      : 'border-[#2a2a2a] bg-[#151515]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -556,7 +645,7 @@ export default function WeeklyCheckin({
                       <p className={`text-sm font-semibold ${baselineChoice === 'custom' ? 'text-primary' : 'text-white'}`}>
                         Custom
                       </p>
-                      <p className="text-[11px] text-[#555] mt-0.5">Enter your actual average manually</p>
+                      <p className="text-sm text-[#b8b8b8] mt-1">Enter your actual average manually</p>
                     </div>
                     <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
                       baselineChoice === 'custom' ? 'border-primary bg-primary' : 'border-[#b8b8b8]'
@@ -582,14 +671,14 @@ export default function WeeklyCheckin({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
+                  className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
                 <button
                   onClick={() => setStep(4)}
                   disabled={baselineChoice === 'custom' && !customCalories}
-                  className="flex-1 py-3 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors disabled:opacity-40"
+                  className="flex-1 py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors disabled:opacity-40"
                 >
                   NEXT
                 </button>
@@ -599,23 +688,23 @@ export default function WeeklyCheckin({
 
           {/* ── Step 4: Program Update ────────────────────────────────── */}
           {step === 4 && (
-            <div className="space-y-5 pt-3">
+            <div className="space-y-6 pt-4">
               <div>
-                <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-1">STEP 5 OF {TOTAL}</p>
-                <h2 className="text-lg font-bold text-white">Program Update</h2>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 5 OF {TOTAL}</p>
+                <h2 className="text-2xl font-bold text-white">Program Update</h2>
               </div>
 
-              <div className="bg-[#111] rounded-xl p-5 space-y-4">
+              <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] text-[#b8b8b8] tracking-widest">DAILY AVERAGE CALORIES</p>
+                    <p className="text-xs font-semibold text-[#b8b8b8]">Daily average calories</p>
                     <p className="text-4xl font-bold font-mono text-white mt-2">
                       {suggestedTarget}
                     </p>
                     <p className="text-xs text-[#b8b8b8] mt-0.5">kcal / day</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-[#b8b8b8] tracking-widest">CHANGE</p>
+                    <p className="text-xs font-semibold text-[#b8b8b8]">Change</p>
                     <p className={`text-2xl font-bold font-mono mt-2 ${
                       suggestion > 0 ? 'text-primary'
                       : suggestion < 0 ? 'text-[#FF0040]'
@@ -627,7 +716,7 @@ export default function WeeklyCheckin({
                 </div>
 
                 <div className="pt-3 border-t border-[#1a1a1a]">
-                  <p className="text-xs text-[#666] leading-relaxed">
+                  <p className="text-sm text-[#b8b8b8] leading-relaxed">
                     {suggestion > 0
                       ? `Your weight dropped ${Math.abs(weightDelta ?? 0).toFixed(1)} kg. Adding ${suggestion} kcal supports your lean mass.`
                       : suggestion < 0
@@ -640,24 +729,29 @@ export default function WeeklyCheckin({
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep(3)}
-                  className="px-4 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-xs rounded-xl hover:border-[#b8b8b8] transition-colors flex-shrink-0"
+                  className="px-4 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-xs rounded-xl hover:border-[#b8b8b8] transition-colors flex-shrink-0"
                 >
                   BACK
                 </button>
                 <button
                   onClick={declineSuggestion}
-                  className="flex-1 py-3 border border-[#222] text-[#555] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
+                  className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   DECLINE
                 </button>
                 <button
                   onClick={acceptSuggestion}
                   disabled={saving}
-                  className="flex-1 py-3 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors disabled:opacity-40"
+                  className="flex-1 py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors disabled:opacity-40"
                 >
                   {saving ? 'SAVING...' : 'ACCEPT'}
                 </button>
               </div>
+              {saveError && (
+                <p className="text-xs text-[#FF0040] text-center">
+                  {saveError}
+                </p>
+              )}
             </div>
           )}
 
@@ -671,10 +765,10 @@ export default function WeeklyCheckin({
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-2xl font-bold text-white">
                   {accepted ? 'Program updated.' : 'Check-in complete.'}
                 </h2>
-                <p className="text-sm text-[#555] mt-2">Keep logging to see your trend.</p>
+                <p className="text-sm text-[#b8b8b8] mt-2">Keep logging to see your trend.</p>
                 {accepted && (
                   <p className="text-xs text-[#b8b8b8] mt-3 font-mono">
                     New target:{' '}
@@ -685,7 +779,7 @@ export default function WeeklyCheckin({
 
               <button
                 onClick={dismiss}
-                className="w-full py-3 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
+                className="w-full py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
               >
                 BACK TO DASHBOARD
               </button>

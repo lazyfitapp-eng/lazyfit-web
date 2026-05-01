@@ -119,7 +119,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-[#222222] px-6 py-6 text-center">
         <p className="text-xs text-muted-foreground tracking-widest">
-          LAZYFIT · ADAPTIVE FITNESS TRACKING · BETA
+          LAZYFIT - ADAPTIVE FITNESS TRACKING - BETA
         </p>
       </footer>
     </div>
