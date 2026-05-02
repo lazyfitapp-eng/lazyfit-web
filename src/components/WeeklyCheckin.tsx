@@ -118,7 +118,9 @@ export default function WeeklyCheckin({
   const [daysError, setDaysError] = useState<string | null>(null)
 
   // Step 3 — baseline choice
-  const [baselineChoice, setBaselineChoice] = useState<'logged' | 'target' | 'custom'>('logged')
+  const [baselineChoice, setBaselineChoice] = useState<'logged' | 'target' | 'custom'>(
+    targetCalories > 0 ? 'target' : 'custom'
+  )
   const [customCalories, setCustomCalories] = useState('')
 
   useEffect(() => {
@@ -147,9 +149,9 @@ export default function WeeklyCheckin({
   const baselineCalories =
     baselineChoice === 'logged'
       ? loggedAvg
-      : baselineChoice === 'target'
+    : baselineChoice === 'target'
       ? targetCalories
-      : parseInt(customCalories) || avgCalories
+      : parseInt(customCalories) || targetCalories
 
   // ±100 kcal suggestion based on weight trend
   const suggestion =
@@ -161,7 +163,7 @@ export default function WeeklyCheckin({
         : 0
       : 0
 
-  const suggestedTarget = baselineCalories + suggestion
+  const suggestedTarget = Math.max(0, baselineCalories + suggestion)
 
   const macroTargetsForCalories = (calories: number) => {
     const protein = Math.max(0, Math.round(targetProtein))

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { resolveNutritionTargets } from '@/lib/nutritionTargets'
 import { redirect } from 'next/navigation'
 import DashboardClient from './DashboardClient'
 
@@ -124,6 +125,12 @@ export default async function DashboardPage() {
     .map(([date, calories]) => ({ date, calories }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
+  const resolvedTargets = resolveNutritionTargets(profile)
+  const dashboardTargets = {
+    ...resolvedTargets,
+    trainingDaysPerWeek: profile?.training_days_per_week ?? 3,
+  }
+
   return (
     <DashboardClient
       userId={user.id}
@@ -135,13 +142,7 @@ export default async function DashboardPage() {
       weeklyDelta={weeklyDelta}
       daysSinceWorkout={daysSinceWorkout}
       recentWeights={recentWeights}
-      targets={{
-        calories: profile?.target_calories ?? 0,
-        protein:  profile?.target_protein  ?? 0,
-        carbs:    profile?.target_carbs    ?? 0,
-        fat:      profile?.target_fat      ?? 0,
-        trainingDaysPerWeek: profile?.training_days_per_week ?? 3,
-      }}
+      targets={dashboardTargets}
       checkin={{
         currentWeight:    latestWeight?.weight ?? null,
         prevWeight:       prevWeekWeight?.weight ?? null,

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ProgressClient from './ProgressClient'
 import { getCoachingCard, type CoachingInput, type CoachingCard } from '@/lib/coachingRules'
+import { resolveNutritionTargets } from '@/lib/nutritionTargets'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ export default async function ProgressPage() {
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('goal, current_weight, target_calories, target_protein, email')
+      .select('goal, current_weight, height_cm, age, date_of_birth, sex, job_activity, daily_steps, target_calories, target_protein, target_carbs, target_fat, email')
       .eq('id', user.id)
       .single(),
     supabase
@@ -358,8 +359,9 @@ export default async function ProgressPage() {
     : 'You'
 
   // ── 16. Coaching card ─────────────────────────────────────────────────────
-  const targetCal = profile?.target_calories ?? 2000
-  const targetProt = profile?.target_protein ?? 150
+  const nutritionTargets = resolveNutritionTargets(profile, { calories: 2000, protein: 150, carbs: 200, fat: 70 })
+  const targetCal = nutritionTargets.calories
+  const targetProt = nutritionTargets.protein
 
   const weekCalAvg =
     weekFoodLogs.length > 0

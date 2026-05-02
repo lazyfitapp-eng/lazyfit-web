@@ -3,12 +3,18 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import {
+  calcAgeFromDob as sharedCalcAgeFromDob,
+  calcNutritionTargets,
+  normalizeGoal as sharedNormalizeGoal,
+  validSex as sharedValidSex,
+  type DailySteps,
+  type GoalKey,
+  type JobActivity,
+} from '@/lib/nutritionTargets'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type GoalKey = 'cut' | 'recomp' | 'bulk'
-type JobActivity = 'desk' | 'feet' | 'labor'
-type DailySteps = 'lt5k' | '5-10k' | '10-15k' | 'gt15k'
 type EditField = 'dob' | 'sex' | 'height' | 'weight' | 'macros' | null
 type ChoiceField = 'job' | 'steps' | null
 
@@ -105,19 +111,6 @@ const STEP_OPTIONS: { value: DailySteps; label: string; sub: string }[] = [
   { value: 'gt15k', label: '>15k steps', sub: 'Very active day-to-day' },
 ]
 
-const JOB_MULTIPLIERS: Record<JobActivity, number> = {
-  desk: 1.2,
-  feet: 1.35,
-  labor: 1.5,
-}
-
-const STEP_ADJUSTMENTS: Record<DailySteps, number> = {
-  lt5k: 0,
-  '5-10k': 0.1,
-  '10-15k': 0.2,
-  gt15k: 0.3,
-}
-
 // ─── Macro calculation ────────────────────────────────────────────────────────
 
 function calcMacros(
@@ -129,30 +122,15 @@ function calcMacros(
   jobActivity: JobActivity,
   dailySteps: DailySteps,
 ) {
-  const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + (sex.toLowerCase() === 'male' ? 5 : -161)
-  const tdee = bmr * (JOB_MULTIPLIERS[jobActivity] + STEP_ADJUSTMENTS[dailySteps])
-  const adjusted = goal === 'cut' ? tdee - 400 : goal === 'bulk' ? tdee + 250 : tdee
-  const protein = Math.round(weightKg * (goal === 'cut' ? 1.8 : 1.6))
-  const fat = Math.round((adjusted * 0.25) / 9)
-  const carbs = Math.max(0, Math.round((adjusted - protein * 4 - fat * 9) / 4))
-  return { kcal: Math.max(1200, Math.round(adjusted)), protein, fat, carbs, tdee: Math.round(tdee) }
+  return calcNutritionTargets(goal, weightKg, heightCm, age, sex, jobActivity, dailySteps)
 }
 
 function normalizeGoal(goal: string | null | undefined): GoalKey {
-  if (goal === 'cut' || goal === 'recomp' || goal === 'bulk') return goal
-  if (goal === 'lean_bulk') return 'bulk'
-  return 'recomp'
+  return sharedNormalizeGoal(goal)
 }
 
 function calcAgeFromDob(dob: string | null): number | null {
-  if (!dob) return null
-  const birth = new Date(`${dob}T12:00:00`)
-  if (Number.isNaN(birth.getTime())) return null
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const monthDelta = today.getMonth() - birth.getMonth()
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate())) age--
-  return age
+  return sharedCalcAgeFromDob(dob)
 }
 
 function isoDateForAge(age: number): string {
@@ -162,7 +140,7 @@ function isoDateForAge(age: number): string {
 }
 
 function validSex(value: string): 'male' | 'female' {
-  return value.toLowerCase() === 'female' ? 'female' : 'male'
+  return sharedValidSex(value)
 }
 
 // ─── Animations (injected once) ───────────────────────────────────────────────

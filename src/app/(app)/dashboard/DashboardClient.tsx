@@ -60,10 +60,15 @@ function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targe
     (acc, l) => ({ cal: acc.cal + (l.calories ?? 0), p: acc.p + (l.protein ?? 0), c: acc.c + (l.carbs ?? 0), f: acc.f + (l.fat ?? 0) }),
     { cal: 0, p: 0, c: 0, f: 0 }
   )
-  const remaining = Math.max(0, targets.calories - Math.round(total.cal))
-  const pct = (value: number, target: number) =>
+  const consumedCalories = Math.round(total.cal)
+  const calorieTarget =
+    Number.isFinite(targets.calories) && targets.calories > 0
+      ? Math.round(targets.calories)
+      : null
+  const remaining = calorieTarget !== null ? calorieTarget - consumedCalories : null
+  const calPct = calorieTarget !== null ? Math.round((consumedCalories / calorieTarget) * 100) : null
+  const barPct = (value: number, target: number) =>
     target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0
-  const calPct = pct(total.cal, targets.calories)
 
   return (
     <div className="bg-[#141414] border border-[#1e1e1e] rounded-xl px-4 py-[14px] font-sans" style={{ width: '100%' }}>
@@ -71,16 +76,25 @@ function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targe
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="leading-none tracking-[-1px]">
-            <span className="text-[32px] font-bold text-[#f0f0f0]" style={{ fontStyle: 'normal', fontVariantNumeric: 'normal', fontFeatureSettings: 'normal' }}>{Math.round(total.cal).toLocaleString()}</span>
+            <span className="text-[32px] font-bold text-[#f0f0f0]" style={{ fontStyle: 'normal', fontVariantNumeric: 'normal', fontFeatureSettings: 'normal' }}>{consumedCalories.toLocaleString()}</span>
             <span className="text-sm font-normal text-[#b8b8b8] ml-[2px]">kcal</span>
           </div>
           <div className="text-[11px] text-[#b8b8b8] mt-[3px]">
-            Target: {targets.calories.toLocaleString()} kcal — {remaining.toLocaleString()} remaining
+            {calorieTarget !== null
+              ? (
+                <>
+                  Target: {calorieTarget.toLocaleString()} kcal —{' '}
+                  {remaining! >= 0
+                    ? `${remaining!.toLocaleString()} remaining`
+                    : `${Math.abs(remaining!).toLocaleString()} over target`}
+                </>
+              )
+              : 'No calorie target set'}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[13px] font-semibold text-[#3ecf8e]">{calPct}%</div>
-          <div className="text-[10px] text-[#b8b8b8] mt-[1px]">of target</div>
+          <div className="text-[13px] font-semibold text-[#3ecf8e]">{calPct !== null ? `${calPct}%` : '—'}</div>
+          <div className="text-[10px] text-[#b8b8b8] mt-[1px]">{calorieTarget !== null ? 'of target' : 'target'}</div>
         </div>
       </div>
 
@@ -102,9 +116,9 @@ function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targe
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '44px', flexShrink: 0, fontSize: '10px', color: '#999999' }}>{label}</span>
                 <div style={{ flex: 1, backgroundColor: '#1e1e1e', borderRadius: '3px', height: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct(value, target)}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
+                  <div style={{ width: `${barPct(value, target)}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
                 </div>
-                <span style={{ width: '42px', flexShrink: 0, fontSize: '10px', color: '#999999', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value} / {target}g</span>
+                <span style={{ width: '42px', flexShrink: 0, fontSize: '10px', color: '#999999', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value} / {target > 0 ? target : '—'}g</span>
               </div>
             ))}
           </div>
