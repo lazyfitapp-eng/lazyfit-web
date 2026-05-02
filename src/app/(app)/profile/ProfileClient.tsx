@@ -16,7 +16,7 @@ import { getLocalDateString } from '@/lib/dateUtils'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type EditField = 'dob' | 'sex' | 'height' | 'weight' | 'macros' | null
+type EditField = 'dob' | 'sex' | 'height' | 'weight' | null
 type ChoiceField = 'job' | 'steps' | null
 
 interface ProfileData {
@@ -177,7 +177,6 @@ export default function ProfileClient({ user, profile }: Props) {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [editSex, setEditSex] = useState(validSex(profile?.sex ?? 'male'))
   const [editInputVal, setEditInputVal] = useState('')
-  const [editMacroVals, setEditMacroVals] = useState({ calories: '', protein: '', carbs: '', fat: '' })
   const [pulsing, setPulsing] = useState(false)
   const [savingMessage, setSavingMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -331,24 +330,6 @@ export default function ProfileClient({ user, profile }: Props) {
       setSex(editSex)
       updates.sex = editSex
       Object.assign(updates, recommendationUpdates({ nextSex: editSex }))
-    } else if (editDrawer === 'macros') {
-      const calories = parseInt(editMacroVals.calories)
-      const protein = parseInt(editMacroVals.protein)
-      const carbs = parseInt(editMacroVals.carbs)
-      const fat = parseInt(editMacroVals.fat)
-      if (!Number.isFinite(calories) || calories <= 0) {
-        setErrorMessage('Calories must be a positive number.')
-        return
-      }
-      if (![protein, carbs, fat].every(v => Number.isFinite(v) && v >= 0)) {
-        setErrorMessage('Protein, carbs, and fat must be zero or positive.')
-        return
-      }
-      updates.target_calories = calories
-      updates.target_protein = protein
-      updates.target_carbs = carbs
-      updates.target_fat = fat
-      setDisplayKcal(calories)
     }
     const ok = await saveProfileUpdate(updates, 'Profile saved')
     if (ok) setEditDrawer(null)
@@ -396,12 +377,6 @@ export default function ProfileClient({ user, profile }: Props) {
       ''
     )
     setEditSex(sex)
-    setEditMacroVals({
-      calories: String(currentMacros.kcal || ''),
-      protein: String(currentMacros.protein || ''),
-      carbs: String(currentMacros.carbs || ''),
-      fat: String(currentMacros.fat || ''),
-    })
     setEditDrawer(field)
   }
 
@@ -580,12 +555,9 @@ export default function ProfileClient({ user, profile }: Props) {
             <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2 }}>fat</div>
           </div>
         </div>
-        <button
-          onClick={() => openEditDrawer('macros')}
-          style={{ width: '100%', marginTop: 12, padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: '#b8b8b8', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer' }}
-        >
-          Edit calories / macros
-        </button>
+        <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, color: '#888888', fontSize: 12, lineHeight: 1.45 }}>
+          Targets are calculated from your body stats, activity, and goal. Update those settings to change your plan.
+        </div>
       </div>
 
       {/* Body section */}
@@ -750,7 +722,7 @@ export default function ProfileClient({ user, profile }: Props) {
           <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px calc(28px + env(safe-area-inset-bottom, 0px))', width: '100%', maxHeight: '88dvh', overflowY: 'auto', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
             <div style={{ width: 36, height: 4, background: '#2a2a2a', borderRadius: 2, margin: '0 auto 20px' }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 16 }}>
-              {editDrawer === 'dob' ? 'Edit date of birth' : editDrawer === 'sex' ? 'Edit sex' : editDrawer === 'height' ? 'Edit height' : editDrawer === 'weight' ? 'Edit weight' : 'Edit calories / macros'}
+              {editDrawer === 'dob' ? 'Edit date of birth' : editDrawer === 'sex' ? 'Edit sex' : editDrawer === 'height' ? 'Edit height' : 'Edit weight'}
             </div>
             <div style={{ marginBottom: 20 }}>
               {editDrawer === 'dob' && (
@@ -802,30 +774,6 @@ export default function ProfileClient({ user, profile }: Props) {
                     autoFocus
                   />
                   <span style={{ fontSize: 15, color: '#b8b8b8', fontWeight: 600 }}>kg</span>
-                </div>
-              )}
-              {editDrawer === 'macros' && (
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {([
-                    ['calories', 'Calories', 'kcal'],
-                    ['protein', 'Protein', 'g'],
-                    ['carbs', 'Carbs', 'g'],
-                    ['fat', 'Fat', 'g'],
-                  ] as const).map(([key, label, unit]) => (
-                    <label key={key} style={{ display: 'grid', gap: 6 }}>
-                      <span style={{ fontSize: 12, color: '#b8b8b8' }}>{label}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <input
-                          type="number"
-                          value={editMacroVals[key]}
-                          onChange={e => setEditMacroVals(prev => ({ ...prev, [key]: e.target.value }))}
-                          min={key === 'calories' ? 1 : 0}
-                          style={{ flex: 1, padding: '12px 14px', background: '#111', border: '1px solid #1a1a1a', borderRadius: 12, fontSize: 16, fontWeight: 600, color: '#f0f0f0', fontFamily: 'inherit', outline: 'none' }}
-                        />
-                        <span style={{ fontSize: 13, color: '#b8b8b8', fontWeight: 600, width: 34 }}>{unit}</span>
-                      </div>
-                    </label>
-                  ))}
                 </div>
               )}
             </div>
