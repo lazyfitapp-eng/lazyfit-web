@@ -53,13 +53,28 @@ interface Props {
   chartFoodLogs: { date: string; calories: number }[]
 }
 
+function getFoodTotals(logs: FoodLog[]) {
+  return logs.reduce(
+    (acc, l) => ({
+      cal: acc.cal + (l.calories ?? 0),
+      p: acc.p + (l.protein ?? 0),
+      c: acc.c + (l.carbs ?? 0),
+      f: acc.f + (l.fat ?? 0),
+    }),
+    { cal: 0, p: 0, c: 0, f: 0 }
+  )
+}
+
+function getFoodHref(selectedDate: string, meal?: MealType) {
+  const params = new URLSearchParams({ date: selectedDate })
+  if (meal) params.set('meal', meal)
+  return `/food?${params.toString()}`
+}
+
 // ─── SummaryCard ─────────────────────────────────────────────────────────────
 
 function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targets'] }) {
-  const total = logs.reduce(
-    (acc, l) => ({ cal: acc.cal + (l.calories ?? 0), p: acc.p + (l.protein ?? 0), c: acc.c + (l.carbs ?? 0), f: acc.f + (l.fat ?? 0) }),
-    { cal: 0, p: 0, c: 0, f: 0 }
-  )
+  const total = getFoodTotals(logs)
   const consumedCalories = Math.round(total.cal)
   const calorieTarget =
     Number.isFinite(targets.calories) && targets.calories > 0
@@ -130,6 +145,163 @@ function SummaryCard({ logs, targets }: { logs: FoodLog[]; targets: Props['targe
 
 // ─── WeighInCard ─────────────────────────────────────────────────────────────
 
+function MissionCard({
+  logs,
+  targets,
+  selectedDate,
+  today,
+  weight,
+  daysSinceWorkout,
+}: {
+  logs: FoodLog[]
+  targets: Props['targets']
+  selectedDate: string
+  today: string
+  weight: number | null
+  daysSinceWorkout: number
+}) {
+  const isToday = selectedDate === today
+  const total = getFoodTotals(logs)
+  const consumedCalories = Math.round(total.cal)
+  const calorieTarget =
+    Number.isFinite(targets.calories) && targets.calories > 0
+      ? Math.round(targets.calories)
+      : null
+  const proteinTarget =
+    Number.isFinite(targets.protein) && targets.protein > 0
+      ? Math.round(targets.protein)
+      : null
+  const caloriesRemaining = calorieTarget !== null ? calorieTarget - consumedCalories : null
+  const proteinRemaining = proteinTarget !== null ? proteinTarget - Math.round(total.p) : null
+  const nextMeal = MEALS.find(meal => !logs.some(log => log.meal_type === meal.type))
+  const foodHref = getFoodHref(selectedDate, nextMeal?.type)
+  const proteinHigh = proteinRemaining !== null && proteinRemaining > Math.max(30, Math.round((proteinTarget ?? 0) * 0.25))
+  const hasRecentTrainingActivity = daysSinceWorkout === 0
+  const foodStatus = consumedCalories > 0 ? 'Food logged' : 'No food logged'
+  const trainingStatus = hasRecentTrainingActivity ? 'Training activity found' : 'Training ready'
+  const weightStatus = weight !== null ? 'Weight logged' : isToday ? 'No weigh-in today' : 'No weigh-in logged'
+  const secondaryStatus = isToday ? `${trainingStatus} · ${weightStatus}` : `${foodStatus} · ${weightStatus}`
+
+  const formatCaloriesLeft = () => {
+    if (caloriesRemaining === null) return 'calories not set'
+    if (caloriesRemaining >= 0) return `${caloriesRemaining.toLocaleString()} kcal remaining`
+    return `${Math.abs(caloriesRemaining).toLocaleString()} kcal over target`
+  }
+
+  const formatProteinLeft = () => {
+    if (proteinRemaining === null) return 'protein target not set'
+    if (proteinRemaining > 0) return `${proteinRemaining.toLocaleString()}g protein left`
+    return 'protein target hit'
+  }
+
+  const recommendation = (() => {
+    if (!isToday) {
+      return {
+        eyebrow: 'Selected day',
+        title: 'Daily Review',
+        headline: consumedCalories > 0 ? 'Review this day.' : 'Add anything missing.',
+        support: `${formatCaloriesLeft()} - ${formatProteinLeft()}.`,
+        cta: consumedCalories > 0 ? 'Review food' : 'Log food',
+        href: foodHref,
+      }
+    }
+
+    if (consumedCalories === 0) {
+      return {
+        eyebrow: 'Today',
+        title: "Today's Mission",
+        headline: 'Log your first meal.',
+        support: `You still have ${formatCaloriesLeft()} and ${formatProteinLeft()} to plan.`,
+        cta: 'Log food',
+        href: foodHref,
+      }
+    }
+
+    if (caloriesRemaining !== null && caloriesRemaining < 0) {
+      return {
+        eyebrow: 'Today',
+        title: "Today's Mission",
+        headline: 'Hold the line.',
+        support: `${Math.abs(caloriesRemaining).toLocaleString()} kcal over target. Keep the rest clean.`,
+        cta: 'Review food',
+        href: foodHref,
+      }
+    }
+
+    if (proteinHigh) {
+      return {
+        eyebrow: 'Today',
+        title: "Today's Mission",
+        headline: 'Finish protein.',
+        support: `${formatProteinLeft()} - ${formatCaloriesLeft()}.`,
+        cta: 'Log food',
+        href: foodHref,
+      }
+    }
+
+    if (!hasRecentTrainingActivity) {
+      return {
+        eyebrow: 'Today',
+        title: "Today's Mission",
+        headline: 'Start your next session.',
+        support: 'Training is the highest-leverage action today.',
+        cta: 'Start workout',
+        href: '/train',
+      }
+    }
+
+    return {
+      eyebrow: 'Today',
+      title: "Today's Mission",
+      headline: 'Stay on target.',
+      support: hasRecentTrainingActivity
+        ? 'Open your training log or start another session.'
+        : 'Keep logging food and follow the plan.',
+      cta: hasRecentTrainingActivity ? 'Train' : 'Log food',
+      href: hasRecentTrainingActivity ? '/train' : foodHref,
+    }
+  })()
+
+  return (
+    <section
+      className="rounded-xl border font-sans"
+      style={{
+        background: 'linear-gradient(180deg, #122018 0%, #101411 100%)',
+        borderColor: '#244431',
+        padding: '14px 16px',
+        boxShadow: '0 14px 40px rgba(0,0,0,0.24)',
+      }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase text-[#3ecf8e] mb-1" style={{ letterSpacing: '1px' }}>
+            {recommendation.eyebrow}
+          </p>
+          <h2 className="text-[19px] font-bold text-[#f0f0f0] leading-tight">
+            {recommendation.title}
+          </h2>
+          <p className="text-[15px] font-bold text-[#f0f0f0] mt-2 leading-snug">
+            {recommendation.headline}
+          </p>
+          <p className="text-[12px] text-[#d4e2d9] mt-1 leading-[1.45]">
+            {recommendation.support}
+          </p>
+        </div>
+        <Link
+          href={recommendation.href}
+          className="flex-shrink-0 rounded-[9px] bg-[#3ecf8e] px-4 py-3 text-[12px] font-bold text-[#0a0a0a]"
+        >
+          {recommendation.cta}
+        </Link>
+      </div>
+
+      <div className="mt-3 border-t border-[#203529] pt-2 text-[11px] font-medium text-[#9fb5a8]">
+        {secondaryStatus}
+      </div>
+    </section>
+  )
+}
+
 function WeighInCard({ weight, trend, weeklyDelta, isToday, onLogWeight }: {
   weight: number | null
   trend: number | null
@@ -189,22 +361,14 @@ function WeighInCard({ weight, trend, weeklyDelta, isToday, onLogWeight }: {
 
 // ─── MealCard ────────────────────────────────────────────────────────────────
 
-function MealCard({ meal, logs, selectedDate, today }: {
+function MealCard({ meal, logs, selectedDate }: {
   meal: typeof MEALS[number]
   logs: FoodLog[]
   selectedDate: string
-  today: string
 }) {
   const router = useRouter()
-  const foodHref = (() => {
-    const params = new URLSearchParams({ meal: meal.type })
-    if (selectedDate !== today) params.set('date', selectedDate)
-    return `/food?${params.toString()}`
-  })()
-  const total = logs.reduce(
-    (acc, l) => ({ cal: acc.cal + (l.calories ?? 0), p: acc.p + (l.protein ?? 0), c: acc.c + (l.carbs ?? 0), f: acc.f + (l.fat ?? 0) }),
-    { cal: 0, p: 0, c: 0, f: 0 }
-  )
+  const foodHref = getFoodHref(selectedDate, meal.type)
+  const total = getFoodTotals(logs)
 
   // Empty state — compact single row, ~44px tall
   if (logs.length === 0) {
@@ -528,10 +692,19 @@ export default function DashboardClient({
             targetDaysPerWeek={targets.trainingDaysPerWeek}
           />
 
+          <MissionCard
+            logs={logs}
+            targets={targets}
+            selectedDate={selectedDate}
+            today={today}
+            weight={displayWeight}
+            daysSinceWorkout={daysSinceWorkout}
+          />
+
           {/* Section: Today's summary */}
           <div className="text-[10px] font-bold text-[#b8b8b8] uppercase font-sans pt-1 pb-0.5"
                style={{ letterSpacing: '1px' }}>
-            Today&apos;s summary
+            {selectedDate === today ? "Today's summary" : 'Daily summary'}
           </div>
           <SummaryCard logs={logs} targets={targets} />
 
@@ -559,7 +732,6 @@ export default function DashboardClient({
               meal={meal}
               logs={logsByMeal[meal.type]}
               selectedDate={selectedDate}
-              today={today}
             />
           ))}
 
@@ -577,14 +749,14 @@ export default function DashboardClient({
               <div>
                 <div className="text-[10px] font-bold text-[#3ecf8e] uppercase mb-1"
                      style={{ letterSpacing: '1px' }}>
-                  Today&apos;s session
+                  {selectedDate === today ? "Today's session" : 'Training'}
                 </div>
                 <div className="text-[15px] font-bold text-[#f0f0f0]">
-                  {daysSinceWorkout === 0 ? 'Session logged today' : 'Start a workout'}
+                  {daysSinceWorkout === 0 ? 'Training activity found' : 'Training ready'}
                 </div>
-                <div className="text-[11px] text-[#3a5040] mt-[2px]">
+                <div className="text-[11px] text-[#9fb5a8] mt-[3px] leading-snug">
                   {daysSinceWorkout === 0
-                    ? 'Great work today!'
+                    ? 'Open your training log or start another session.'
                     : daysSinceWorkout === 1
                     ? 'Last done: yesterday'
                     : daysSinceWorkout < 99
@@ -593,7 +765,7 @@ export default function DashboardClient({
                 </div>
               </div>
               <div className="bg-[#3ecf8e] text-[#0a0a0a] rounded-[8px] px-[18px] py-[10px] text-[13px] font-bold flex-shrink-0">
-                Start
+                {daysSinceWorkout === 0 ? 'Train' : 'Start'}
               </div>
             </div>
           </Link>
