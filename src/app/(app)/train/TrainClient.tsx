@@ -13,6 +13,7 @@ interface Routine {
   name: string
   exerciseCount: number
   is_system: boolean
+  canDelete: boolean
 }
 
 interface WorkoutSet {
@@ -118,6 +119,9 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
   }
 
   const handleDelete = async (routineId: string) => {
+    const routine = routines.find(r => r.id === routineId)
+    if (!routine?.canDelete) return
+
     setConfirmDelete(null)
     const { error } = await supabase
       .from('routines')
@@ -138,7 +142,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
       .select('id')
       .single()
     if (!error && data) {
-      setRoutines(prev => [...prev, { id: data.id, name: newRoutineName.trim(), exerciseCount: 0, is_system: false }])
+      setRoutines(prev => [...prev, { id: data.id, name: newRoutineName.trim(), exerciseCount: 0, is_system: false, canDelete: true }])
       setShowNewRoutine(false)
       setNewRoutineName('')
     }
@@ -333,8 +337,8 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                       )}
                     </div>
 
-                    {/* Delete control — only for non-system routines */}
-                    {!r.is_system && (
+                    {/* Delete control - only for custom routines */}
+                    {r.canDelete && (
                       confirmDelete === r.id ? (
                         <div style={{ position: 'absolute', top: '8px', right: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '11px', color: '#b8b8b8' }}>Delete?</span>

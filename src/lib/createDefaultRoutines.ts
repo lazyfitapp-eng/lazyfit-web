@@ -54,7 +54,7 @@ export async function createDefaultRoutines(supabase: SupabaseClient, userId: st
     if (!routineId) {
       const { data: routine, error: rErr } = await supabase
         .from('routines')
-        .insert({ user_id: userId, name: tpl.name })
+        .insert({ user_id: userId, name: tpl.name, is_system: true })
         .select('id')
         .single()
 

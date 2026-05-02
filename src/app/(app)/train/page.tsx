@@ -1,6 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
+import { THREE_DAY_TEMPLATE } from '@/lib/createDefaultRoutines'
 import { redirect } from 'next/navigation'
 import TrainClient from './TrainClient'
+
+function isDefaultRoutine(name: string, exerciseNames: string[]) {
+  const template = THREE_DAY_TEMPLATE.find(tpl => tpl.name === name)
+  if (!template || template.exercises.length !== exerciseNames.length) return false
+
+  const exerciseSet = new Set(exerciseNames)
+  return template.exercises.every(ex => exerciseSet.has(ex.exercise_name))
+}
 
 export default async function TrainPage() {
   const supabase = await createClient()
@@ -19,7 +28,7 @@ export default async function TrainPage() {
   const { data: exRows } = routineIds.length > 0
     ? await supabase
         .from('routine_exercises')
-        .select('routine_id')
+        .select('routine_id, exercise_name')
         .in('routine_id', routineIds)
     : { data: [] }
 
@@ -27,12 +36,17 @@ export default async function TrainPage() {
     acc[e.routine_id] = (acc[e.routine_id] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
+  const exercisesByRoutine = (exRows ?? []).reduce((acc, e) => {
+    acc[e.routine_id] = [...(acc[e.routine_id] ?? []), e.exercise_name]
+    return acc
+  }, {} as Record<string, string[]>)
 
   const routines = (routineRows ?? []).map(r => ({
     id: r.id,
     name: r.name,
     exerciseCount: countsByRoutine[r.id] ?? 0,
     is_system: r.is_system ?? false,
+    canDelete: !r.is_system && !isDefaultRoutine(r.name, exercisesByRoutine[r.id] ?? []),
   }))
 
   // Fetch last completed workout
