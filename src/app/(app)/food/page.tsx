@@ -4,18 +4,27 @@ import { getLocalDateString, getLocalDayBounds, parseDateParamSafe } from '@/lib
 import { redirect } from 'next/navigation'
 import FoodClient from './FoodClient'
 
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const
+type MealType = typeof MEAL_TYPES[number]
+
+function parseMealParamSafe(meal: string | string[] | undefined): MealType | null {
+  if (typeof meal !== 'string') return null
+  return MEAL_TYPES.includes(meal as MealType) ? meal as MealType : null
+}
+
 export default async function FoodPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>
+  searchParams: Promise<{ date?: string | string[]; meal?: string | string[] }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { date: rawDate } = await searchParams
+  const { date: rawDate, meal: rawMeal } = await searchParams
   const today = getLocalDateString()
-  const date = parseDateParamSafe(rawDate, today)
+  const date = parseDateParamSafe(typeof rawDate === 'string' ? rawDate : undefined, today)
+  const initialMeal = parseMealParamSafe(rawMeal)
   const dayBounds = getLocalDayBounds(date)
 
   const [{ data: foodLogs }, { data: profile }, { data: dayNoteRow }] = await Promise.all([
@@ -47,6 +56,7 @@ export default async function FoodPage({
       initialLogs={foodLogs ?? []}
       targets={resolveNutritionTargets(profile, { calories: 2000, protein: 150, carbs: 200, fat: 70 })}
       date={date}
+      initialMeal={initialMeal}
       dayNote={dayNoteRow?.note ?? ''}
     />
   )

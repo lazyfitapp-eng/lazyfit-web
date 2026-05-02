@@ -152,12 +152,14 @@ export default function FoodClient({
   initialLogs,
   targets,
   date,
+  initialMeal,
   dayNote,
 }: {
   userId: string
   initialLogs: FoodLog[]
   targets: { calories: number; protein: number; carbs: number; fat: number }
   date: string
+  initialMeal: MealType | null
   dayNote: string
 }) {
   const supabase = createClient()
@@ -168,8 +170,8 @@ export default function FoodClient({
   const [mode, setMode] = useState<SummaryMode>('logged')
 
   // ── Modal state ─────────────────────────────────────────────────────────────
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalMeal, setModalMeal] = useState<MealType>('breakfast')
+  const [modalOpen, setModalOpen] = useState(Boolean(initialMeal))
+  const [modalMeal, setModalMeal] = useState<MealType>(initialMeal ?? 'breakfast')
   const [methodTab, setMethodTab] = useState<MethodTab>('photo')
 
   // ── Photo tab ───────────────────────────────────────────────────────────────
@@ -234,6 +236,16 @@ export default function FoodClient({
     setLogs(initialLogs)
     setActionMenuId(null)
   }, [date, initialLogs])
+
+  useEffect(() => {
+    if (initialMeal) {
+      setModalMeal(initialMeal)
+      setModalOpen(true)
+    } else {
+      setModalMeal('breakfast')
+      setModalOpen(false)
+    }
+  }, [date, initialMeal])
 
   // ── FAB event listener ──────────────────────────────────────────────────────
   useEffect(() => {
