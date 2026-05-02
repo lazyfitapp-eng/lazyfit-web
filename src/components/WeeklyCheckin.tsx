@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getLocalDateDaysAgo, getLocalDateString, getLocalDayBounds } from '@/lib/dateUtils'
 
 const CHECKIN_KEY = 'lf_checkin_week'
 
@@ -260,16 +261,18 @@ export default function WeeklyCheckin({
     if (step !== 2 || dailyData.length > 0 || loadingDays) return
     setLoadingDays(true)
     ;(async () => {
-      const today = new Date().toISOString().split('T')[0]
-      const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+      const today = getLocalDateString()
+      const sevenDaysAgo = getLocalDateDaysAgo(6)
+      const todayBounds = getLocalDayBounds(today)
+      const sevenDaysAgoBounds = getLocalDayBounds(sevenDaysAgo)
 
       setDaysError(null)
       const { data: logs, error: logsError } = await supabase
         .from('food_logs')
         .select('logged_at, calories')
         .eq('user_id', userId)
-        .gte('logged_at', `${sevenDaysAgo}T00:00:00`)
-        .lte('logged_at', `${today}T23:59:59`)
+        .gte('logged_at', sevenDaysAgoBounds.start)
+        .lte('logged_at', todayBounds.end)
 
       if (logsError) {
         setDaysError(logsError.message)
@@ -281,13 +284,13 @@ export default function WeeklyCheckin({
 
       const byDate: Record<string, number> = {}
       for (const log of logs ?? []) {
-        const date = (log.logged_at as string).split('T')[0]
+        const date = getLocalDateString(new Date(log.logged_at as string))
         byDate[date] = (byDate[date] ?? 0) + (log.calories ?? 0)
       }
 
       const days: DayData[] = []
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+        const d = getLocalDateDaysAgo(i)
         const cal = byDate[d] ?? 0
         days.push({ date: d, calories: cal, logged: cal > 0 })
       }

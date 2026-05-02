@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { detectFoodAmbiguity, type FoodAmbiguityIssue } from '@/lib/foodAmbiguity'
+import { addLocalDays, getLocalDateString, parseLocalDateString } from '@/lib/dateUtils'
 import type { USDAResult } from '@/app/api/food-search/route'
 import type { FoodAIItem } from '@/app/api/food-ai/route'
 
@@ -83,7 +84,7 @@ function toBase64(file: File): Promise<string> {
 
 function timestampForSelectedDate(date: string): string {
   const now = new Date()
-  const selected = new Date(`${date}T00:00:00`)
+  const selected = parseLocalDateString(date) ?? now
   selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
   return selected.toISOString()
 }
@@ -214,7 +215,7 @@ export default function FoodClient({
   const [ctaLoading, setCtaLoading] = useState(false)
 
   // ── Date helpers ────────────────────────────────────────────────────────────
-  const today = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const today = useMemo(() => getLocalDateString(), [])
   const isToday = date === today
 
   const dateLabel = useMemo(() => {
@@ -223,9 +224,7 @@ export default function FoodClient({
   }, [date])
 
   function shiftDay(delta: number) {
-    const d = new Date(date + 'T12:00:00')
-    d.setDate(d.getDate() + delta)
-    const next = d.toISOString().split('T')[0]
+    const next = addLocalDays(date, delta)
     setLogs([])
     setActionMenuId(null)
     router.push(next === today ? '/food' : `/food?date=${next}`)

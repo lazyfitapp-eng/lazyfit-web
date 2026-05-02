@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getLocalDateString } from '@/lib/dateUtils'
 
 function calculateTrendWeight(current: number, recentWeights: number[]): number {
   const alpha = 2 / (7 + 1)
@@ -36,7 +37,7 @@ export default function WeighInModal({ userId, recentWeights, onSave, onClose }:
     setSaving(true)
 
     const trendWeight = calculateTrendWeight(weight, recentWeights)
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
 
     const { error: dbError } = await supabase
       .from('weight_entries')

@@ -1,13 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { resolveNutritionTargets } from '@/lib/nutritionTargets'
+import { getLocalDateString, getLocalDayBounds, parseDateParamSafe } from '@/lib/dateUtils'
 import { redirect } from 'next/navigation'
 import FoodClient from './FoodClient'
-
-function isValidDateParam(value: string | undefined): value is string {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const parsed = new Date(`${value}T12:00:00`)
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().split('T')[0] === value
-}
 
 export default async function FoodPage({
   searchParams,
@@ -19,16 +14,17 @@ export default async function FoodPage({
   if (!user) redirect('/login')
 
   const { date: rawDate } = await searchParams
-  const today = new Date().toISOString().split('T')[0]
-  const date = isValidDateParam(rawDate) ? rawDate : today
+  const today = getLocalDateString()
+  const date = parseDateParamSafe(rawDate, today)
+  const dayBounds = getLocalDayBounds(date)
 
   const [{ data: foodLogs }, { data: profile }, { data: dayNoteRow }] = await Promise.all([
     supabase
       .from('food_logs')
       .select('id, food_name, calories, protein, carbs, fat, fiber, quantity, meal_type, logged_at')
       .eq('user_id', user.id)
-      .gte('logged_at', `${date}T00:00:00`)
-      .lte('logged_at', `${date}T23:59:59`)
+      .gte('logged_at', dayBounds.start)
+      .lte('logged_at', dayBounds.end)
       .order('logged_at', { ascending: true }),
 
     supabase

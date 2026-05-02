@@ -1,5 +1,7 @@
 'use client'
 
+import { addLocalDays, parseLocalDateString } from '@/lib/dateUtils'
+
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 interface WeekStripProps {
@@ -30,12 +32,12 @@ export default function WeekStrip({
   onDateClick,
 }: WeekStripProps) {
   const days: { date: string; num: number; letter: string }[] = []
-  const [ty, tm, td] = today.split('-').map(Number)
 
   for (let i = -7; i <= 6; i++) {
-    const d = new Date(Date.UTC(ty, tm - 1, td + i))
-    const dateStr = d.toISOString().split('T')[0]
-    days.push({ date: dateStr, num: d.getUTCDate(), letter: DAY_LETTERS[d.getUTCDay()] })
+    const dateStr = addLocalDays(today, i)
+    const d = parseLocalDateString(dateStr)
+    if (!d) continue
+    days.push({ date: dateStr, num: d.getDate(), letter: DAY_LETTERS[d.getDay()] })
   }
 
   return (

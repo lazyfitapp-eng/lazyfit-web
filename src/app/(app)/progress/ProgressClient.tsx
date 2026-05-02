@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ExerciseSummary, PREntry } from './page'
 import type { CoachingCard, CoachingBadge } from '@/lib/coachingRules'
+import { addLocalDays, getLocalDateString } from '@/lib/dateUtils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -57,15 +58,12 @@ function periodDays(p: Period): number | null {
 }
 
 function dateStr(d: Date): string {
-  return d.toISOString().split('T')[0]
+  return getLocalDateString(d)
 }
 
 /** Local-timezone YYYY-MM-DD (avoids UTC midnight-shift in UTC+ zones) */
 function localIso(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return getLocalDateString(d)
 }
 
 function todayStr(): string {
@@ -73,9 +71,7 @@ function todayStr(): string {
 }
 
 function addDays(base: Date, n: number): Date {
-  const d = new Date(base)
-  d.setDate(d.getDate() + n)
-  return d
+  return new Date(`${addLocalDays(getLocalDateString(base), n)}T12:00:00`)
 }
 
 function weekMonday(d: Date): Date {

@@ -12,6 +12,7 @@ import {
   type GoalKey,
   type JobActivity,
 } from '@/lib/nutritionTargets'
+import { getLocalDateString } from '@/lib/dateUtils'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ function calcAgeFromDob(dob: string | null): number | null {
 function isoDateForAge(age: number): string {
   const d = new Date()
   d.setFullYear(d.getFullYear() - age)
-  return d.toISOString().split('T')[0]
+  return getLocalDateString(d)
 }
 
 function validSex(value: string): 'male' | 'female' {

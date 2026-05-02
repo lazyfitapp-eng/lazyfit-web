@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { getLocalDateString, parseLocalDateString } from '@/lib/dateUtils'
 
 type WorkoutSet = {
   workout_id: string
@@ -31,7 +32,11 @@ const DAY_LABELS = ['M','T','W','T','F','S','S']
 const WEEKDAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 function relativeDate(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  const workoutDate = parseLocalDateString(getLocalDateString(new Date(iso)))
+  const today = parseLocalDateString(getLocalDateString())
+  const diff = workoutDate && today
+    ? Math.round((today.getTime() - workoutDate.getTime()) / 86400000)
+    : Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
   if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
   if (diff < 7) return `${diff} days ago`
@@ -72,7 +77,7 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
   onMonthChange: (dir: 1 | -1) => void
 }) {
   const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const todayStr = getLocalDateString(today)
 
   const firstDay = new Date(year, month, 1)
   const startOffset = (firstDay.getDay() + 6) % 7 // Mon=0
@@ -285,7 +290,7 @@ export default function WorkoutHistory({ userId }: { userId: string }) {
   }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const workoutDays = useMemo(
-    () => new Set(workouts.map(w => w.completedAt.split('T')[0])),
+    () => new Set(workouts.map(w => getLocalDateString(new Date(w.completedAt)))),
     [workouts]
   )
 

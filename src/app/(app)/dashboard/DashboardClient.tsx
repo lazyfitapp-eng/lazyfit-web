@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getLocalDateDaysAgo, getLocalDayBounds } from '@/lib/dateUtils'
 import WeekStrip from '@/components/WeekStrip'
 import DashboardDatePicker from '@/components/DashboardDatePicker'
 import WeeklyCheckinWrapper from '@/components/WeeklyCheckinWrapper'
@@ -510,7 +511,7 @@ function ProgressTabContent({
   chartFoodLogs: { date: string; calories: number }[]
   targetCalories: number
 }) {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+  const thirtyDaysAgo = getLocalDateDaysAgo(30)
   const recentWeights = chartWeightEntries
     .filter(e => e.date >= thirtyDaysAgo)
     .map(e => ({ date: e.date, value: e.weight }))
@@ -575,12 +576,13 @@ export default function DashboardClient({
 
   const fetchLogsForDate = (date: string) => {
     startTransition(async () => {
+      const bounds = getLocalDayBounds(date)
       const { data } = await supabase
         .from('food_logs')
         .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity')
         .eq('user_id', userId)
-        .gte('logged_at', `${date}T00:00:00`)
-        .lte('logged_at', `${date}T23:59:59`)
+        .gte('logged_at', bounds.start)
+        .lte('logged_at', bounds.end)
       setLogs((data as FoodLog[]) ?? [])
     })
   }

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { resolveNutritionTargets } from '@/lib/nutritionTargets'
+import { getLocalDateDaysAgo, getLocalDateString, getLocalDayBounds, parseLocalDateString } from '@/lib/dateUtils'
 import { redirect } from 'next/navigation'
 import DashboardClient from './DashboardClient'
 
@@ -8,11 +9,15 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const today = new Date().toISOString().split('T')[0]
-  const twoWeeksAgo  = new Date(Date.now() - 14  * 86400000).toISOString().split('T')[0]
-  const sevenDaysAgo = new Date(Date.now() - 7   * 86400000).toISOString().split('T')[0]
-  const thirtyDaysAgo   = new Date(Date.now() - 30  * 86400000).toISOString().split('T')[0]
-  const ninetyDaysAgo   = new Date(Date.now() - 90  * 86400000).toISOString().split('T')[0]
+  const today = getLocalDateString()
+  const twoWeeksAgo = getLocalDateDaysAgo(14)
+  const sevenDaysAgo = getLocalDateDaysAgo(7)
+  const thirtyDaysAgo = getLocalDateDaysAgo(30)
+  const ninetyDaysAgo = getLocalDateDaysAgo(90)
+  const todayBounds = getLocalDayBounds(today)
+  const twoWeeksAgoBounds = getLocalDayBounds(twoWeeksAgo)
+  const sevenDaysAgoBounds = getLocalDayBounds(sevenDaysAgo)
+  const thirtyDaysAgoBounds = getLocalDayBounds(thirtyDaysAgo)
 
   const [
     { data: profile },
@@ -31,8 +36,8 @@ export default async function DashboardPage() {
       .from('food_logs')
       .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity')
       .eq('user_id', user.id)
-      .gte('logged_at', `${today}T00:00:00`)
-      .lte('logged_at', `${today}T23:59:59`),
+      .gte('logged_at', todayBounds.start)
+      .lte('logged_at', todayBounds.end),
     supabase
       .from('weight_entries')
       .select('weight, trend_weight, date')
@@ -50,24 +55,24 @@ export default async function DashboardPage() {
       .from('food_logs')
       .select('logged_at')
       .eq('user_id', user.id)
-      .gte('logged_at', `${twoWeeksAgo}T00:00:00`),
+      .gte('logged_at', twoWeeksAgoBounds.start),
     supabase
       .from('workouts')
       .select('started_at')
       .eq('user_id', user.id)
-      .gte('started_at', `${twoWeeksAgo}T00:00:00`)
+      .gte('started_at', twoWeeksAgoBounds.start)
       .order('started_at', { ascending: false }),
     supabase
       .from('food_logs')
       .select('calories, protein')
       .eq('user_id', user.id)
-      .gte('logged_at', `${sevenDaysAgo}T00:00:00`),
+      .gte('logged_at', sevenDaysAgoBounds.start),
     supabase
       .from('workouts')
       .select('id')
       .eq('user_id', user.id)
       .not('completed_at', 'is', null)
-      .gte('started_at', `${sevenDaysAgo}T00:00:00`),
+      .gte('started_at', sevenDaysAgoBounds.start),
     // Chart data for Progress sub-tab
     supabase
       .from('weight_entries')
@@ -79,18 +84,18 @@ export default async function DashboardPage() {
       .from('food_logs')
       .select('logged_at, calories')
       .eq('user_id', user.id)
-      .gte('logged_at', `${thirtyDaysAgo}T00:00:00`),
+      .gte('logged_at', thirtyDaysAgoBounds.start),
   ])
 
   // Activity dots for WeekStrip
   const activityByDate: Record<string, { food: boolean; workout: boolean }> = {}
   for (const log of recentFoodActivity ?? []) {
-    const date = (log.logged_at as string).split('T')[0]
+    const date = getLocalDateString(new Date(log.logged_at as string))
     if (!activityByDate[date]) activityByDate[date] = { food: false, workout: false }
     activityByDate[date].food = true
   }
   for (const w of recentWorkouts ?? []) {
-    const date = (w.started_at as string).split('T')[0]
+    const date = getLocalDateString(new Date(w.started_at as string))
     if (!activityByDate[date]) activityByDate[date] = { food: false, workout: false }
     activityByDate[date].workout = true
   }
@@ -106,8 +111,12 @@ export default async function DashboardPage() {
 
   // Days since last workout
   const lastWorkoutDate = recentWorkouts?.[0]?.started_at
-  const daysSinceWorkout = lastWorkoutDate
-    ? Math.floor((Date.now() - new Date(lastWorkoutDate).getTime()) / 86400000)
+  const todayDate = parseLocalDateString(today)
+  const lastWorkoutLocalDate = lastWorkoutDate
+    ? parseLocalDateString(getLocalDateString(new Date(lastWorkoutDate)))
+    : null
+  const daysSinceWorkout = todayDate && lastWorkoutLocalDate
+    ? Math.floor((todayDate.getTime() - lastWorkoutLocalDate.getTime()) / 86400000)
     : 99
 
   // Check-in averages
@@ -118,7 +127,7 @@ export default async function DashboardPage() {
   const chartWeightEntries = (chartWeightRaw ?? []) as { date: string; weight: number; trend_weight: number }[]
   const chartFoodByDay: Record<string, number> = {}
   for (const log of chartFoodRaw ?? []) {
-    const date = (log.logged_at as string).split('T')[0]
+    const date = getLocalDateString(new Date(log.logged_at as string))
     chartFoodByDay[date] = (chartFoodByDay[date] ?? 0) + (log.calories ?? 0)
   }
   const chartFoodLogs = Object.entries(chartFoodByDay)

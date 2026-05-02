@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { addLocalDays, getLocalDateString } from '@/lib/dateUtils'
 import ExerciseProgressChart from './ExerciseProgressChart'
 
 export interface SessionSet {
@@ -42,7 +43,7 @@ function calcWeekStreak(sessions: Session[]): number {
     const day = date.getDay()
     const diff = date.getDate() - day + (day === 0 ? -6 : 1)
     date.setDate(diff)
-    return date.toISOString().split('T')[0]
+    return getLocalDateString(date)
   }
 
   const weeks = new Set(sessions.map(s => getMonday(new Date(s.date))))
@@ -58,9 +59,7 @@ function calcWeekStreak(sessions: Session[]): number {
   for (const week of sorted) {
     if (week === expected) {
       streak++
-      const d = new Date(expected)
-      d.setDate(d.getDate() - 7)
-      expected = d.toISOString().split('T')[0]
+      expected = addLocalDays(expected, -7)
     } else break
   }
   return streak

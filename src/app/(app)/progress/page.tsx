@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import ProgressClient from './ProgressClient'
 import { getCoachingCard, type CoachingInput, type CoachingCard } from '@/lib/coachingRules'
 import { resolveNutritionTargets } from '@/lib/nutritionTargets'
+import { getLocalDateString, getLocalDayBounds, getLocalWeekStartString, parseLocalDateString } from '@/lib/dateUtils'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -10,15 +11,6 @@ function epley(weight: number, reps: number): number {
   if (reps <= 0 || weight <= 0) return 0
   if (reps === 1) return weight
   return weight * (1 + reps / 30)
-}
-
-/** Monday-anchored ISO week start (YYYY-MM-DD) for a given Date */
-function weekStart(d: Date): string {
-  const day = d.getDay() === 0 ? 6 : d.getDay() - 1 // Mon=0
-  const mon = new Date(d)
-  mon.setDate(d.getDate() - day)
-  mon.setHours(0, 0, 0, 0)
-  return mon.toISOString().split('T')[0]
 }
 
 // ── Types exposed to the client ───────────────────────────────────────────────
@@ -56,14 +48,15 @@ export default async function ProgressPage() {
   // ── 1. Parallel fetches ───────────────────────────────────────────────────
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr = getLocalDateString(today)
 
   // Start of current week (Monday)
-  const wkStartStr = weekStart(today)
+  const wkStartStr = getLocalWeekStartString(today)
+  const wkStartBounds = getLocalDayBounds(wkStartStr)
   // Start of last year for weight/waist history
   const oneYearAgo = new Date(today)
   oneYearAgo.setFullYear(today.getFullYear() - 1)
-  const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0]
+  const oneYearAgoStr = getLocalDateString(oneYearAgo)
 
   const [
     { data: profile },
@@ -92,7 +85,7 @@ export default async function ProgressPage() {
       .from('food_logs')
       .select('logged_at, calories, protein')
       .eq('user_id', user.id)
-      .gte('logged_at', `${wkStartStr}T00:00:00`)
+      .gte('logged_at', wkStartBounds.start)
       .order('logged_at', { ascending: true }),
   ])
 
@@ -139,7 +132,7 @@ export default async function ProgressPage() {
   // ── 4. Compute training dates ─────────────────────────────────────────────
   const completedAtById: Record<string, string> = {}
   for (const w of workoutList) {
-    completedAtById[w.id] = (w.completed_at as string).split('T')[0]
+    completedAtById[w.id] = getLocalDateString(new Date(w.completed_at as string))
   }
   const trainingDates = [...new Set(Object.values(completedAtById))].sort()
   const totalSessions = workoutList.length
@@ -147,9 +140,11 @@ export default async function ProgressPage() {
   // ── 5. Weeks active since first workout ───────────────────────────────────
   let weeksActive = 0
   if (trainingDates.length > 0) {
-    const firstDate = new Date(trainingDates[0])
-    const diffMs = today.getTime() - firstDate.getTime()
-    weeksActive = Math.max(1, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)))
+    const firstDate = parseLocalDateString(trainingDates[0])
+    if (firstDate) {
+      const diffMs = today.getTime() - firstDate.getTime()
+      weeksActive = Math.max(1, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)))
+    }
   }
 
   // ── 6. Current streak (consecutive weeks with ≥1 session) ────────────────
@@ -168,7 +163,7 @@ export default async function ProgressPage() {
       const day = new Date(wStart)
       day.setDate(wStart.getDate() + d)
       if (day > today) continue
-      if (tSet.has(day.toISOString().split('T')[0])) {
+      if (tSet.has(getLocalDateString(day))) {
         hasSession = true
         break
       }
@@ -180,10 +175,10 @@ export default async function ProgressPage() {
   // bestStreakWeeks — full computation over all weeks
   let bestStreakWeeks = currentStreakWeeks
   if (trainingDates.length > 0) {
-    const firstDate = new Date(trainingDates[0])
-    const totalWeeks = Math.ceil(
-      (today.getTime() - firstDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
-    )
+    const firstDate = parseLocalDateString(trainingDates[0])
+    const totalWeeks = firstDate
+      ? Math.ceil((today.getTime() - firstDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
+      : 0
     let running = 0
     for (let w = totalWeeks - 1; w >= 0; w--) {
       const wStart = new Date(thisMonday)
@@ -193,7 +188,7 @@ export default async function ProgressPage() {
         const day = new Date(wStart)
         day.setDate(wStart.getDate() + d)
         if (day > today) continue
-        if (tSet.has(day.toISOString().split('T')[0])) {
+        if (tSet.has(getLocalDateString(day))) {
           hasSession = true
           break
         }
@@ -309,7 +304,7 @@ export default async function ProgressPage() {
   // ── 10. Recent PRs (last 30 days) ─────────────────────────────────────────
   const thirtyDaysAgo = new Date(today)
   thirtyDaysAgo.setDate(today.getDate() - 30)
-  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0]
+  const thirtyDaysAgoStr = getLocalDateString(thirtyDaysAgo)
   const recentPRCount = allTimePRs.filter((pr) => pr.date >= thirtyDaysAgoStr).length
 
   // ── 11. Stalled exercise (3+ consecutive declining sessions) ─────────────
@@ -327,15 +322,15 @@ export default async function ProgressPage() {
   // ── 12. Days since last workout ───────────────────────────────────────────
   let daysSinceLastWorkout = 0
   if (trainingDates.length > 0) {
-    const lastDate = new Date(trainingDates[trainingDates.length - 1])
+    const lastDate = parseLocalDateString(trainingDates[trainingDates.length - 1])
     daysSinceLastWorkout = Math.floor(
-      (today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000)
+      lastDate ? (today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000) : 0
     )
   }
 
   // ── 13. Nutrition this week ───────────────────────────────────────────────
   const weekFoodLogs = (foodLogsWeek ?? []).map((l) => ({
-    date: (l.logged_at as string).split('T')[0],
+    date: getLocalDateString(new Date(l.logged_at as string)),
     calories: l.calories ?? 0,
     protein: l.protein ?? 0,
   }))
