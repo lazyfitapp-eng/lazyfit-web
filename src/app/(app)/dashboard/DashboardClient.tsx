@@ -162,6 +162,7 @@ function MissionCard({
   daysSinceWorkout: number
 }) {
   const isToday = selectedDate === today
+  const isFuture = selectedDate > today
   const total = getFoodTotals(logs)
   const consumedCalories = Math.round(total.cal)
   const calorieTarget =
@@ -196,6 +197,19 @@ function MissionCard({
   }
 
   const recommendation = (() => {
+    if (isFuture) {
+      return {
+        eyebrow: 'Ahead',
+        title: 'Plan Ahead',
+        headline: consumedCalories > 0 ? 'Food planned.' : 'Plan this day.',
+        support: consumedCalories > 0
+          ? `${formatCaloriesLeft()} - ${formatProteinLeft()}.`
+          : 'Log planned meals here; training actions unlock on the day.',
+        cta: consumedCalories > 0 ? 'Review food' : 'Plan food',
+        href: foodHref,
+      }
+    }
+
     if (!isToday) {
       return {
         eyebrow: 'Selected day',
@@ -300,6 +314,77 @@ function MissionCard({
         {secondaryStatus}
       </div>
     </section>
+  )
+}
+
+function TrainingReviewCard({
+  isToday,
+  hasWorkout,
+  daysSinceWorkout,
+}: {
+  isToday: boolean
+  hasWorkout: boolean
+  daysSinceWorkout: number
+}) {
+  if (!isToday) {
+    return (
+      <div
+        className="block rounded-xl px-4 py-[14px] font-sans"
+        style={{ background: '#141414', border: '1px solid #1e1e1e' }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-bold text-[#b8b8b8] uppercase mb-1"
+                 style={{ letterSpacing: '1px' }}>
+              Training
+            </div>
+            <div className="text-[15px] font-bold text-[#f0f0f0]">
+              {hasWorkout ? 'Workout logged' : 'No workout logged'}
+            </div>
+            <div className="text-[11px] text-[#b8b8b8] mt-[3px] leading-snug">
+              {hasWorkout
+                ? 'Training activity found for this day.'
+                : 'No training activity found for this day.'}
+            </div>
+          </div>
+          <div className="rounded-[8px] border border-[#2a2a2a] px-[14px] py-[9px] text-[12px] font-bold text-[#b8b8b8] flex-shrink-0">
+            Review
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href="/train"
+      className="block rounded-xl px-4 py-[14px] font-sans"
+      style={{ background: '#0d1f17', border: '1px solid #1a3528' }}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[10px] font-bold text-[#3ecf8e] uppercase mb-1"
+               style={{ letterSpacing: '1px' }}>
+            Today&apos;s session
+          </div>
+          <div className="text-[15px] font-bold text-[#f0f0f0]">
+            {daysSinceWorkout === 0 ? 'Training activity found' : 'Training ready'}
+          </div>
+          <div className="text-[11px] text-[#9fb5a8] mt-[3px] leading-snug">
+            {daysSinceWorkout === 0
+              ? 'Open your training log or start another session.'
+              : daysSinceWorkout === 1
+              ? 'Last done: yesterday'
+              : daysSinceWorkout < 99
+              ? `Last done: ${daysSinceWorkout} days ago`
+              : 'No sessions yet'}
+          </div>
+        </div>
+        <div className="bg-[#3ecf8e] text-[#0a0a0a] rounded-[8px] px-[18px] py-[10px] text-[13px] font-bold flex-shrink-0">
+          {daysSinceWorkout === 0 ? 'Train' : 'Start'}
+        </div>
+      </div>
+    </Link>
   )
 }
 
@@ -619,6 +704,8 @@ export default function DashboardClient({
     acc[m.type as MealType] = logs.filter(l => l.meal_type === m.type)
     return acc
   }, {} as Record<MealType, FoodLog[]>)
+  const isToday = selectedDate === today
+  const selectedActivity = activityByDate[selectedDate] ?? { food: false, workout: false }
 
   return (
     <>
@@ -680,19 +767,21 @@ export default function DashboardClient({
       {/* ── Daily log tab ───────────────────────────────────────────── */}
       {activeTab === 'daily-log' && (
         <div className={`px-5 pt-[14px] pb-24 flex flex-col gap-2 transition-opacity duration-150 font-sans ${isPending ? 'opacity-50' : 'opacity-100'}`}>
-          <WeeklyCheckinWrapper
-            userId={userId}
-            currentWeight={checkin.currentWeight}
-            prevWeight={checkin.prevWeight}
-            avgCalories={checkin.avgCalories}
-            targetCalories={targets.calories}
-            avgProtein={checkin.avgProtein}
-            targetProtein={targets.protein}
-            targetCarbs={targets.carbs}
-            targetFat={targets.fat}
-            workoutsThisWeek={checkin.workoutsThisWeek}
-            targetDaysPerWeek={targets.trainingDaysPerWeek}
-          />
+          {isToday && (
+            <WeeklyCheckinWrapper
+              userId={userId}
+              currentWeight={checkin.currentWeight}
+              prevWeight={checkin.prevWeight}
+              avgCalories={checkin.avgCalories}
+              targetCalories={targets.calories}
+              avgProtein={checkin.avgProtein}
+              targetProtein={targets.protein}
+              targetCarbs={targets.carbs}
+              targetFat={targets.fat}
+              workoutsThisWeek={checkin.workoutsThisWeek}
+              targetDaysPerWeek={targets.trainingDaysPerWeek}
+            />
+          )}
 
           <MissionCard
             logs={logs}
@@ -719,7 +808,7 @@ export default function DashboardClient({
             weight={displayWeight}
             trend={displayTrend}
             weeklyDelta={weeklyDelta}
-            isToday={selectedDate === today}
+            isToday={isToday}
             onLogWeight={() => setShowWeighIn(true)}
           />
 
@@ -742,35 +831,11 @@ export default function DashboardClient({
                style={{ letterSpacing: '1px' }}>
             Training
           </div>
-          <Link
-            href="/train"
-            className="block rounded-xl px-4 py-[14px] font-sans"
-            style={{ background: '#0d1f17', border: '1px solid #1a3528' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-bold text-[#3ecf8e] uppercase mb-1"
-                     style={{ letterSpacing: '1px' }}>
-                  {selectedDate === today ? "Today's session" : 'Training'}
-                </div>
-                <div className="text-[15px] font-bold text-[#f0f0f0]">
-                  {daysSinceWorkout === 0 ? 'Training activity found' : 'Training ready'}
-                </div>
-                <div className="text-[11px] text-[#9fb5a8] mt-[3px] leading-snug">
-                  {daysSinceWorkout === 0
-                    ? 'Open your training log or start another session.'
-                    : daysSinceWorkout === 1
-                    ? 'Last done: yesterday'
-                    : daysSinceWorkout < 99
-                    ? `Last done: ${daysSinceWorkout} days ago`
-                    : 'No sessions yet'}
-                </div>
-              </div>
-              <div className="bg-[#3ecf8e] text-[#0a0a0a] rounded-[8px] px-[18px] py-[10px] text-[13px] font-bold flex-shrink-0">
-                {daysSinceWorkout === 0 ? 'Train' : 'Start'}
-              </div>
-            </div>
-          </Link>
+          <TrainingReviewCard
+            isToday={isToday}
+            hasWorkout={selectedActivity.workout}
+            daysSinceWorkout={daysSinceWorkout}
+          />
         </div>
       )}
 
@@ -784,7 +849,7 @@ export default function DashboardClient({
       )}
 
       {/* ── Modals ──────────────────────────────────────────────────── */}
-      {activeTab === 'daily-log' && daysSinceWorkout >= 3 && (
+      {activeTab === 'daily-log' && isToday && daysSinceWorkout >= 3 && (
         <SurveyModal
           surveyKey="workout_friction"
           title="If you've looked at the workout but didn't start yet, what's the main reason?"
