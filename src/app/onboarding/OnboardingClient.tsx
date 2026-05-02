@@ -4,14 +4,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createDefaultRoutines } from '@/lib/createDefaultRoutines'
+import {
+  calcAgeFromDob,
+  calcNutritionTargets,
+  validSex,
+  type DailySteps,
+  type GoalKey,
+  type JobActivity,
+} from '@/lib/nutritionTargets'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Gender = 'Male' | 'Female'
 type BFMethod = 'visual' | 'navy'
-type JobActivity = 'desk' | 'feet' | 'labor'
-type DailySteps = 'lt5k' | '5-10k' | '10-15k' | 'gt15k'
-type Goal = 'recomp' | 'cut' | 'bulk'
+type Goal = GoalKey
 
 interface FormState {
   firstName: string
@@ -81,15 +87,6 @@ const CTA_LABELS: Record<number, string> = {
 
 // ── Helper functions ───────────────────────────────────────────────────────────
 
-function calcAge(dob: string): number {
-  const birth = new Date(dob)
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const m = today.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return Math.max(0, age)
-}
-
 function parseNumber(value: string): number | null {
   const parsed = parseFloat(value)
   return Number.isFinite(parsed) ? parsed : null
@@ -98,25 +95,24 @@ function parseNumber(value: string): number | null {
 function computeMacros(form: FormState): Macros {
   const w = parseFloat(form.weightKg) || 80
   const h = parseFloat(form.heightCm) || 175
-  const age = form.dob ? calcAge(form.dob) : 30
-  const isMale = form.gender === 'Male'
+  const age = form.dob ? calcAgeFromDob(form.dob) ?? 30 : 30
+  const targets = calcNutritionTargets(
+    form.goal,
+    w,
+    h,
+    age,
+    validSex(form.gender),
+    form.jobActivity,
+    form.dailySteps,
+  )
 
-  const bmr = isMale
-    ? 10 * w + 6.25 * h - 5 * age + 5
-    : 10 * w + 6.25 * h - 5 * age - 161
-
-  const jobMult: Record<JobActivity, number> = { desk: 1.2, feet: 1.375, labor: 1.55 }
-  const stepMult: Record<DailySteps, number> = { lt5k: 0, '5-10k': 0.05, '10-15k': 0.1, gt15k: 0.175 }
-  const tdee = Math.round(bmr * (jobMult[form.jobActivity] + stepMult[form.dailySteps]))
-
-  const goalAdj: Record<Goal, number> = { recomp: 0, cut: -400, bulk: 250 }
-  const calories = Math.max(1200, tdee + goalAdj[form.goal])
-
-  const protein = Math.round(w * (form.goal === 'cut' ? 1.8 : 1.6))
-  const fat = Math.round(w * 0.8)
-  const carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4))
-
-  return { tdee, calories, protein, carbs, fat }
+  return {
+    tdee: targets.tdee,
+    calories: targets.kcal,
+    protein: targets.protein,
+    carbs: targets.carbs,
+    fat: targets.fat,
+  }
 }
 
 function calcNavyBF(neck: number, waist: number, height: number, gender: Gender): number | null {
@@ -231,7 +227,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
 
   const validateStep = (stepToValidate: number): string | null => {
     if (stepToValidate === 1) {
-      const age = form.dob ? calcAge(form.dob) : null
+      const age = calcAgeFromDob(form.dob)
       const height = parseNumber(form.heightCm)
 
       if (age == null || !Number.isFinite(age) || age < 13 || age > 90) {
@@ -285,7 +281,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
       if (validationError) throw new Error(validationError)
 
       const bfFinal = form.bodyFatMethod === 'navy' && navyBF != null ? navyBF : form.bodyFatPct
-      const age = form.dob ? calcAge(form.dob) : null
+      const age = calcAgeFromDob(form.dob)
 
       const { error } = await supabase.from('profiles').upsert({
         id: userId,
