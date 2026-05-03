@@ -1,5 +1,94 @@
 # LazyFit — Current State Document
-*Last updated: April 20, 2026 — Sprints 1–13 complete; Profile screen fully rebuilt; global contrast/readability pass complete across all components*
+*Last updated: May 2026 — active state repaired for post-onboarding training hardening*
+
+## ACTIVE STATE — MAY 2026
+
+When this file conflicts with older sections below, the ACTIVE STATE section wins.
+
+### Current Phase
+Training hardening after Food Logger hardening.
+
+### Latest Confirmed Commits
+- `8ddfbd8` Fix onboarding DOB validation state handling
+- `23206db` Align default training routines with LazyFit doctrine
+- `9fe1a76` Fix training progression guardrails
+- `8d60bea` Polish food search loading and USDA result quality
+- `7d03a9c` Polish food correction flows on mobile
+- `37e3ecb` Add recent food repeat logging
+
+### Food Status
+Food Logger is good enough to pause for now.
+
+It supports AI draft review, generated item scrolling, logged-food editing, recent foods, improved USDA ranking, search loading fix, negative macro sanitization, and mobile correction polish.
+
+Deferred food work:
+- Saved meals
+- Barcode
+- Deeper USDA preference/ranking
+- Production-scale database improvements
+
+### Training Status
+Training is the current priority.
+
+Confirmed:
+- Guardrails fixed.
+- Default doctrine templates aligned.
+- Fresh onboarding DOB blocker fixed.
+- Fresh onboarding generated correct training days.
+
+### Training Doctrine
+LazyFit = Kinobody simplicity + Menno-style adaptive logic + Hevy-level execution + LazyFit nutrition engine.
+
+LazyFit uses a 3-day upper-biased aesthetic program. The program contains workout days:
+1. Upper A
+2. Lower A
+3. Upper B
+
+These are not three unrelated routines.
+
+### Current Generated Templates
+Upper A:
+- Incline Barbell Press
+- Lat Pulldown
+- Flat Dumbbell Press
+- Cable Row
+- Lateral Raise
+- Tricep Pushdown
+
+Lower A:
+- Bulgarian Split Squat
+- Hip Thrust
+- Seated Leg Curl
+- Leg Extension
+- Calf Raise
+
+Upper B:
+- Overhead Press
+- Pull-Up
+- Machine Row
+- Cable Lateral Raise
+- Face Pull
+- Bicep Curl
+
+### Known Next Issue
+Train UI still uses routine language:
+- Routines
+- My routines
+- New routine
+- No routines yet.
+
+Needs Program / Workout Days language polish.
+
+### Known Unresolved Future Architecture
+Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day.
+
+### Workflow Rules
+- One sprint at a time.
+- Browser validation required for UI.
+- Codex does not commit/push.
+- Report before commit.
+- Do not stage `docs/QA_FINDINGS.md` unless explicitly asked.
+- No friends beta until Tudor explicitly asks.
 
 ---
 
@@ -31,14 +120,14 @@ This is not a calorie-obsessed fitness tracker. It's a **minimal effective dose*
 - People who've tried every app and burned out — they want something that respects their time
 - Romanian market initially, English-first UI
 
-### Training Philosophy (Implemented in App)
+### Training Philosophy (legacy notes; ACTIVE STATE wins)
 - **RPT (Reverse Pyramid Training):** Heaviest set first (CNS freshest), back-off sets at -10% weight
-- **Rep ceiling: 12 reps max** on all exercises — strength + size in one range
+- **Rep ranges now vary by movement:** current generated templates include 5–8, 8–12, 10–15, 12–15, and 15–20
 - **Primary compounds:** 5–8 reps (near-maximal, 1 RIR — Reps in Reserve)
-- **Secondary compounds:** 6–10 reps
-- **Isolations/machines:** 8–12 reps
+- **Secondary compounds:** commonly 8–12 or 10–15 reps
+- **Isolations/machines:** commonly 10–15, 12–15, or 15–20 reps
 - **Science basis:** 1 RIR = trivially less hypertrophy than failure (≤3%), dramatically better recovery. Allows consistent 3×/week training
-- **Progressive overload engine:** +2.5kg compound / +1kg isolation when all sets hit reps_max
+- **Progressive overload engine:** see `src/lib/progressionConfig.ts` for current increments and bodyweight semantics
 
 ### Competitors (Researched)
 | App | Relationship |
@@ -264,10 +353,10 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 **What it shows:**
 
-**ROUTINES tab:**
+**ROUTINES tab (legacy wording; needs Program / Workout Days language polish):**
 - "START EMPTY WORKOUT" button
 - List of saved routines (with exercise count + muscle split preview)
-- "LOAD TEMPLATE" button → creates 3 routines (Upper A / Lower / Upper B)
+- "LOAD TEMPLATE" button → creates the 3 workout days (Upper A / Lower A / Upper B)
 - Last workout card (duration, volume, muscle split, date)
 - `is_system` boolean on routines — system routines cannot be deleted; custom routines show a trash icon
 - Muscle color in routine card overridden by rank (primary muscle = full accent, secondary = dimmed)
@@ -282,13 +371,13 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 - `deriveWorkoutName()` generates readable name from exercise list when no routine name exists
 - Tap card → navigates to /train/summary/[workoutId]
 
-**Current Template (Kinobody aesthetic philosophy):**
+**Current Generated Template (LazyFit doctrine):**
 
-*Upper A:* Bench Press (5–8), Row (5–8), Incline DB Press (6–10), Cable Row (8–12), Lateral Raise (10–12), Tricep Pushdown (8–12)
+*Upper A:* Incline Barbell Press, Lat Pulldown, Flat Dumbbell Press, Cable Row, Lateral Raise, Tricep Pushdown
 
-*Lower:* Calf Raise (8–12) → Bulgarian Split Squat (6–10) → Pendulum Squat (6–10) → Leg Extension (8–12) → Lying Leg Curl (8–12) → Hip Thrust (8–12)
+*Lower A:* Bulgarian Split Squat, Hip Thrust, Seated Leg Curl, Leg Extension, Calf Raise
 
-*Upper B:* OHP (5–8), Pull-Up (5–8), DB Shoulder Press (6–10), Face Pull (10–12), Bicep Curl (8–12), Skull Crusher (8–12)
+*Upper B:* Overhead Press, Pull-Up, Machine Row, Cable Lateral Raise, Face Pull, Bicep Curl
 
 **Status:** ✅ Working.
 
@@ -561,11 +650,11 @@ src/lib/
 | Exercise GIFs not showing | `/api/exercise-media` | Medium — How To shows YouTube card instead | Shoot own videos for LazyFit YouTube channel (best long-term), OR pay $10 one-time ExerciseDB |
 | Workout auto-save | `ActiveWorkoutClient.tsx` | High — in-progress workout lost on accidental navigation | localStorage auto-save on every set log + recovery prompt on next visit to /train |
 | Coach card rebuild | `ActiveWorkoutClient.tsx` | Medium — currently shows redundant set info; ↑/→ Hold badge triggers lack clear rules | Rewrite progression logic with explicit scientific rules; clean up coach card UI |
-| Routine overhaul | `TrainClient.tsx` + `routine_exercises` | Medium — exercise selection, rep ranges, and progression algorithm need science-based defaults | Full routine rebuild with RPT structure, deload logic, and auto-progression |
-| Onboarding flow | None exists | High — new users have no guided setup | Build onboarding wizard (TDEE calc, goals, body stats) — deferred post-MVP |
+| Program language polish | `TrainClient.tsx` + related train UI | Medium — UI still says routines/My routines/New routine | Rename user-facing copy to Program / Workout Days without changing data model yet |
+| Onboarding flow | `/onboarding` | Fixed blocker — fresh onboarding completed and generated correct training days | Keep browser-validating fresh onboarding after training changes |
 | Weekly check-in | `WeeklyCheckin.tsx` | Medium — UI exists, adaptive calorie loop not wired | Connect to `suggestCalorieTarget()` in `trendWeight.ts` |
 | Subscription / paywall | `profiles.subscription_status` | High for monetization — field exists, no enforcement | Build paywall + Stripe/payment integration |
-| Manual food search | `FoodClient.tsx` | Medium — AI works, manual search is placeholder | Integrate Open Food Facts API or USDA |
+| Food follow-ups | `FoodClient.tsx` | Deferred — Food Logger is good enough to pause | Saved meals, barcode, deeper USDA ranking, production-scale database improvements |
 | Rate limiting on API routes | All `/api/*` routes | Low now, high at scale | Add rate limiting middleware |
 
 ---
@@ -611,7 +700,7 @@ lazyfit-web/
 | No Redux/Zustand | Overkill for current state needs; Supabase is source of truth |
 | Tailwind v4 (PostCSS-first) | No config file — all customization via CSS variables |
 | Monospace font everywhere | Matrix aesthetic — auth/landing only; rebuilt app screens use SF Pro Display |
-| Routines system (not Programs) | Programs table exists in DB but was deleted from UI — too complex |
+| Legacy routine data model, program language next | Data model still uses `routines`, but user-facing Train copy should move to Program / Workout Days |
 | set_type column ('warmup'/'working') | Prevents warm-up sets from corrupting progression engine |
 | exercise_targets PK on (user_id, exercise_name, set_number) | Enables upsert for per-set progression tracking |
 | RLS disabled on exercise_media | Public cache table, no user data — simplifies server writes |
@@ -664,11 +753,12 @@ A systematic multi-round pass was applied across all components to fix unreadabl
 |------|----------|-------|
 | Workout auto-save | 🔴 High | localStorage save on every set; recovery prompt on /train if draft exists |
 | Coach card rebuild | 🟡 Medium | Clear ↑/→ Hold rules; remove redundant set display |
-| Routine overhaul | 🟡 Medium | Science-based exercise selection, RPT structure, deload logic |
-| Onboarding wizard | 🟡 Medium | Multi-step: TDEE → goal → body stats → first routine. Deferred post-launch |
+| Program / workout-day language polish | 🟡 Medium | Train UI still says routines/My routines/New routine; doctrine is one 3-day program |
+| Lower B alternate architecture | 🟡 Medium | Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day |
+| Onboarding regression checks | 🟡 Medium | Fresh onboarding should continue to validate DOB and generate Upper A / Lower A / Upper B |
 | Adaptive TDEE algorithm | 🟢 Post-launch | MacroFactor-style: logged weight + food → reverse-engineer real TDEE |
 | AI Coach chat tab | 🟢 Post-launch | Separate tab, rule-based at launch |
 | Waist logging | 🟢 Post-launch | Required for US Navy body fat method in profile |
 | Backdated weight entry | 🟢 Post-launch | Let users log past weigh-ins |
-| Manual food search | 🟢 Post-launch | Open Food Facts or USDA API |
+| Food follow-ups | 🟢 Post-launch | Saved meals, barcode, deeper USDA ranking, production-scale database improvements |
 | Paywall / Stripe | 🔴 High (post-beta) | subscription_status field exists; no enforcement yet |
