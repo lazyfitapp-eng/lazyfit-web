@@ -414,11 +414,12 @@ function RestTimer({
 
 const COMMON_EXERCISES = [
   'Barbell Bench Press', 'Barbell Row', 'Barbell Squat', 'Deadlift', 'Romanian Deadlift',
-  'Overhead Press', 'Pull-Up', 'Lat Pulldown', 'Incline Dumbbell Press', 'Dumbbell Row',
-  'Dumbbell Shoulder Press', 'Face Pull', 'Lateral Raise', 'Cable Row', 'Leg Press',
-  'Leg Curl', 'Leg Extension', 'Calf Raise', 'Hip Thrust', 'Bulgarian Split Squat',
+  'Overhead Press', 'Pull-Up', 'Lat Pulldown', 'Incline Barbell Press', 'Flat Dumbbell Press',
+  'Incline Dumbbell Press', 'Dumbbell Row', 'Dumbbell Shoulder Press', 'Face Pull',
+  'Lateral Raise', 'Cable Lateral Raise', 'Cable Row', 'Leg Press', 'Leg Curl',
+  'Seated Leg Curl', 'Leg Extension', 'Calf Raise', 'Hip Thrust', 'Bulgarian Split Squat',
   'Tricep Pushdown', 'Skull Crusher', 'Bicep Curl', 'Hammer Curl', 'Preacher Curl',
-  'Cable Fly', 'Pec Deck', 'Incline Barbell Press', 'Chest Dip', 'Seated Cable Row',
+  'Cable Fly', 'Pec Deck', 'Chest Dip', 'Seated Cable Row',
   'T-Bar Row', 'Hack Squat', 'Smith Machine Squat', 'Glute Kickback', 'Ab Crunch',
 ]
 

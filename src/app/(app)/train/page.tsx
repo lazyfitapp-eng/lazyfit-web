@@ -1,14 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
-import { THREE_DAY_TEMPLATE } from '@/lib/createDefaultRoutines'
+import { DEFAULT_ROUTINE_DELETE_GUARD_TEMPLATES } from '@/lib/createDefaultRoutines'
 import { redirect } from 'next/navigation'
 import TrainClient from './TrainClient'
 
 function isDefaultRoutine(name: string, exerciseNames: string[]) {
-  const template = THREE_DAY_TEMPLATE.find(tpl => tpl.name === name)
-  if (!template || template.exercises.length !== exerciseNames.length) return false
-
   const exerciseSet = new Set(exerciseNames)
-  return template.exercises.every(ex => exerciseSet.has(ex.exercise_name))
+  return DEFAULT_ROUTINE_DELETE_GUARD_TEMPLATES
+    .filter(tpl => tpl.name === name && tpl.exercises.length === exerciseNames.length)
+    .some(tpl => tpl.exercises.every(ex => exerciseSet.has(ex.exercise_name)))
 }
 
 export default async function TrainPage() {

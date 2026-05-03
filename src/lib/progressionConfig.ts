@@ -2,7 +2,7 @@
 // Single source of truth for exercise type classification, weight increments,
 // deload percentage, bodyweight semantics, and primary coach-card exercises.
 
-export type ExerciseType = 'barbell_compound' | 'cable_machine' | 'isolation' | 'bodyweight'
+export type ExerciseType = 'barbell_compound' | 'dumbbell_compound' | 'cable_machine' | 'isolation' | 'bodyweight'
 
 export const DELOAD_FACTOR = 0.85
 export const DELOAD_PERCENT_LABEL = `${Math.round(DELOAD_FACTOR * 100)}%`
@@ -19,20 +19,22 @@ export const EXERCISE_TYPE: Record<string, ExerciseType> = {
   'Overhead Press':         'barbell_compound',
   'Pull-Up':                'bodyweight',
   'Bulgarian Split Squat':  'barbell_compound',
-  'Incline Dumbbell Press': 'barbell_compound',
+  'Incline Dumbbell Press': 'dumbbell_compound',
   'Cable Row':              'cable_machine',
   'Machine Row':            'cable_machine',
   'Leg Press':              'cable_machine',
   'Leg Extension':          'cable_machine',
   'Lying Leg Curl':         'cable_machine',
+  'Seated Leg Curl':        'cable_machine',
   'Hip Thrust':             'cable_machine',
   'Lateral Raise':          'isolation',
+  'Cable Lateral Raise':    'isolation',
   'Tricep Pushdown':        'isolation',
   'Bicep Curl':             'isolation',
   'Face Pull':              'isolation',
   'Calf Raise':             'isolation',
   'Incline Barbell Press':  'barbell_compound',
-  'Flat Dumbbell Press':    'barbell_compound',
+  'Flat Dumbbell Press':    'dumbbell_compound',
   'Lat Pulldown':           'cable_machine',
   'Barbell Squat':          'barbell_compound',
   'Romanian Deadlift':      'barbell_compound',
@@ -41,6 +43,7 @@ export const EXERCISE_TYPE: Record<string, ExerciseType> = {
 
 export const WEIGHT_INCREMENT: Record<ExerciseType, number> = {
   barbell_compound: 2.5,
+  dumbbell_compound: 2.5,
   cable_machine:    5.0,
   isolation:        1.0,
   bodyweight:       2.5,

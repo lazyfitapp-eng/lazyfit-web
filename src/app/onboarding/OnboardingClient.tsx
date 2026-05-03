@@ -791,9 +791,9 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
           })}
         </div>
         {[
-          { letter: 'A', name: 'Upper A', desc: 'Bench · Row · Incline Press · Cable Row · Lateral Raise · Triceps' },
-          { letter: 'L', name: 'Lower A', desc: 'Bulgarian Split Squat · Hip Thrust · Leg Curl · Leg Extension · Calves' },
-          { letter: 'B', name: 'Upper B', desc: 'OHP · Pull-Up · Machine Row · Face Pull · Bicep Curl' },
+          { letter: 'A', name: 'Upper A', desc: 'Incline Press · Lat Pulldown · Dumbbell Press · Cable Row · Triceps' },
+          { letter: 'L', name: 'Lower A', desc: 'Bulgarian Split Squat · Hip Thrust · Seated Leg Curl · Leg Extension · Calves' },
+          { letter: 'B', name: 'Upper B', desc: 'OHP · Pull-Up · Machine Row · Cable Lateral Raise · Face Pull' },
         ].map(s => (
           <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: C.greenGlow, border: `1px solid ${C.greenBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.green, flexShrink: 0 }}>{s.letter}</div>
