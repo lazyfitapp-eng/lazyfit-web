@@ -64,7 +64,7 @@ export default async function DashboardPage() {
       .order('started_at', { ascending: false }),
     supabase
       .from('food_logs')
-      .select('calories, protein')
+      .select('calories, protein, logged_at')
       .eq('user_id', user.id)
       .gte('logged_at', sevenDaysAgoBounds.start),
     supabase
@@ -122,6 +122,13 @@ export default async function DashboardPage() {
   // Check-in averages
   const weekCalTotal = (weekFoodLogs ?? []).reduce((s, l) => s + (l.calories ?? 0), 0)
   const weekProtTotal = (weekFoodLogs ?? []).reduce((s, l) => s + (l.protein ?? 0), 0)
+  const foodDaysThisWeek = new Set(
+    (weekFoodLogs ?? []).map(l => getLocalDateString(new Date(l.logged_at as string)))
+  ).size
+  const hasMeaningfulCheckinData =
+    (weekWorkouts?.length ?? 0) >= 1 ||
+    (weightEntries?.length ?? 0) >= 2 ||
+    foodDaysThisWeek >= 3
 
   // Chart data for Progress sub-tab
   const chartWeightEntries = (chartWeightRaw ?? []) as { date: string; weight: number; trend_weight: number }[]
@@ -158,6 +165,7 @@ export default async function DashboardPage() {
         avgCalories:      Math.round(weekCalTotal / 7),
         avgProtein:       Math.round(weekProtTotal / 7),
         workoutsThisWeek: weekWorkouts?.length ?? 0,
+        hasMeaningfulData: hasMeaningfulCheckinData,
       }}
       chartWeightEntries={chartWeightEntries}
       chartFoodLogs={chartFoodLogs}

@@ -49,6 +49,7 @@ interface Props {
     avgCalories: number
     avgProtein: number
     workoutsThisWeek: number
+    hasMeaningfulData: boolean
   }
   chartWeightEntries: { date: string; weight: number; trend_weight: number }[]
   chartFoodLogs: { date: string; calories: number }[]
@@ -767,7 +768,7 @@ export default function DashboardClient({
       {/* ── Daily log tab ───────────────────────────────────────────── */}
       {activeTab === 'daily-log' && (
         <div className={`px-5 pt-[14px] pb-24 flex flex-col gap-2 transition-opacity duration-150 font-sans ${isPending ? 'opacity-50' : 'opacity-100'}`}>
-          {isToday && (
+          {isToday && checkin.hasMeaningfulData && (
             <WeeklyCheckinWrapper
               userId={userId}
               currentWeight={checkin.currentWeight}

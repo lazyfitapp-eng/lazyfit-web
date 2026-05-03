@@ -129,7 +129,6 @@ export default function SummaryClient({
   const isToday = completedAt ? new Date(completedAt).toDateString() === new Date().toDateString() : false
   const exerciseNames = [...new Set(sets.map(s => s.exercise_name))]
   const muscleSplit = computeMuscleSplit(sets)
-  const showMuscleSplit = muscleSplit.length > 0 && !(muscleSplit.length === 1 && muscleSplit[0].muscle === 'Other' && muscleSplit[0].pct >= 95)
   const rawTotalVolume = sets.reduce((sum, s) => sum + s.weight_kg * s.reps_completed, 0)
   const totalVolume = formatVolume(sets)
   const totalVolumeLabel = formatKg(rawTotalVolume)
@@ -161,6 +160,11 @@ export default function SummaryClient({
   })
   const baselineExercises = exerciseNames.filter(name => todayBest[name] && !allTimeBest[name] && !prevBestWeight[name])
   const isLowData = sessionCount <= 1 || comparableExercises.length === 0
+  const showMuscleSplit =
+    muscleSplit.length > 1 &&
+    totalSets >= 3 &&
+    !isLowData &&
+    !(muscleSplit.length === 1 && muscleSplit[0].muscle === 'Other' && muscleSplit[0].pct >= 95)
   const summaryMode: 'baseline' | 'consistency' | 'progress' | 'regression' =
     prs.length > 0 || progressedExercises.length > 0 ? 'progress'
     : isLowData ? 'baseline'
@@ -915,9 +919,6 @@ export default function SummaryClient({
       {showMuscleSplit && (
         <div className="lf-a6" style={{ padding: '0 16px' }}>
           <div style={{ background: T.card, border: `1px solid ${T.border2}`, borderRadius: 20, padding: '16px 18px' }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: T.text3, marginBottom: 12 }}>
-              Muscle Split
-            </div>
             {/* Bar */}
             <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex', gap: 2, marginBottom: 14 }}>
               {muscleSplit.map(m => (
