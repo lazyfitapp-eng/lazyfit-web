@@ -26,8 +26,15 @@ interface FoodLog {
   logged_at: string
 }
 
-interface EditableAIItem extends FoodAIItem {
+type EditableAINumericField = 'calories' | 'protein' | 'carbs' | 'fat' | 'quantity_g'
+
+interface EditableAIItem extends Omit<FoodAIItem, EditableAINumericField> {
   _id: string
+  calories: string
+  protein: string
+  carbs: string
+  fat: string
+  quantity_g: string
 }
 
 interface EditLogForm {
@@ -117,6 +124,17 @@ function parseNonNegativeNumber(value: string): number | null {
   if (value.trim() === '') return null
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
+
+function formatEditableNumber(value: number | string | null | undefined): string {
+  if (typeof value === 'string') return value
+  if (typeof value !== 'number' || !Number.isFinite(value)) return ''
+  const rounded = Math.round(value * 10) / 10
+  return String(rounded)
+}
+
+function normalizeRecentFoodName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 function formatQuantity(quantity: number | null | undefined): string | null {
@@ -259,6 +277,7 @@ export default function FoodClient({
   const [editForm, setEditForm] = useState<EditLogForm | null>(null)
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [editDeleteConfirming, setEditDeleteConfirming] = useState(false)
 
   // ── CTA loading ─────────────────────────────────────────────────────────────
   const [ctaLoading, setCtaLoading] = useState(false)
@@ -285,6 +304,7 @@ export default function FoodClient({
     setEditingLog(null)
     setEditForm(null)
     setEditError(null)
+    setEditDeleteConfirming(false)
   }, [date, initialLogs])
 
   useEffect(() => {
@@ -373,12 +393,11 @@ export default function FoodClient({
   const recentFoods = useMemo(() => {
     const seen = new Set<string>()
     return [...recentSourceLogs]
-      .filter(log => log.food_name?.trim())
+      .filter(log => log.food_name?.trim() && getLocalDateString(new Date(log.logged_at)) !== date)
       .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())
       .filter(log => {
         const key = [
-          log.food_id ?? '',
-          log.food_name.trim().toLowerCase(),
+          normalizeRecentFoodName(log.food_name),
           Math.round((log.calories ?? 0) * 10) / 10,
           Math.round((log.protein ?? 0) * 10) / 10,
           Math.round((log.carbs ?? 0) * 10) / 10,
@@ -390,7 +409,7 @@ export default function FoodClient({
         return true
       })
       .slice(0, 8)
-  }, [recentSourceLogs])
+  }, [date, recentSourceLogs])
 
   const visibleMethodTabs = useMemo(
     () => recentFoods.length > 0 ? METHOD_TABS : METHOD_TABS.filter(tab => tab.id !== 'recent'),
@@ -425,16 +444,23 @@ export default function FoodClient({
   }
 
   // ── Delete food log ─────────────────────────────────────────────────────────
-  const deleteLog = async (id: string) => {
+  const deleteLog = async (id: string): Promise<boolean> => {
     setActionMenuId(null)
-    const { error } = await supabase.from('food_logs').delete().eq('id', id)
+    const { error } = await supabase.from('food_logs').delete().eq('id', id).eq('user_id', userId)
     if (error) {
-      alert(`Delete failed: ${error.message}`)
-    } else {
-      setLogs(prev => prev.filter(l => l.id !== id))
-      setRecentSourceLogs(prev => prev.filter(l => l.id !== id))
-      if (editingLog?.id === id) closeEditSheet()
+      if (editingLog?.id === id) {
+        setEditError(`Delete failed: ${error.message}`)
+        setEditDeleteConfirming(false)
+      } else {
+        alert(`Delete failed: ${error.message}`)
+      }
+      return false
     }
+
+    setLogs(prev => prev.filter(l => l.id !== id))
+    setRecentSourceLogs(prev => prev.filter(l => l.id !== id))
+    if (editingLog?.id === id) closeEditSheet()
+    return true
   }
 
   // ── Open modal for a specific meal ──────────────────────────────────────────
@@ -452,6 +478,7 @@ export default function FoodClient({
       meal_type: MEAL_TYPES.includes(log.meal_type as MealType) ? log.meal_type as MealType : 'breakfast',
     })
     setEditError(null)
+    setEditDeleteConfirming(false)
   }
 
   const closeEditSheet = () => {
@@ -459,11 +486,13 @@ export default function FoodClient({
     setEditForm(null)
     setEditSaving(false)
     setEditError(null)
+    setEditDeleteConfirming(false)
   }
 
   const updateEditForm = (field: keyof EditLogForm, value: string | MealType) => {
     setEditForm(prev => prev ? { ...prev, [field]: value } : prev)
     setEditError(null)
+    setEditDeleteConfirming(false)
   }
 
   const saveEditedLog = async () => {
@@ -476,9 +505,9 @@ export default function FoodClient({
     const fat = parseNonNegativeNumber(editForm.fat)
 
     if (!foodName) { setEditError('Enter a food name.'); return }
-    if (quantity === null) { setEditError('Enter a valid quantity greater than 0.'); return }
+    if (quantity === null) { setEditError('Enter a valid quantity greater than 0g.'); return }
     if (calories === null || protein === null || carbs === null || fat === null) {
-      setEditError('Calories and macros must be 0 or higher.')
+      setEditError('Fill in calories, protein, carbs, and fat. Use 0 only when that macro is truly zero.')
       return
     }
 
@@ -512,6 +541,19 @@ export default function FoodClient({
     setLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log))
     setRecentSourceLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log))
     closeEditSheet()
+  }
+
+  const requestDeleteEditedLog = async () => {
+    if (!editingLog || editSaving) return
+    if (!editDeleteConfirming) {
+      setEditDeleteConfirming(true)
+      setEditError(null)
+      return
+    }
+
+    setEditSaving(true)
+    const deleted = await deleteLog(editingLog.id)
+    if (!deleted) setEditSaving(false)
   }
 
   const openModal = (meal: MealType) => {
@@ -615,7 +657,15 @@ export default function FoodClient({
       })
       const data = await res.json()
       if (!res.ok || !data.items) { setAiError(data.error ?? 'Analysis failed. Try again.'); return }
-      setAiItems(data.items.map((item: FoodAIItem, i: number) => ({ ...item, _id: `ai-${i}-${Date.now()}` })))
+      setAiItems(data.items.map((item: FoodAIItem, i: number) => ({
+        ...item,
+        _id: `ai-${i}-${Date.now()}`,
+        calories: formatEditableNumber(item.calories),
+        protein: formatEditableNumber(item.protein),
+        carbs: formatEditableNumber(item.carbs),
+        fat: formatEditableNumber(item.fat),
+        quantity_g: formatEditableNumber(item.quantity_g),
+      })))
     } catch {
       setAiError('Network error. Try again.')
     } finally {
@@ -623,10 +673,10 @@ export default function FoodClient({
     }
   }
 
-  const updateAiItem = (id: string, field: keyof FoodAIItem, value: string | number) => {
+  const updateAiItem = (id: string, field: 'name' | EditableAINumericField, value: string) => {
     setAiItems(prev => prev?.map(item =>
       item._id === id
-        ? { ...item, [field]: typeof value === 'string' && field !== 'name' && field !== 'confidence' ? parseFloat(value) || 0 : value }
+        ? { ...item, [field]: value }
         : item
     ) ?? null)
     setAiError(null)
@@ -635,6 +685,13 @@ export default function FoodClient({
   const removeAiItem = (id: string) => {
     setAiItems(prev => prev?.filter(i => i._id !== id) ?? null)
     setAiError(null)
+  }
+
+  const clearAiDraft = () => {
+    setAiItems(null)
+    setAiError(null)
+    setAiWarnings([])
+    setCtaLoading(false)
   }
 
   // ── Log AI items ────────────────────────────────────────────────────────────
@@ -647,8 +704,16 @@ export default function FoodClient({
     }
     setCtaLoading(true)
     try {
-      const invalidItem = aiItems.find(item => parsePositiveQuantity(item.quantity_g) === null)
-      if (invalidItem) {
+      const parsedItems = aiItems.map(item => ({
+        item,
+        quantity: parsePositiveQuantity(item.quantity_g),
+        calories: parseNonNegativeNumber(item.calories),
+        protein: parseNonNegativeNumber(item.protein),
+        carbs: parseNonNegativeNumber(item.carbs),
+        fat: parseNonNegativeNumber(item.fat),
+      }))
+      const invalidQuantityItem = parsedItems.find(({ quantity }) => quantity === null)
+      if (invalidQuantityItem) {
         setAiError('Enter a valid quantity greater than 0g for every item.')
         return
       }
@@ -657,24 +722,24 @@ export default function FoodClient({
         setAiError('Enter a food name for every draft item.')
         return
       }
-      const invalidMacroItem = aiItems.find(item =>
-        [item.calories, item.protein, item.carbs, item.fat].some(value => !Number.isFinite(value) || value < 0)
+      const invalidMacroItem = parsedItems.find(({ calories, protein, carbs, fat }) =>
+        [calories, protein, carbs, fat].some(value => value === null)
       )
       if (invalidMacroItem) {
-        setAiError('Calories and macros must be 0 or higher for every item.')
+        setAiError('Fill in calories, protein, carbs, and fat for every item. Use 0 only when a macro is truly zero.')
         return
       }
       setAiError(null)
       const loggedAt = timestampForSelectedDate(date)
-      const rows = aiItems.map(item => ({
+      const rows = parsedItems.map(({ item, quantity, calories, protein, carbs, fat }) => ({
         user_id: userId,
         food_id: `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        food_name: item.name,
-        calories: Math.round(item.calories),
-        protein: Math.round(item.protein * 10) / 10,
-        carbs: Math.round(item.carbs * 10) / 10,
-        fat: Math.round(item.fat * 10) / 10,
-        quantity: parsePositiveQuantity(item.quantity_g) as number,
+        food_name: item.name.trim(),
+        calories: Math.round(calories!),
+        protein: Math.round(protein! * 10) / 10,
+        carbs: Math.round(carbs! * 10) / 10,
+        fat: Math.round(fat! * 10) / 10,
+        quantity: quantity!,
         meal_type: modalMeal,
         logged_at: loggedAt,
       }))
@@ -834,6 +899,7 @@ export default function FoodClient({
   }
 
   // ── CTA logic per tab ───────────────────────────────────────────────────────
+  const aiDraftActive = aiItems !== null
   const aiDraftEmpty = aiItems !== null && aiItems.length === 0
   const ctaDisabled = ctaLoading || analysing || aiDraftEmpty || methodTab === 'recent'
   const showPinnedCTA = methodTab !== 'recent' || aiItems !== null || analysing
@@ -1223,10 +1289,10 @@ export default function FoodClient({
       >
         <div
           onClick={e => e.stopPropagation()}
-          style={{ width: '100%', maxWidth: 430, margin: '0 auto', background: '#111', border: '1px solid #242424', borderRadius: '26px 26px 0 0', maxHeight: 'min(88dvh, 720px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          style={{ width: '100%', maxWidth: 430, margin: '0 auto', background: '#111', border: '1px solid #242424', borderRadius: '26px 26px 0 0', maxHeight: 'min(88dvh, 720px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', overflowX: 'hidden', boxSizing: 'border-box' }}
         >
           <div style={{ width: 36, height: 4, background: '#242424', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
-          <div style={{ padding: '14px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderBottom: '1px solid #1c1c1c' }}>
+          <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexShrink: 0, borderBottom: '1px solid #1c1c1c' }}>
             <div>
               <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.4px', color: '#f0f0f0' }}>Edit food</div>
               <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 3 }}>{MEAL_CONFIG[editForm.meal_type].label} / {dateLabel}</div>
@@ -1238,32 +1304,32 @@ export default function FoodClient({
             </button>
           </div>
 
-          <div style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 20px 12px' }}>
+          <div style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px 12px', overflowX: 'hidden' }}>
             <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Name</label>
-            <input value={editForm.food_name} onChange={e => updateEditForm('food_name', e.target.value)} style={{ width: '100%', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e', marginBottom: 14 }} />
+            <input value={editForm.food_name} onChange={e => updateEditForm('food_name', e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e', marginBottom: 14 }} />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 10, marginBottom: 14 }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 72px', gap: 10, marginBottom: 14 }}>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Quantity</label>
-                <input type="number" inputMode="decimal" value={editForm.quantity} onChange={e => updateEditForm('quantity', e.target.value)} style={{ width: '100%', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }} />
+                <input type="number" inputMode="decimal" min={0} step="any" required value={editForm.quantity} onChange={e => updateEditForm('quantity', e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Unit</label>
-                <input value={editForm.unit} readOnly aria-label="Unit" style={{ width: '100%', background: '#141414', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#b8b8b8', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none' }} />
+                <input value={editForm.unit} readOnly aria-label="Unit" style={{ width: '100%', boxSizing: 'border-box', background: '#141414', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#b8b8b8', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none' }} />
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(128px, 1fr))', gap: 10, marginBottom: 14 }}>
               {([
                 ['calories', 'Calories', 'kcal'],
                 ['protein', 'Protein', 'g'],
                 ['carbs', 'Carbs', 'g'],
                 ['fat', 'Fat', 'g'],
               ] as const).map(([field, label, unit]) => (
-                <div key={field}>
+                <div key={field} style={{ minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>{label}</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '0 11px 0 0' }}>
-                    <input type="number" inputMode="decimal" value={editForm[field]} onChange={e => updateEditForm(field, e.target.value)} style={{ minWidth: 0, flex: 1, background: 'none', border: 'none', padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '0 11px 0 0', minWidth: 0, boxSizing: 'border-box' }}>
+                    <input type="number" inputMode="decimal" min={0} step="any" required value={editForm[field]} onChange={e => updateEditForm(field, e.target.value)} style={{ minWidth: 0, flex: 1, background: 'none', border: 'none', padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }} />
                     <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 700 }}>{unit}</span>
                   </div>
                 </div>
@@ -1271,7 +1337,7 @@ export default function FoodClient({
             </div>
 
             <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 8 }}>Meal</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(128px, 1fr))', gap: 8, marginBottom: 14 }}>
               {MEAL_TYPES.map(m => (
                 <button key={m} onClick={() => updateEditForm('meal_type', m)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: `1px solid ${editForm.meal_type === m ? '#183525' : '#242424'}`, borderRadius: 12, color: editForm.meal_type === m ? '#3ecf8e' : '#b8b8b8', cursor: 'pointer', background: editForm.meal_type === m ? '#091510' : '#181818', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', textAlign: 'left' }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: MEAL_CONFIG[m].color, flexShrink: 0 }} />
@@ -1280,14 +1346,15 @@ export default function FoodClient({
               ))}
             </div>
 
+            {editDeleteConfirming && <p style={{ fontSize: 12, color: '#f5a623', textAlign: 'center', marginBottom: 8, lineHeight: 1.4 }}>Delete this food? Tap Confirm to remove it.</p>}
             {editError && <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', marginBottom: 10 }}>{editError}</p>}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '92px 1fr', gap: 10, padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
-            <button onClick={() => deleteLog(editingLog.id)} disabled={editSaving} style={{ padding: 14, background: '#181818', border: '1px solid #242424', borderRadius: 14, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, color: '#ff3b5c', cursor: editSaving ? 'default' : 'pointer', opacity: editSaving ? 0.7 : 1 }}>
-              Delete
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(92px, 0.42fr) minmax(0, 1fr)', gap: 10, padding: '12px 16px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c', boxSizing: 'border-box' }}>
+            <button onClick={requestDeleteEditedLog} disabled={editSaving} style={{ padding: 14, minWidth: 0, background: editDeleteConfirming ? '#3a1018' : '#181818', border: `1px solid ${editDeleteConfirming ? '#6f1a2a' : '#242424'}`, borderRadius: 14, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, color: editDeleteConfirming ? '#fff' : '#ff3b5c', cursor: editSaving ? 'default' : 'pointer', opacity: editSaving ? 0.7 : 1 }}>
+              {editSaving && editDeleteConfirming ? 'Deleting...' : editDeleteConfirming ? 'Confirm' : 'Delete'}
             </button>
-            <button onClick={saveEditedLog} disabled={editSaving} style={{ padding: 14, background: '#3ecf8e', border: 'none', borderRadius: 14, fontFamily: 'inherit', fontSize: 15, fontWeight: 800, letterSpacing: '0.2px', color: '#000', cursor: editSaving ? 'default' : 'pointer', opacity: editSaving ? 0.7 : 1 }}>
+            <button onClick={saveEditedLog} disabled={editSaving} style={{ padding: 14, minWidth: 0, background: '#3ecf8e', border: 'none', borderRadius: 14, fontFamily: 'inherit', fontSize: 15, fontWeight: 800, letterSpacing: '0.2px', color: '#000', cursor: editSaving ? 'default' : 'pointer', opacity: editSaving ? 0.7 : 1 }}>
               {editSaving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
@@ -1368,12 +1435,16 @@ export default function FoodClient({
             {visibleMethodTabs.map(({ id, label, icon }) => (
               <button
                 key={id}
-                onClick={() => { if (!aiItems) { setMethodTab(id); setAiError(null); setRecentError(null) } }}
+                disabled={aiDraftActive}
+                aria-disabled={aiDraftActive}
+                title={aiDraftActive ? 'Finish or clear draft to switch methods.' : undefined}
+                onClick={() => { if (!aiDraftActive) { setMethodTab(id); setAiError(null); setRecentError(null) } }}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                  padding: '6px 4px 11px', cursor: 'pointer', border: 'none', background: 'none',
+                  padding: '6px 4px 11px', cursor: aiDraftActive ? 'default' : 'pointer', border: 'none', background: 'none',
                   fontFamily: 'inherit', position: 'relative',
                   color: methodTab === id ? '#3ecf8e' : '#b8b8b8', transition: 'color 0.15s',
+                  opacity: aiDraftActive && methodTab !== id ? 0.42 : 1,
                 }}
               >
                 {icon}
@@ -1384,6 +1455,13 @@ export default function FoodClient({
               </button>
             ))}
           </div>
+          {aiDraftActive && (
+            <div style={{ padding: '8px 20px 0', flexShrink: 0 }}>
+              <div style={{ border: '1px solid #242424', borderRadius: 10, background: '#151515', color: '#b8b8b8', fontSize: 12, lineHeight: 1.4, padding: '8px 10px', textAlign: 'center' }}>
+                Finish or clear draft to switch methods.
+              </div>
+            </div>
+          )}
 
           {/* Scrollable body with top fade hint */}
           <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
@@ -1437,10 +1515,10 @@ export default function FoodClient({
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                         {([
-                          { label: 'CAL', field: 'calories' as keyof FoodAIItem, color: '#b8b8b8' },
-                          { label: 'PRO', field: 'protein' as keyof FoodAIItem, color: '#4a9eff' },
-                          { label: 'CARB', field: 'carbs' as keyof FoodAIItem, color: '#3ecf8e' },
-                          { label: 'FAT', field: 'fat' as keyof FoodAIItem, color: '#f5a623' },
+                          { label: 'CAL', field: 'calories' as EditableAINumericField, color: '#b8b8b8' },
+                          { label: 'PRO', field: 'protein' as EditableAINumericField, color: '#4a9eff' },
+                          { label: 'CARB', field: 'carbs' as EditableAINumericField, color: '#3ecf8e' },
+                          { label: 'FAT', field: 'fat' as EditableAINumericField, color: '#f5a623' },
                         ] as const).map(({ label, field, color }) => (
                           <div key={field} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <span style={{ fontSize: 9, letterSpacing: '0.8px', marginBottom: 4, color }}>{label}</span>
@@ -1448,8 +1526,10 @@ export default function FoodClient({
                               type="number"
                               inputMode="decimal"
                               min={0}
+                              step="any"
+                              required
                               aria-label={`${label} for ${item.name || 'draft item'}`}
-                              value={Math.round((item[field] as number) * 10) / 10}
+                              value={item[field]}
                               onChange={e => updateAiItem(item._id, field, e.target.value)}
                               style={{ width: '100%', background: '#121212', border: '1px solid #242424', borderRadius: 8, padding: '6px 4px', fontSize: 12, color: '#f0f0f0', fontFamily: 'monospace', textAlign: 'center', outline: 'none' }}
                             />
@@ -1462,6 +1542,8 @@ export default function FoodClient({
                           type="number"
                           inputMode="decimal"
                           min={0}
+                          step="any"
+                          required
                           aria-label={`Quantity in grams for ${item.name || 'draft item'}`}
                           value={item.quantity_g}
                           onChange={e => updateAiItem(item._id, 'quantity_g', e.target.value)}
@@ -1472,8 +1554,8 @@ export default function FoodClient({
                     </div>
                   ))}
                   {aiError && <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', padding: '4px 0' }}>{aiError}</p>}
-                  <button onClick={() => { setAiItems(null); setAiError(null); setAiWarnings([]) }} style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>
-                    Retake / Edit
+                  <button onClick={clearAiDraft} style={{ background: 'none', border: 'none', color: '#b8b8b8', fontSize: 11, letterSpacing: '0.8px', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>
+                    Start over
                   </button>
                 </div>
 
