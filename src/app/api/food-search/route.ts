@@ -90,6 +90,8 @@ const BASIC_DESCRIPTION_TERMS = [
   'with skin',
 ]
 
+const RAW_RICE_QUERY_TOKENS = new Set(['raw', 'dry', 'dried', 'uncooked'])
+
 const PROCESSED_DESCRIPTION_TERMS = [
   'babyfood',
   'bagel',
@@ -158,6 +160,10 @@ function termIsInQuery(term: string, queryTokens: string[]): boolean {
   return termTokens.length > 0 && termTokens.every(token => queryTokens.includes(token))
 }
 
+function queryHasRawRiceIntent(queryTokens: string[]): boolean {
+  return queryTokens.includes('rice') && queryTokens.some(token => RAW_RICE_QUERY_TOKENS.has(token))
+}
+
 function shouldRerankQuery(query: string, queryTokens: string[]): boolean {
   return queryTokens.length > 0
     && queryTokens.length <= 2
@@ -194,6 +200,7 @@ function scoreFood(candidate: SearchCandidate, queryTokens: string[]): number {
   score -= Math.min(72, processedTermCount * 18)
 
   const query = queryTokens.join(' ')
+  const rawRiceIntent = queryHasRawRiceIntent(queryTokens)
   if (query === 'milk') {
     if (/\b(fluid|whole|lowfat|nonfat|reduced[-\s]fat|skim)\b/i.test(description)) score += 24
     if (/\b(3\.25%|1% milkfat|2% milkfat|fat free)\b/i.test(description)) score += 18
@@ -202,9 +209,17 @@ function scoreFood(candidate: SearchCandidate, queryTokens: string[]): number {
 
   if (query === 'rice') {
     if (/\b(white|brown)\b/i.test(description)) score += 24
-    if (/\b(cooked|raw)\b/i.test(description)) score += 12
+    if (/\bcooked\b/i.test(description)) score += 48
+    if (/\b(raw|dry|dried|uncooked|dehydrated)\b/i.test(description)) score -= 28
     if (/\b(long[-\s]grain|medium[-\s]grain|short[-\s]grain)\b/i.test(description)) score += 12
     if (/\b(black|red|glutinous|parboiled|noodles|cracker|cake|snack|vermicelli|pilaf|flour|bran|milk|oil)\b/i.test(description)) score -= 24
+  }
+
+  if (rawRiceIntent) {
+    if (/\b(raw|dry|dried|uncooked|dehydrated)\b/i.test(description)) score += 90
+    if (/\bcooked\b/i.test(description)) score -= 30
+    if (/\b(white|brown)\b/i.test(description)) score += 18
+    if (/\b(long[-\s]grain|medium[-\s]grain|short[-\s]grain)\b/i.test(description)) score += 10
   }
 
   if (query === 'oat') {
@@ -241,6 +256,12 @@ function stripSearchMetadata(candidate: SearchCandidate): USDAResult {
   }
 }
 
+function sanitizeNutritionValue(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  const rounded = Math.round(value * 10) / 10
+  return rounded < 0 || Object.is(rounded, -0) ? 0 : rounded
+}
+
 function rerankFoods(candidates: SearchCandidate[], query: string, pageSize: number): USDAResult[] {
   const queryTokens = getStemmedTokens(query)
   if (!shouldRerankQuery(query, queryTokens)) {
@@ -269,7 +290,7 @@ export async function GET(req: NextRequest) {
   const pageSize = Math.min(Number(searchParams.get('pageSize') ?? '8'), 20)
   const queryTokens = getStemmedTokens(q)
   const candidatePageSize = shouldRerankQuery(q, queryTokens) ? Math.max(pageSize, 100) : pageSize
-  const cacheKey = `${q}:${pageSize}:rank-v2`
+  const cacheKey = `${q}:${pageSize}:rank-v3`
 
   // Return cached result if fresh
   const cached = cache.get(cacheKey)
@@ -307,7 +328,7 @@ export async function GET(req: NextRequest) {
       }
       for (const n of food.foodNutrients ?? []) {
         const field = typeof n.nutrientId === 'number' ? NUTRIENT_MAP[n.nutrientId] : undefined
-        if (field && typeof n.value === 'number') result[field] = Math.round(n.value * 10) / 10
+        if (field && typeof n.value === 'number') result[field] = sanitizeNutritionValue(n.value)
       }
       return result
     }).filter((r: SearchCandidate) => r.kcalPer100g > 0)

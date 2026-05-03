@@ -133,6 +133,21 @@ function formatEditableNumber(value: number | string | null | undefined): string
   return String(rounded)
 }
 
+function sanitizeNutritionNumber(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
+}
+
+function sanitizeUSDAResult(result: USDAResult): USDAResult {
+  return {
+    ...result,
+    kcalPer100g: sanitizeNutritionNumber(result.kcalPer100g),
+    protein: sanitizeNutritionNumber(result.protein),
+    carbs: sanitizeNutritionNumber(result.carbs),
+    fat: sanitizeNutritionNumber(result.fat),
+    fiber: sanitizeNutritionNumber(result.fiber),
+  }
+}
+
 function normalizeRecentFoodName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ')
 }
@@ -254,7 +269,9 @@ export default function FoodClient({
   const [selectedResult, setSelectedResult] = useState<USDAResult | null>(null)
   const [selectedQty, setSelectedQty] = useState('')
   const [searchError, setSearchError] = useState<string | null>(null)
+  const [searchCompletedQuery, setSearchCompletedQuery] = useState('')
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchRequestId = useRef(0)
 
   // ── Barcode tab ─────────────────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -358,7 +375,9 @@ export default function FoodClient({
       setMethodTab('photo')
       setImagePreview(null); setImageData(null); setPhotoWeight(''); setPhotoDesc('')
       setVoiceText(''); setMicListening(false); setMicError(null)
-      setSearchQuery(''); setSearchResults([]); setSelectedResult(null); setSelectedQty(''); setSearchError(null)
+      if (searchTimeout.current) { clearTimeout(searchTimeout.current); searchTimeout.current = null }
+      searchRequestId.current += 1
+      setSearchQuery(''); setSearchResults([]); setSearching(false); setSearchCompletedQuery(''); setSelectedResult(null); setSelectedQty(''); setSearchError(null)
       setScannedProduct(null); setScannedQty(''); setBarcodeError(null)
       setAiItems(null); setAiError(null); setAiWarnings([])
       setRecentLoggingId(null); setRecentError(null)
@@ -595,33 +614,58 @@ export default function FoodClient({
 
   // ── USDA search ─────────────────────────────────────────────────────────────
   const runSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setSearchResults([]); setSearchError(null); return }
+    const trimmed = q.trim()
+    const requestId = ++searchRequestId.current
+    if (!trimmed) {
+      setSearchResults([])
+      setSearchError(null)
+      setSearchCompletedQuery('')
+      setSearching(false)
+      return
+    }
     setSearching(true)
     setSearchError(null)
+    setSearchCompletedQuery('')
     try {
-      const res = await fetch(`/api/food-search?q=${encodeURIComponent(q)}`)
+      const res = await fetch(`/api/food-search?q=${encodeURIComponent(trimmed)}`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
+        if (requestId !== searchRequestId.current) return
         setSearchError(res.status === 401 ? 'Session expired — please refresh the page.' : (err.error ?? `Search failed (${res.status})`))
         setSearchResults([])
+        setSearchCompletedQuery(trimmed)
         return
       }
       const data = await res.json()
-      setSearchResults(data.results ?? [])
+      if (requestId !== searchRequestId.current) return
+      const results = Array.isArray(data.results) ? data.results.map(sanitizeUSDAResult) : []
+      setSearchResults(results)
+      setSearchCompletedQuery(trimmed)
     } catch {
+      if (requestId !== searchRequestId.current) return
       setSearchError('Network error — check your connection.')
       setSearchResults([])
+      setSearchCompletedQuery(trimmed)
     } finally {
-      setSearching(false)
+      if (requestId === searchRequestId.current) setSearching(false)
     }
   }, [])
 
   const handleSearchChange = (val: string) => {
+    const trimmed = val.trim()
     setSearchQuery(val)
     setSelectedResult(null)
     setSearchError(null)
+    setSearchCompletedQuery('')
+    setSearchResults([])
+    searchRequestId.current += 1
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
-    searchTimeout.current = setTimeout(() => runSearch(val), 500)
+    if (!trimmed) {
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    searchTimeout.current = setTimeout(() => runSearch(trimmed), 500)
   }
 
   // ── Analyse (photo + voice) ─────────────────────────────────────────────────
@@ -767,15 +811,16 @@ export default function FoodClient({
       setSearchError(null)
       const factor = qty / 100
       const loggedAt = timestampForSelectedDate(date)
+      const food = sanitizeUSDAResult(selectedResult)
       const entry = {
         user_id: userId,
-        food_id: `usda-${selectedResult.fdcId}`,
-        food_name: selectedResult.name,
-        calories: Math.round(selectedResult.kcalPer100g * factor),
-        protein: Math.round(selectedResult.protein * factor * 10) / 10,
-        carbs: Math.round(selectedResult.carbs * factor * 10) / 10,
-        fat: Math.round(selectedResult.fat * factor * 10) / 10,
-        fiber: Math.round((selectedResult.fiber ?? 0) * factor * 10) / 10,
+        food_id: `usda-${food.fdcId}`,
+        food_name: food.name,
+        calories: Math.round(food.kcalPer100g * factor),
+        protein: Math.round(food.protein * factor * 10) / 10,
+        carbs: Math.round(food.carbs * factor * 10) / 10,
+        fat: Math.round(food.fat * factor * 10) / 10,
+        fiber: Math.round(food.fiber * factor * 10) / 10,
         quantity: qty,
         meal_type: modalMeal,
         logged_at: loggedAt,
@@ -903,6 +948,8 @@ export default function FoodClient({
   const aiDraftEmpty = aiItems !== null && aiItems.length === 0
   const ctaDisabled = ctaLoading || analysing || aiDraftEmpty || methodTab === 'recent'
   const showPinnedCTA = methodTab !== 'recent' || aiItems !== null || analysing
+  const trimmedSearchQuery = searchQuery.trim()
+  const searchCompletedWithoutResults = Boolean(trimmedSearchQuery) && searchCompletedQuery === trimmedSearchQuery && !searching
   const ctaLabel = (() => {
     if (aiItems !== null) {
       if (aiDraftEmpty) return 'No items to log'
@@ -1847,11 +1894,15 @@ export default function FoodClient({
                             <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', padding: '10px 14px' }}>{searchError}</p>
                           )}
                         </div>
+                      ) : searching && trimmedSearchQuery ? (
+                        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                          <p style={{ fontSize: 14, color: '#b8b8b8' }}>Searching...</p>
+                        </div>
                       ) : searchError ? (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
                           <p style={{ fontSize: 13, color: '#ff3b5c' }}>{searchError}</p>
                         </div>
-                      ) : searchQuery && !searching ? (
+                      ) : searchCompletedWithoutResults ? (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
                           <p style={{ fontSize: 14, color: '#b8b8b8' }}>No results for &ldquo;{searchQuery}&rdquo;</p>
                           <p style={{ fontSize: 11, color: '#282828', marginTop: 6 }}>Try a simpler name, e.g. &ldquo;chicken breast&rdquo;</p>
