@@ -250,7 +250,17 @@ function buildSetsForExercise(
 
 // ─── Rest Timer ───────────────────────────────────────────────────────────────
 
-function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void }) {
+function RestTimer({
+  seconds,
+  onDone,
+  onFinishWorkout,
+  finishing,
+}: {
+  seconds: number
+  onDone: () => void
+  onFinishWorkout: () => void
+  finishing: boolean
+}) {
   const [remaining, setRemaining] = useState(seconds)
   const [totalSeconds, setTotalSeconds] = useState(seconds)
   // Store onDone in a ref so the effect never re-runs due to a new function reference
@@ -353,6 +363,14 @@ function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void })
             +15
           </button>
         </div>
+
+        <button
+          onClick={onFinishWorkout}
+          disabled={finishing}
+          className="mt-8 w-56 rounded-xl bg-primary px-4 py-3 text-xs font-bold tracking-widest text-black transition-all disabled:opacity-50"
+        >
+          {finishing ? 'SAVING...' : 'FINISH WORKOUT'}
+        </button>
       </div>
     </div>
   )
@@ -869,6 +887,8 @@ export default function ActiveWorkoutClient({
         <RestTimer
           seconds={restTimer.seconds}
           onDone={() => setRestTimer({ active: false, seconds: 120 })}
+          onFinishWorkout={finishWorkout}
+          finishing={finishing}
         />
       )}
 

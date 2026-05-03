@@ -810,45 +810,45 @@ export default function ProgressClient({
         </nav>
 
         {/* ── HERO ── */}
-        <div style={{ position: 'relative', padding: '36px 20px 28px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', padding: '24px 20px 20px', overflow: 'hidden' }}>
           {/* BG glow */}
           <div style={{
-            position: 'absolute', top: -120, left: -80,
-            width: 500, height: 500,
-            background: 'radial-gradient(ellipse at 35% 35%, rgba(62,207,142,0.11) 0%, rgba(62,207,142,0.04) 40%, transparent 68%)',
+            position: 'absolute', top: -160, left: -100,
+            width: 420, height: 420,
+            background: 'radial-gradient(ellipse at 35% 35%, rgba(62,207,142,0.12) 0%, rgba(62,207,142,0.035) 38%, transparent 64%)',
             pointerEvents: 'none',
           }} />
-          <div className="rise-1" style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: '#3ecf8e', marginBottom: 16 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2.5px', textTransform: 'uppercase', color: '#3ecf8e', marginBottom: 12 }}>
             {hero.eyebrow}
           </div>
-          <div className="rise-2" style={{ fontSize: 34, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-1.5px', lineHeight: 1.08, marginBottom: 12 }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#f5f5f5', letterSpacing: '-1.1px', lineHeight: 1.08, marginBottom: 10, maxWidth: 330 }}>
             {hero.statement}
           </div>
-          <div className="rise-3" style={{ fontSize: 14, color: '#4a4a4a', lineHeight: 1.55, letterSpacing: '-0.2px', marginBottom: 26 }}>
+          <div style={{ fontSize: 14, color: '#b8b8b8', lineHeight: 1.5, letterSpacing: '-0.2px', marginBottom: 18, maxWidth: 340 }}>
             {hero.proof}
           </div>
           {/* Stats strip */}
-          <div className="rise-4" style={{
+          <div style={{
             display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr',
             background: '#0e0e0e', border: '1px solid #1a1a1a',
             borderRadius: 18, overflow: 'hidden',
           }}>
-            <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ padding: '13px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.8px', lineHeight: 1 }}>{periodSessions}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>{periodLabel} sessions</div>
+              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888888' }}>{periodLabel} sessions</div>
             </div>
             <div style={{ background: '#1a1a1a', width: 1 }} />
-            <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ padding: '13px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#b8b8b8', letterSpacing: '-0.8px', lineHeight: 1 }}>{currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Current streak</div>
-              <div style={{ display: 'flex', gap: 6, fontSize: 9, color: '#2e2e2e', fontWeight: 500 }}>
+              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888888' }}>Current streak</div>
+              <div style={{ display: 'flex', gap: 6, fontSize: 9, color: '#888888', fontWeight: 500 }}>
                 <span>Best: <span style={{ color: '#b8b8b8' }}>{bestStreakWeeks} wk{bestStreakWeeks !== 1 ? 's' : ''}</span></span>
               </div>
             </div>
             <div style={{ background: '#1a1a1a', width: 1 }} />
-            <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ padding: '13px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.8px', lineHeight: 1 }}>{weeksActive}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Weeks In</div>
+              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888888' }}>Weeks In</div>
             </div>
           </div>
         </div>
@@ -858,7 +858,7 @@ export default function ProgressClient({
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', color: '#888888', marginBottom: 12, paddingTop: 22 }}>
             Training Consistency
           </div>
-          <div className="rise-5" style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, padding: '20px 18px 18px' }}>
+          <div style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 20, padding: '20px 18px 18px' }}>
             <CalendarMonth trainingDates={trainingDates} userCreatedAt={userCreatedAt} period={period} />
             <div style={{ height: 1, background: '#141414', margin: '18px 0 16px' }} />
             <WeekDots

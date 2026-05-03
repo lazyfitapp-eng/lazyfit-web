@@ -55,6 +55,26 @@ function getRoutineTags(name: string): string[] {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+function findRecommendedRoutine(routines: Routine[], lastRoutineName: string | null) {
+  const starterNames = THREE_DAY_TEMPLATE.map(tpl => tpl.name)
+  const starterRoutines = starterNames
+    .map(name => routines.find(r => r.name === name))
+    .filter((r): r is Routine => Boolean(r))
+
+  if (starterRoutines.length === 0) return routines[0] ?? null
+
+  const lastStarterIdx = lastRoutineName ? starterNames.indexOf(lastRoutineName) : -1
+  if (lastStarterIdx >= 0) {
+    for (let offset = 1; offset <= starterNames.length; offset++) {
+      const nextName = starterNames[(lastStarterIdx + offset) % starterNames.length]
+      const nextRoutine = starterRoutines.find(r => r.name === nextName)
+      if (nextRoutine) return nextRoutine
+    }
+  }
+
+  return starterRoutines[0]
+}
+
 export default function TrainClient({ userId, routines: initialRoutines, lastWorkout }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -93,6 +113,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
   const totalVolume = lastWorkout
     ? Math.round(lastWorkout.sets.reduce((s, r) => s + r.weight_kg * r.reps_completed, 0))
     : 0
+  const recommendedRoutine = findRecommendedRoutine(routines, lastWorkout?.routineName ?? null)
 
   const startWorkout = async (routineId?: string) => {
     const key = routineId ?? 'empty'
@@ -295,13 +316,14 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {routines.map(r => {
                 const isLastDone = r.name === lastWorkout?.routineName
+                const isRecommended = r.id === recommendedRoutine?.id
                 const tags = getRoutineTags(r.name)
                 return (
                   <div
                     key={r.id}
                     style={{
-                      background: '#141414',
-                      border: `1px solid ${isLastDone ? '#1a3528' : '#1e1e1e'}`,
+                      background: isRecommended ? '#0d1a12' : '#141414',
+                      border: `1px solid ${isRecommended ? '#3ecf8e' : isLastDone ? '#1a3528' : '#1e1e1e'}`,
                       borderRadius: '12px',
                       padding: '14px',
                       display: 'flex',
@@ -318,6 +340,11 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                       <div style={{ fontSize: '11px', color: '#b8b8b8', marginTop: '2px' }}>
                         {r.exerciseCount} exercises
                       </div>
+                      {isRecommended && (
+                        <div style={{ fontSize: '10px', color: '#3ecf8e', marginTop: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                          Recommended next
+                        </div>
+                      )}
                       {isLastDone && lastWorkout && (
                         <div style={{ fontSize: '10px', color: '#2a6e50', marginTop: '4px', fontWeight: 500 }}>
                           Done {relativeDate(lastWorkout.completedAt).toLowerCase()}
@@ -359,9 +386,9 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                       onClick={() => startWorkout(r.id)}
                       disabled={starting !== null}
                       style={{
-                        background: '#3ecf8e',
-                        color: '#0a0a0a',
-                        border: 'none',
+                        background: isRecommended ? '#3ecf8e' : '#202020',
+                        color: isRecommended ? '#0a0a0a' : '#f0f0f0',
+                        border: isRecommended ? 'none' : '1px solid #2a2a2a',
                         borderRadius: '8px',
                         padding: '9px 0',
                         fontSize: '13px',
@@ -379,10 +406,10 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                     >
                       {starting === r.id ? '…' : (
                         <>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="#0a0a0a">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill={isRecommended ? '#0a0a0a' : '#f0f0f0'}>
                             <polygon points="5,3 19,12 5,21" />
                           </svg>
-                          Start
+                          {isRecommended ? 'Start recommended' : 'Start'}
                         </>
                       )}
                     </button>
