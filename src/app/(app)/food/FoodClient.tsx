@@ -14,6 +14,7 @@ import type { FoodAIItem } from '@/app/api/food-ai/route'
 
 interface FoodLog {
   id: string
+  food_id?: string | null
   food_name: string
   calories: number
   protein: number
@@ -42,7 +43,7 @@ interface EditLogForm {
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 type SummaryMode = 'logged' | 'remaining'
-type MethodTab = 'photo' | 'voice' | 'search' | 'barcode'
+type MethodTab = 'recent' | 'photo' | 'voice' | 'search' | 'barcode'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -59,7 +60,13 @@ const MEAL_CONFIG: Record<MealType, { color: string; label: string }> = {
 
 const CIRC = 295.2 // 2π × 47
 
+const FOOD_LOG_SELECT = 'id, food_id, food_name, calories, protein, carbs, fat, fiber, quantity, meal_type, logged_at'
+
 const METHOD_TABS: { id: MethodTab; label: string; icon: React.ReactNode }[] = [
+  {
+    id: 'recent', label: 'Recent',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>,
+  },
   {
     id: 'photo', label: 'Photo',
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
@@ -110,6 +117,20 @@ function parseNonNegativeNumber(value: string): number | null {
   if (value.trim() === '') return null
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
+
+function formatQuantity(quantity: number | null | undefined): string | null {
+  if (typeof quantity !== 'number' || !Number.isFinite(quantity) || quantity <= 0) return null
+  const rounded = Math.round(quantity * 10) / 10
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}g`
+}
+
+function formatRecentLoggedAt(loggedAt: string, today: string): string {
+  const loggedDate = new Date(loggedAt)
+  const loggedDateString = getLocalDateString(loggedDate)
+  if (loggedDateString === today) return 'Today'
+  if (loggedDateString === addLocalDays(today, -1)) return 'Yesterday'
+  return loggedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,6 +188,7 @@ function DayNote({ userId, date, initialNote }: { userId: string; date: string; 
 export default function FoodClient({
   userId,
   initialLogs,
+  initialRecentLogs,
   targets,
   date,
   initialMeal,
@@ -174,6 +196,7 @@ export default function FoodClient({
 }: {
   userId: string
   initialLogs: FoodLog[]
+  initialRecentLogs: FoodLog[]
   targets: { calories: number; protein: number; carbs: number; fat: number }
   date: string
   initialMeal: MealType | null
@@ -184,12 +207,15 @@ export default function FoodClient({
 
   // ── Core state ──────────────────────────────────────────────────────────────
   const [logs, setLogs] = useState<FoodLog[]>(initialLogs)
+  const [recentSourceLogs, setRecentSourceLogs] = useState<FoodLog[]>(initialRecentLogs)
   const [mode, setMode] = useState<SummaryMode>('logged')
 
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(Boolean(initialMeal))
   const [modalMeal, setModalMeal] = useState<MealType>(initialMeal ?? 'breakfast')
-  const [methodTab, setMethodTab] = useState<MethodTab>('photo')
+  const [methodTab, setMethodTab] = useState<MethodTab>(initialRecentLogs.length > 0 ? 'recent' : 'photo')
+  const [recentLoggingId, setRecentLoggingId] = useState<string | null>(null)
+  const [recentError, setRecentError] = useState<string | null>(null)
 
   // ── Photo tab ───────────────────────────────────────────────────────────────
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -262,21 +288,32 @@ export default function FoodClient({
   }, [date, initialLogs])
 
   useEffect(() => {
+    setRecentSourceLogs(initialRecentLogs)
+  }, [initialRecentLogs])
+
+  useEffect(() => {
     if (initialMeal) {
       setModalMeal(initialMeal)
+      setMethodTab(initialRecentLogs.length > 0 ? 'recent' : 'photo')
+      setRecentError(null)
       setModalOpen(true)
     } else {
       setModalMeal('breakfast')
       setModalOpen(false)
     }
-  }, [date, initialMeal])
+  }, [date, initialMeal, initialRecentLogs.length])
 
   // ── FAB event listener ──────────────────────────────────────────────────────
   useEffect(() => {
-    const handler = () => { setModalMeal('breakfast'); setModalOpen(true) }
+    const handler = () => {
+      setModalMeal('breakfast')
+      setMethodTab(recentSourceLogs.length > 0 ? 'recent' : 'photo')
+      setRecentError(null)
+      setModalOpen(true)
+    }
     window.addEventListener('lazyfit:open-food-modal', handler)
     return () => window.removeEventListener('lazyfit:open-food-modal', handler)
-  }, [])
+  }, [recentSourceLogs.length])
 
   // ── Close action menu on outside click ─────────────────────────────────────
   useEffect(() => {
@@ -304,6 +341,7 @@ export default function FoodClient({
       setSearchQuery(''); setSearchResults([]); setSelectedResult(null); setSelectedQty(''); setSearchError(null)
       setScannedProduct(null); setScannedQty(''); setBarcodeError(null)
       setAiItems(null); setAiError(null); setAiWarnings([])
+      setRecentLoggingId(null); setRecentError(null)
       setCtaLoading(false)
     }, 300)
   }, [stopScanner])
@@ -332,6 +370,39 @@ export default function FoodClient({
     return acc
   }, {} as Record<MealType, FoodLog[]>), [logs])
 
+  const recentFoods = useMemo(() => {
+    const seen = new Set<string>()
+    return [...recentSourceLogs]
+      .filter(log => log.food_name?.trim())
+      .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())
+      .filter(log => {
+        const key = [
+          log.food_id ?? '',
+          log.food_name.trim().toLowerCase(),
+          Math.round((log.calories ?? 0) * 10) / 10,
+          Math.round((log.protein ?? 0) * 10) / 10,
+          Math.round((log.carbs ?? 0) * 10) / 10,
+          Math.round((log.fat ?? 0) * 10) / 10,
+          Math.round((log.quantity ?? 0) * 10) / 10,
+        ].join('|')
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      .slice(0, 8)
+  }, [recentSourceLogs])
+
+  const visibleMethodTabs = useMemo(
+    () => recentFoods.length > 0 ? METHOD_TABS : METHOD_TABS.filter(tab => tab.id !== 'recent'),
+    [recentFoods.length]
+  )
+
+  useEffect(() => {
+    if (methodTab === 'recent' && recentFoods.length === 0) {
+      setMethodTab('photo')
+    }
+  }, [methodTab, recentFoods.length])
+
   // ── Ring ────────────────────────────────────────────────────────────────────
   const loggedArc = targets.calories > 0 ? Math.min(totals.calories / targets.calories, 1) * CIRC : 0
   const remainingArc = targets.calories > 0 ? Math.max(0, remaining.calories) / targets.calories * CIRC : 0
@@ -348,6 +419,11 @@ export default function FoodClient({
     { key: 'fat',     label: 'Fat',   color: '#f5a623', consumed: totals.fat,     target: targets.fat },
   ], [totals, targets])
 
+  const addLoggedLogs = (newLogs: FoodLog[]) => {
+    setLogs(prev => [...prev, ...newLogs])
+    setRecentSourceLogs(prev => [...newLogs, ...prev])
+  }
+
   // ── Delete food log ─────────────────────────────────────────────────────────
   const deleteLog = async (id: string) => {
     setActionMenuId(null)
@@ -356,6 +432,7 @@ export default function FoodClient({
       alert(`Delete failed: ${error.message}`)
     } else {
       setLogs(prev => prev.filter(l => l.id !== id))
+      setRecentSourceLogs(prev => prev.filter(l => l.id !== id))
       if (editingLog?.id === id) closeEditSheet()
     }
   }
@@ -422,7 +499,7 @@ export default function FoodClient({
       .update(updates)
       .eq('id', editingLog.id)
       .eq('user_id', userId)
-      .select('id, food_name, calories, protein, carbs, fat, fiber, quantity, meal_type, logged_at')
+      .select(FOOD_LOG_SELECT)
       .single()
 
     if (error) {
@@ -433,12 +510,45 @@ export default function FoodClient({
 
     const updatedLog = data as FoodLog
     setLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log))
+    setRecentSourceLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log))
     closeEditSheet()
   }
 
   const openModal = (meal: MealType) => {
     setModalMeal(meal)
+    setMethodTab(recentFoods.length > 0 ? 'recent' : 'photo')
+    setRecentError(null)
     setModalOpen(true)
+  }
+
+  const handleLogRecentFood = async (recent: FoodLog) => {
+    if (recentLoggingId) return
+    setRecentLoggingId(recent.id)
+    setRecentError(null)
+    try {
+      const loggedAt = timestampForSelectedDate(date)
+      const entry = {
+        user_id: userId,
+        food_id: recent.food_id ?? `repeat-${recent.id}`,
+        food_name: recent.food_name,
+        calories: Math.round(recent.calories ?? 0),
+        protein: Math.round((recent.protein ?? 0) * 10) / 10,
+        carbs: Math.round((recent.carbs ?? 0) * 10) / 10,
+        fat: Math.round((recent.fat ?? 0) * 10) / 10,
+        fiber: Math.round((recent.fiber ?? 0) * 10) / 10,
+        quantity: recent.quantity,
+        meal_type: modalMeal,
+        logged_at: loggedAt,
+      }
+      const { data, error } = await supabase.from('food_logs').insert(entry).select(FOOD_LOG_SELECT).single()
+      if (error) throw new Error(error.message)
+      addLoggedLogs([data as FoodLog])
+      closeModal()
+    } catch (err) {
+      setRecentError(`Log failed: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setRecentLoggingId(null)
+    }
   }
 
   // ── USDA search ─────────────────────────────────────────────────────────────
@@ -568,9 +678,9 @@ export default function FoodClient({
         meal_type: modalMeal,
         logged_at: loggedAt,
       }))
-      const { data, error } = await supabase.from('food_logs').insert(rows).select()
+      const { data, error } = await supabase.from('food_logs').insert(rows).select(FOOD_LOG_SELECT)
       if (error) throw new Error(error.message)
-      setLogs(prev => [...prev, ...(data as FoodLog[])])
+      addLoggedLogs(data as FoodLog[])
       closeModal()
     } catch (err) {
       setAiError(`Failed to log: ${err instanceof Error ? err.message : String(err)}`)
@@ -605,9 +715,9 @@ export default function FoodClient({
         meal_type: modalMeal,
         logged_at: loggedAt,
       }
-      const { data, error } = await supabase.from('food_logs').insert(entry).select().single()
+      const { data, error } = await supabase.from('food_logs').insert(entry).select(FOOD_LOG_SELECT).single()
       if (error) throw new Error(error.message)
-      setLogs(prev => [...prev, data as FoodLog])
+      addLoggedLogs([data as FoodLog])
       closeModal()
     } catch (err) {
       alert(`Log failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -642,9 +752,9 @@ export default function FoodClient({
         meal_type: modalMeal,
         logged_at: loggedAt,
       }
-      const { data, error } = await supabase.from('food_logs').insert(entry).select().single()
+      const { data, error } = await supabase.from('food_logs').insert(entry).select(FOOD_LOG_SELECT).single()
       if (error) throw new Error(error.message)
-      setLogs(prev => [...prev, data as FoodLog])
+      addLoggedLogs([data as FoodLog])
       closeModal()
     } catch (err) {
       alert(`Log failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -725,13 +835,15 @@ export default function FoodClient({
 
   // ── CTA logic per tab ───────────────────────────────────────────────────────
   const aiDraftEmpty = aiItems !== null && aiItems.length === 0
-  const ctaDisabled = ctaLoading || analysing || aiDraftEmpty
+  const ctaDisabled = ctaLoading || analysing || aiDraftEmpty || methodTab === 'recent'
+  const showPinnedCTA = methodTab !== 'recent' || aiItems !== null || analysing
   const ctaLabel = (() => {
     if (aiItems !== null) {
       if (aiDraftEmpty) return 'No items to log'
       return ctaLoading ? 'Logging...' : `Log ${aiItems.length} item${aiItems.length !== 1 ? 's' : ''} \u2192 ${MEAL_CONFIG[modalMeal].label}`
     }
     if (analysing) return 'Analysing…'
+    if (methodTab === 'recent') return 'Tap a food to log'
     if (methodTab === 'photo' || methodTab === 'voice') return 'Analyse with AI →'
     if (methodTab === 'search') return ctaLoading ? 'Logging…' : 'Add Selected Food'
     if (methodTab === 'barcode') {
@@ -1253,10 +1365,10 @@ export default function FoodClient({
 
           {/* Method tabs */}
           <div style={{ display: 'flex', padding: '14px 20px 0', borderBottom: '1px solid #1c1c1c', flexShrink: 0 }}>
-            {METHOD_TABS.map(({ id, label, icon }) => (
+            {visibleMethodTabs.map(({ id, label, icon }) => (
               <button
                 key={id}
-                onClick={() => { if (!aiItems) { setMethodTab(id); setAiError(null) } }}
+                onClick={() => { if (!aiItems) { setMethodTab(id); setAiError(null); setRecentError(null) } }}
                 style={{
                   flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                   padding: '6px 4px 11px', cursor: 'pointer', border: 'none', background: 'none',
@@ -1374,6 +1486,67 @@ export default function FoodClient({
 
               ) : (
                 <>
+                  {/* Recent panel */}
+                  {methodTab === 'recent' && recentFoods.length > 0 && (
+                    <div style={{ padding: '16px 0 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.9px', textTransform: 'uppercase', color: '#3ecf8e' }}>Recent foods</div>
+                          <div style={{ fontSize: 12, color: '#b8b8b8', marginTop: 2 }}>{MEAL_CONFIG[modalMeal].label}</div>
+                        </div>
+                        <div style={{ minWidth: 42, textAlign: 'center', background: '#091510', border: '1px solid #183525', borderRadius: 10, padding: '7px 9px', color: '#3ecf8e', fontSize: 12, fontWeight: 800 }}>
+                          {recentFoods.length}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+                        {recentFoods.map((recent, idx) => {
+                          const isLogging = recentLoggingId === recent.id
+                          const qty = formatQuantity(recent.quantity)
+                          const previousMeal = MEAL_TYPES.includes(recent.meal_type as MealType) ? MEAL_CONFIG[recent.meal_type as MealType].label : 'Meal'
+                          const previousDate = formatRecentLoggedAt(recent.logged_at, today)
+                          const previousMeta = [qty, previousMeal, previousDate].filter(Boolean).join(' / ')
+                          return (
+                            <button
+                              key={recent.id}
+                              onClick={() => handleLogRecentFood(recent)}
+                              disabled={recentLoggingId !== null}
+                              style={{
+                                display: 'flex', alignItems: 'center', padding: '12px 14px', gap: 12,
+                                minHeight: 68,
+                                border: 'none',
+                                borderBottom: idx < recentFoods.length - 1 ? '1px solid #0e0e0e' : 'none',
+                                cursor: recentLoggingId ? 'default' : 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit',
+                                background: isLogging ? '#091510' : 'none',
+                                opacity: recentLoggingId && !isLogging ? 0.45 : 1,
+                                transition: 'background 0.1s, opacity 0.15s',
+                              }}
+                            >
+                              <div style={{ width: 34, height: 34, borderRadius: 10, background: isLogging ? '#0d2018' : '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 800, color: isLogging ? '#3ecf8e' : '#b8b8b8' }}>
+                                {recent.food_name.charAt(0).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0', letterSpacing: '-0.1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{recent.food_name}</div>
+                                <div style={{ display: 'flex', gap: 7, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                                  {previousMeta && <span style={{ fontSize: 11, fontWeight: 700, color: '#b8b8b8' }}>{previousMeta}</span>}
+                                  <span style={{ fontSize: 10, color: '#282828' }}>|</span>
+                                  <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 500 }}><b style={{ fontWeight: 700, color: '#4a9eff' }}>{Math.round(recent.protein ?? 0)}g</b> P</span>
+                                  <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 500 }}><b style={{ fontWeight: 700 }}>{Math.round(recent.carbs ?? 0)}g</b> C</span>
+                                  <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 500 }}><b style={{ fontWeight: 700 }}>{Math.round(recent.fat ?? 0)}g</b> F</span>
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0, alignSelf: 'center' }}>
+                                <div style={{ fontSize: 14, fontWeight: 800, color: '#f0f0f0' }}>{Math.round(recent.calories ?? 0)}</div>
+                                <div style={{ fontSize: 10, color: '#b8b8b8' }}>kcal</div>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {recentError && <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', marginTop: 10 }}>{recentError}</p>}
+                    </div>
+                  )}
+
                   {/* ── Photo panel ── */}
                   {methodTab === 'photo' && (
                     <div style={{ padding: '16px 0 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1677,20 +1850,22 @@ export default function FoodClient({
           </div>
 
           {/* Pinned CTA */}
-          <div style={{ padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
-            <button
-              onClick={handleCTA}
-              disabled={ctaDisabled}
-              style={{
-                width: '100%', padding: 16, background: '#3ecf8e', border: 'none', borderRadius: 14,
-                fontFamily: 'inherit', fontSize: 15, fontWeight: 800, letterSpacing: '0.2px', color: '#000',
-                cursor: ctaDisabled ? 'default' : 'pointer',
-                opacity: ctaDisabled ? 0.7 : 1, transition: 'opacity 0.15s',
-              }}
-            >
-              {ctaLabel}
-            </button>
-          </div>
+          {showPinnedCTA && (
+            <div style={{ padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
+              <button
+                onClick={handleCTA}
+                disabled={ctaDisabled}
+                style={{
+                  width: '100%', padding: 16, background: '#3ecf8e', border: 'none', borderRadius: 14,
+                  fontFamily: 'inherit', fontSize: 15, fontWeight: 800, letterSpacing: '0.2px', color: '#000',
+                  cursor: ctaDisabled ? 'default' : 'pointer',
+                  opacity: ctaDisabled ? 0.7 : 1, transition: 'opacity 0.15s',
+                }}
+              >
+                {ctaLabel}
+              </button>
+            </div>
+          )}
 
         </div>
       </div>

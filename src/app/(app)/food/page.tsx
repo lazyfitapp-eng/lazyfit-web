@@ -6,6 +6,7 @@ import FoodClient from './FoodClient'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const
 type MealType = typeof MEAL_TYPES[number]
+const FOOD_LOG_SELECT = 'id, food_id, food_name, calories, protein, carbs, fat, fiber, quantity, meal_type, logged_at'
 
 function parseMealParamSafe(meal: string | string[] | undefined): MealType | null {
   if (typeof meal !== 'string') return null
@@ -27,14 +28,21 @@ export default async function FoodPage({
   const initialMeal = parseMealParamSafe(rawMeal)
   const dayBounds = getLocalDayBounds(date)
 
-  const [{ data: foodLogs }, { data: profile }, { data: dayNoteRow }] = await Promise.all([
+  const [{ data: foodLogs }, { data: recentFoodLogs }, { data: profile }, { data: dayNoteRow }] = await Promise.all([
     supabase
       .from('food_logs')
-      .select('id, food_name, calories, protein, carbs, fat, fiber, quantity, meal_type, logged_at')
+      .select(FOOD_LOG_SELECT)
       .eq('user_id', user.id)
       .gte('logged_at', dayBounds.start)
       .lte('logged_at', dayBounds.end)
       .order('logged_at', { ascending: true }),
+
+    supabase
+      .from('food_logs')
+      .select(FOOD_LOG_SELECT)
+      .eq('user_id', user.id)
+      .order('logged_at', { ascending: false })
+      .limit(40),
 
     supabase
       .from('profiles')
@@ -54,6 +62,7 @@ export default async function FoodPage({
     <FoodClient
       userId={user.id}
       initialLogs={foodLogs ?? []}
+      initialRecentLogs={recentFoodLogs ?? []}
       targets={resolveNutritionTargets(profile, { calories: 2000, protein: 150, carbs: 200, fat: 70 })}
       date={date}
       initialMeal={initialMeal}
