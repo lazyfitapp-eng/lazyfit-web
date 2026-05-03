@@ -29,6 +29,17 @@ interface EditableAIItem extends FoodAIItem {
   _id: string
 }
 
+interface EditLogForm {
+  food_name: string
+  quantity: string
+  unit: string
+  calories: string
+  protein: string
+  carbs: string
+  fat: string
+  meal_type: MealType
+}
+
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 type SummaryMode = 'logged' | 'remaining'
 type MethodTab = 'photo' | 'voice' | 'search' | 'barcode'
@@ -93,6 +104,12 @@ function parsePositiveQuantity(value: string | number): number | null {
   if (typeof value === 'string' && value.trim() === '') return null
   const parsed = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function parseNonNegativeNumber(value: string): number | null {
+  if (value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -212,6 +229,10 @@ export default function FoodClient({
 
   // ── Action menu (···) ───────────────────────────────────────────────────────
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
+  const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
+  const [editForm, setEditForm] = useState<EditLogForm | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   // ── CTA loading ─────────────────────────────────────────────────────────────
   const [ctaLoading, setCtaLoading] = useState(false)
@@ -235,6 +256,9 @@ export default function FoodClient({
   useEffect(() => {
     setLogs(initialLogs)
     setActionMenuId(null)
+    setEditingLog(null)
+    setEditForm(null)
+    setEditError(null)
   }, [date, initialLogs])
 
   useEffect(() => {
@@ -332,10 +356,86 @@ export default function FoodClient({
       alert(`Delete failed: ${error.message}`)
     } else {
       setLogs(prev => prev.filter(l => l.id !== id))
+      if (editingLog?.id === id) closeEditSheet()
     }
   }
 
   // ── Open modal for a specific meal ──────────────────────────────────────────
+  const openEditSheet = (log: FoodLog) => {
+    setActionMenuId(null)
+    setEditingLog(log)
+    setEditForm({
+      food_name: log.food_name,
+      quantity: String(log.quantity ?? ''),
+      unit: 'g',
+      calories: String(Math.round((log.calories ?? 0) * 10) / 10),
+      protein: String(Math.round((log.protein ?? 0) * 10) / 10),
+      carbs: String(Math.round((log.carbs ?? 0) * 10) / 10),
+      fat: String(Math.round((log.fat ?? 0) * 10) / 10),
+      meal_type: MEAL_TYPES.includes(log.meal_type as MealType) ? log.meal_type as MealType : 'breakfast',
+    })
+    setEditError(null)
+  }
+
+  const closeEditSheet = () => {
+    setEditingLog(null)
+    setEditForm(null)
+    setEditSaving(false)
+    setEditError(null)
+  }
+
+  const updateEditForm = (field: keyof EditLogForm, value: string | MealType) => {
+    setEditForm(prev => prev ? { ...prev, [field]: value } : prev)
+    setEditError(null)
+  }
+
+  const saveEditedLog = async () => {
+    if (!editingLog || !editForm || editSaving) return
+    const foodName = editForm.food_name.trim()
+    const quantity = parsePositiveQuantity(editForm.quantity)
+    const calories = parseNonNegativeNumber(editForm.calories)
+    const protein = parseNonNegativeNumber(editForm.protein)
+    const carbs = parseNonNegativeNumber(editForm.carbs)
+    const fat = parseNonNegativeNumber(editForm.fat)
+
+    if (!foodName) { setEditError('Enter a food name.'); return }
+    if (quantity === null) { setEditError('Enter a valid quantity greater than 0.'); return }
+    if (calories === null || protein === null || carbs === null || fat === null) {
+      setEditError('Calories and macros must be 0 or higher.')
+      return
+    }
+
+    setEditSaving(true)
+    setEditError(null)
+    const updates = {
+      food_name: foodName,
+      quantity,
+      calories: Math.round(calories),
+      protein: Math.round(protein * 10) / 10,
+      carbs: Math.round(carbs * 10) / 10,
+      fat: Math.round(fat * 10) / 10,
+      meal_type: editForm.meal_type,
+    }
+
+    const { data, error } = await supabase
+      .from('food_logs')
+      .update(updates)
+      .eq('id', editingLog.id)
+      .eq('user_id', userId)
+      .select('id, food_name, calories, protein, carbs, fat, fiber, quantity, meal_type, logged_at')
+      .single()
+
+    if (error) {
+      setEditError(`Save failed: ${error.message}`)
+      setEditSaving(false)
+      return
+    }
+
+    const updatedLog = data as FoodLog
+    setLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log))
+    closeEditSheet()
+  }
+
   const openModal = (meal: MealType) => {
     setModalMeal(meal)
     setModalOpen(true)
@@ -857,7 +957,20 @@ export default function FoodClient({
                 {hasItems && (
                   <div style={{ paddingTop: 2 }}>
                     {mealLogs.map(log => (
-                      <div key={log.id} style={{ display: 'flex', alignItems: 'center', padding: '13px 16px', gap: 12, borderTop: '1px solid #0f0f0f', minHeight: 58, position: 'relative' }}>
+                      <div
+                        key={log.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Edit ${log.food_name}`}
+                        onClick={() => openEditSheet(log)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            openEditSheet(log)
+                          }
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', padding: '13px 16px', gap: 12, borderTop: '1px solid #0f0f0f', minHeight: 58, position: 'relative', cursor: 'pointer' }}
+                      >
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 14, fontWeight: 500, color: '#f0f0f0', letterSpacing: '-0.1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.food_name}</div>
                           <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -872,6 +985,12 @@ export default function FoodClient({
                           {Math.round(log.calories)} <span style={{ fontSize: 10, fontWeight: 400, color: '#b8b8b8' }}>kcal</span>
                         </div>
                         {/* ··· action button */}
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} aria-hidden="true">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#b8b8b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                          </svg>
+                        </div>
                         <div style={{ position: 'relative' }}>
                           <button
                             onClick={e => { e.stopPropagation(); setActionMenuId(prev => prev === log.id ? null : log.id) }}
@@ -888,6 +1007,12 @@ export default function FoodClient({
                               onClick={e => e.stopPropagation()}
                               style={{ position: 'absolute', right: 0, top: 28, background: '#181818', border: '1px solid #242424', borderRadius: 10, overflow: 'hidden', zIndex: 10, minWidth: 100, boxShadow: '0 4px 16px rgba(0,0,0,0.6)' }}
                             >
+                              <button
+                                onClick={() => openEditSheet(log)}
+                                style={{ display: 'block', width: '100%', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #242424', color: '#f0f0f0', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                              >
+                                Edit
+                              </button>
                               <button
                                 onClick={() => deleteLog(log.id)}
                                 style={{ display: 'block', width: '100%', padding: '10px 14px', background: 'none', border: 'none', color: '#ff3b5c', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
@@ -960,6 +1085,88 @@ export default function FoodClient({
       </div>
 
       {/* ── Bottom sheet modal ────────────────────────────────────────── */}
+      {editingLog && editForm && (
+      <div
+        onClick={closeEditSheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Edit ${editingLog.food_name}`}
+        style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'flex-end' }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ width: '100%', maxWidth: 430, margin: '0 auto', background: '#111', border: '1px solid #242424', borderRadius: '26px 26px 0 0', maxHeight: 'min(88dvh, 720px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <div style={{ width: 36, height: 4, background: '#242424', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
+          <div style={{ padding: '14px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderBottom: '1px solid #1c1c1c' }}>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.4px', color: '#f0f0f0' }}>Edit food</div>
+              <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 3 }}>{MEAL_CONFIG[editForm.meal_type].label} / {dateLabel}</div>
+            </div>
+            <button onClick={closeEditSheet} style={{ width: 28, height: 28, background: '#181818', border: '1px solid #242424', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#b8b8b8" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
+              </svg>
+            </button>
+          </div>
+
+          <div style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 20px 12px' }}>
+            <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Name</label>
+            <input value={editForm.food_name} onChange={e => updateEditForm('food_name', e.target.value)} style={{ width: '100%', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e', marginBottom: 14 }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 10, marginBottom: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Quantity</label>
+                <input type="number" inputMode="decimal" value={editForm.quantity} onChange={e => updateEditForm('quantity', e.target.value)} style={{ width: '100%', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>Unit</label>
+                <input value={editForm.unit} readOnly aria-label="Unit" style={{ width: '100%', background: '#141414', border: '1px solid #242424', borderRadius: 12, padding: '12px 13px', color: '#b8b8b8', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+              {([
+                ['calories', 'Calories', 'kcal'],
+                ['protein', 'Protein', 'g'],
+                ['carbs', 'Carbs', 'g'],
+                ['fat', 'Fat', 'g'],
+              ] as const).map(([field, label, unit]) => (
+                <div key={field}>
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 6 }}>{label}</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#181818', border: '1px solid #242424', borderRadius: 12, padding: '0 11px 0 0' }}>
+                    <input type="number" inputMode="decimal" value={editForm[field]} onChange={e => updateEditForm(field, e.target.value)} style={{ minWidth: 0, flex: 1, background: 'none', border: 'none', padding: '12px 13px', color: '#f0f0f0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', outline: 'none', caretColor: '#3ecf8e' }} />
+                    <span style={{ fontSize: 11, color: '#b8b8b8', fontWeight: 700 }}>{unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#b8b8b8', marginBottom: 8 }}>Meal</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+              {MEAL_TYPES.map(m => (
+                <button key={m} onClick={() => updateEditForm('meal_type', m)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: `1px solid ${editForm.meal_type === m ? '#183525' : '#242424'}`, borderRadius: 12, color: editForm.meal_type === m ? '#3ecf8e' : '#b8b8b8', cursor: 'pointer', background: editForm.meal_type === m ? '#091510' : '#181818', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', textAlign: 'left' }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: MEAL_CONFIG[m].color, flexShrink: 0 }} />
+                  {MEAL_CONFIG[m].label}
+                </button>
+              ))}
+            </div>
+
+            {editError && <p style={{ fontSize: 12, color: '#ff3b5c', textAlign: 'center', marginBottom: 10 }}>{editError}</p>}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '92px 1fr', gap: 10, padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
+            <button onClick={() => deleteLog(editingLog.id)} disabled={editSaving} style={{ padding: 14, background: '#181818', border: '1px solid #242424', borderRadius: 14, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, color: '#ff3b5c', cursor: editSaving ? 'default' : 'pointer', opacity: editSaving ? 0.7 : 1 }}>
+              Delete
+            </button>
+            <button onClick={saveEditedLog} disabled={editSaving} style={{ padding: 14, background: '#3ecf8e', border: 'none', borderRadius: 14, fontFamily: 'inherit', fontSize: 15, fontWeight: 800, letterSpacing: '0.2px', color: '#000', cursor: editSaving ? 'default' : 'pointer', opacity: editSaving ? 0.7 : 1 }}>
+              {editSaving ? 'Saving...' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+
       {modalOpen && (
       <div
         onClick={closeModal}
