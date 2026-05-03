@@ -8,6 +8,8 @@ import { computeMuscleSplit } from '@/lib/muscleMap'
 import { THREE_DAY_TEMPLATE, createDefaultRoutines } from '@/lib/createDefaultRoutines'
 import WorkoutHistory from './WorkoutHistory'
 
+const PROGRAM_NAME = 'LazyFit 3-Day Aesthetic'
+
 interface Routine {
   id: string
   name: string
@@ -52,6 +54,11 @@ function getRoutineTags(name: string): string[] {
   if (n.includes('push')) return ['Push']
   if (n.includes('pull')) return ['Pull']
   return []
+}
+
+function getProgramDayNumber(name: string): number | null {
+  const idx = THREE_DAY_TEMPLATE.findIndex(tpl => tpl.name === name)
+  return idx >= 0 ? idx + 1 : null
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -211,7 +218,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                   transition: 'color 0.15s',
                 }}
               >
-                {tab === 'routines' ? 'Routines' : 'History'}
+                {tab === 'routines' ? 'Program' : 'History'}
               </button>
             ))}
           </div>
@@ -225,7 +232,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
         </div>
       )}
 
-      {/* ── Routines tab ──────────────────────────────────────── */}
+      {/* ── Program tab ──────────────────────────────────────── */}
       {activeTab === 'routines' && (
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
 
@@ -296,20 +303,33 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
             </>
           )}
 
-          {/* My routines section */}
-          <div style={{ ...sectionLabel, marginTop: lastWorkout ? '4px' : 0 }}>My routines</div>
+          {/* Program section */}
+          <div style={{ ...sectionLabel, marginTop: lastWorkout ? '4px' : 0 }}>Your Program</div>
+          <div style={{ background: '#0d1a12', border: '1px solid #1a3528', borderRadius: '12px', padding: '14px 16px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#3ecf8e', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '5px' }}>
+              Program
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: '#f0f0f0', letterSpacing: '0' }}>
+              {PROGRAM_NAME}
+            </div>
+            <div style={{ fontSize: '12px', color: '#b8b8b8', marginTop: '5px', lineHeight: 1.45 }}>
+              Three workout days. Rotate in order. LazyFit picks the next one.
+            </div>
+          </div>
+
+          <div style={sectionLabel}>Workout days</div>
 
           {routines.length === 0 ? (
             <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '24px', textAlign: 'center' }}>
               <p style={{ color: '#b8b8b8', fontSize: '13px', marginBottom: '16px' }}>
-                No routines yet. Load the recommended 3-day program or create your own.
+                No workout days loaded yet. Load Upper A, Lower A, and Upper B.
               </p>
               <button
                 onClick={loadTemplate}
                 disabled={loadingTemplate}
                 style={{ background: '#3ecf8e', color: '#0a0a0a', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', opacity: loadingTemplate ? 0.4 : 1, fontFamily: 'inherit' }}
               >
-                {loadingTemplate ? 'Loading...' : '↓ Load Recommended 3-Day Program'}
+                {loadingTemplate ? 'Loading...' : `Load ${PROGRAM_NAME}`}
               </button>
             </div>
           ) : (
@@ -318,6 +338,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                 const isLastDone = r.name === lastWorkout?.routineName
                 const isRecommended = r.id === recommendedRoutine?.id
                 const tags = getRoutineTags(r.name)
+                const programDayNumber = getProgramDayNumber(r.name)
                 return (
                   <div
                     key={r.id}
@@ -334,6 +355,9 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                     }}
                   >
                     <div>
+                      <div style={{ fontSize: '10px', color: isRecommended ? '#3ecf8e' : '#b8b8b8', marginBottom: '5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                        {programDayNumber ? `Workout day ${programDayNumber}` : 'Custom routine'}
+                      </div>
                       <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px' }}>
                         {r.name}
                       </div>
@@ -417,12 +441,12 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                 )
               })}
 
-              {/* New routine dashed card */}
+              {/* Custom routine dashed card */}
               <div
                 onClick={() => setShowNewRoutine(true)}
                 style={{
                   background: 'transparent',
-                  border: '1px dashed #222',
+                  border: '1px dashed #1a1a1a',
                   borderRadius: '12px',
                   minHeight: '140px',
                   display: 'flex',
@@ -431,11 +455,12 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                   justifyContent: 'center',
                   gap: '6px',
                   cursor: 'pointer',
+                  opacity: 0.72,
                 }}
               >
-                <div style={{ fontSize: '24px', color: '#252525', fontWeight: 300, lineHeight: 1 }}>+</div>
-                <div style={{ fontSize: '12px', color: '#2e2e2e', fontWeight: 600 }}>New routine</div>
-                <div style={{ fontSize: '10px', color: '#252525' }}>Build from scratch</div>
+                <div style={{ fontSize: '24px', color: '#888888', fontWeight: 300, lineHeight: 1 }}>+</div>
+                <div style={{ fontSize: '12px', color: '#b8b8b8', fontWeight: 600 }}>Custom routine</div>
+                <div style={{ fontSize: '10px', color: '#888888' }}>Optional</div>
               </div>
             </div>
           )}
@@ -446,11 +471,11 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
             disabled={starting !== null}
             style={{
               background: 'none',
-              border: '1px solid #1a1a1a',
+              border: '1px solid #111',
               borderRadius: '10px',
-              padding: '14px',
-              color: '#b8b8b8',
-              fontSize: '13px',
+              padding: '12px',
+              color: '#888888',
+              fontSize: '12px',
               fontWeight: 500,
               width: '100%',
               cursor: starting !== null ? 'not-allowed' : 'pointer',
@@ -468,11 +493,11 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
         </div>
       )}
 
-      {/* ── New Routine modal ─────────────────────────────────── */}
+      {/* ── Custom routine modal ─────────────────────────────────── */}
       {showNewRoutine && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', background: 'rgba(0,0,0,0.6)' }}>
           <div style={{ width: '100%', background: '#0d0d0d', borderTop: '1px solid #222', borderRadius: '16px 16px 0 0', padding: '24px' }}>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f0', marginBottom: '16px' }}>New Routine</p>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f0', marginBottom: '16px' }}>New custom routine</p>
             <input
               type="text"
               value={newRoutineName}

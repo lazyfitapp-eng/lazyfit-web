@@ -331,7 +331,7 @@ export default function SummaryClient({
         .select('id')
         .single()
 
-      if (error || !routine) throw new Error(error?.message ?? 'Failed to create routine')
+      if (error || !routine) throw new Error(error?.message ?? 'Failed to create custom routine')
 
       const seen = new Set<string>()
       const routineExercises = []
@@ -358,7 +358,7 @@ export default function SummaryClient({
       setSavedRoutine(true)
       setShowSaveRoutine(false)
     } catch (err: any) {
-      alert(`Failed to save routine: ${err.message}`)
+      alert(`Failed to save custom routine: ${err.message}`)
     } finally {
       setSaving(false)
     }
@@ -969,7 +969,7 @@ export default function SummaryClient({
         {/* Divider */}
         <div style={{ height: 1, background: T.border, marginBottom: 20 }} />
 
-        {/* Save as Routine (only if no existing routine and not yet saved) */}
+        {/* Save as custom routine (only if no existing routine and not yet saved) */}
         {!routineId && !savedRoutine && (
           <button
             onClick={() => setShowSaveRoutine(true)}
@@ -988,13 +988,13 @@ export default function SummaryClient({
               <polyline points="17,21 17,13 7,13 7,21" />
               <polyline points="7,3 7,8 15,8" />
             </svg>
-            Save as Routine
+            Save as custom routine
           </button>
         )}
 
         {savedRoutine && (
           <div style={{ textAlign: 'center', fontSize: 12, color: T.accent, marginBottom: 10, padding: '12px 0' }}>
-            ✓ Routine saved!
+            Custom routine saved!
           </div>
         )}
 
@@ -1052,7 +1052,7 @@ export default function SummaryClient({
         </div>
       )}
 
-      {/* ── Save as Routine modal ── */}
+      {/* ── Save as custom routine modal ── */}
       {showSaveRoutine && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', background: 'rgba(0,0,0,0.6)' }}>
           <div style={{
@@ -1060,7 +1060,7 @@ export default function SummaryClient({
             background: '#0d0d0d', borderTop: '1px solid #222',
             borderRadius: '24px 24px 0 0', padding: 24,
           }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 }}>Save as Routine</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 }}>Save as custom routine</div>
             <div style={{ fontSize: 12, color: T.text3, marginBottom: 16, fontFamily: 'monospace' }}>
               {exerciseNames.length} exercises · saves targets for next session
             </div>

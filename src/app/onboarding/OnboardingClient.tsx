@@ -789,10 +789,10 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         </div>
       </div>
 
-      {/* Routine block */}
+      {/* Program block */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 18, marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999' }}>Your routine</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999' }}>Your program</span>
           <span style={{ fontFamily: MONO, fontSize: 11, color: C.green, background: C.greenGlow, border: `1px solid ${C.greenBorder}`, borderRadius: 6, padding: '2px 8px' }}>3× per week</span>
         </div>
         <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>

@@ -337,7 +337,7 @@ export default function WorkoutHistory({ userId }: { userId: string }) {
             </svg>
           </div>
           <div style={{ fontSize: '15px', fontWeight: 600, color: '#b8b8b8' }}>No workouts yet</div>
-          <div style={{ fontSize: '12px', color: '#888888', lineHeight: 1.6 }}>Start your first session from the Routines tab.</div>
+          <div style={{ fontSize: '12px', color: '#888888', lineHeight: 1.6 }}>Start your first session from the Program tab.</div>
         </div>
       ) : (
         <>
