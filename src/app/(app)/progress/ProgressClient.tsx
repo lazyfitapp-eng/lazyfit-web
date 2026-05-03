@@ -70,6 +70,17 @@ function todayStr(): string {
   return dateStr(new Date())
 }
 
+function spanLabel(startDate: string, endDate: string): string {
+  const start = new Date(`${startDate}T12:00:00`)
+  const end = new Date(`${endDate}T12:00:00`)
+  const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000))
+  if (days < 7) return days === 1 ? '1 day' : `${days} days`
+  const weeks = Math.round(days / 7)
+  if (weeks < 8) return weeks === 1 ? '1 wk' : `${weeks} wks`
+  const months = Math.round(days / 30)
+  return months === 1 ? '1 mo' : `${months} mo`
+}
+
 function addDays(base: Date, n: number): Date {
   return new Date(`${addLocalDays(getLocalDateString(base), n)}T12:00:00`)
 }
@@ -702,13 +713,19 @@ export default function ProgressClient({
   // Weight stats for header
   const filteredWeight = weightHistory.filter((p) => p.date >= cutoff)
   const latestWeight = filteredWeight.length > 0 ? filteredWeight[filteredWeight.length - 1].weight : null
-  const firstWeight = filteredWeight.length > 0 ? filteredWeight[0].weight : null
+  const firstWeight = filteredWeight.length >= 2 ? filteredWeight[0].weight : null
   const weightDelta = latestWeight !== null && firstWeight !== null ? latestWeight - firstWeight : null
+  const weightSpan = filteredWeight.length >= 2
+    ? spanLabel(filteredWeight[0].date, filteredWeight[filteredWeight.length - 1].date)
+    : null
 
   const latestWaist = waistHistory.length > 0 ? waistHistory[waistHistory.length - 1].waist_cm : null
   const firstWaistInPeriod = waistHistory.filter((p) => p.date >= cutoff)
-  const firstWaist = firstWaistInPeriod.length > 0 ? firstWaistInPeriod[0].waist_cm : null
+  const firstWaist = firstWaistInPeriod.length >= 2 ? firstWaistInPeriod[0].waist_cm : null
   const waistDelta = latestWaist !== null && firstWaist !== null ? latestWaist - firstWaist : null
+  const waistSpan = firstWaistInPeriod.length >= 2
+    ? spanLabel(firstWaistInPeriod[0].date, firstWaistInPeriod[firstWaistInPeriod.length - 1].date)
+    : null
 
 
   // Recomp insight (weight down AND waist down)
@@ -1029,9 +1046,9 @@ export default function ProgressClient({
                     <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1, color: '#4a9eff' }}>
                       {latestWeight.toFixed(1)}<span style={{ fontSize: 13, fontWeight: 400, color: '#888888' }}> kg</span>
                     </div>
-                    {weightDelta !== null && (
+                    {weightDelta !== null && weightSpan && (
                       <div style={{ fontSize: 11, fontWeight: 600, marginTop: 3, color: weightDelta <= 0 ? '#3ecf8e' : '#2e2e2e' }}>
-                        {weightDelta > 0 ? '+' : ''}{weightDelta.toFixed(1)} kg · {period === 'all' ? 'all time' : period === '1m' ? '4 wks' : period === '3m' ? '12 wks' : '6 mo'}
+                        {weightDelta > 0 ? '+' : ''}{weightDelta.toFixed(1)} kg · {weightSpan}
                       </div>
                     )}
                   </>
@@ -1055,9 +1072,9 @@ export default function ProgressClient({
                     <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1, color: '#3ecf8e' }}>
                       {latestWaist.toFixed(1)}<span style={{ fontSize: 13, fontWeight: 400, color: '#888888' }}> cm</span>
                     </div>
-                    {waistDelta !== null && (
+                    {waistDelta !== null && waistSpan && (
                       <div style={{ fontSize: 11, fontWeight: 600, marginTop: 3, color: waistDelta <= 0 ? '#3ecf8e' : '#2e2e2e' }}>
-                        {waistDelta > 0 ? '+' : ''}{waistDelta.toFixed(1)} cm · {period === 'all' ? 'all time' : period === '1m' ? '4 wks' : period === '3m' ? '12 wks' : '6 mo'}
+                        {waistDelta > 0 ? '+' : ''}{waistDelta.toFixed(1)} cm · {waistSpan}
                       </div>
                     )}
                   </>
