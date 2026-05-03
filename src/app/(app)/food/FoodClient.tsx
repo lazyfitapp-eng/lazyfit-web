@@ -960,14 +960,16 @@ export default function FoodClient({
       </div>
 
       {/* ── Bottom sheet modal ────────────────────────────────────────── */}
-      {/* Overlay */}
+      {modalOpen && (
       <div
         onClick={closeModal}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Log ${MEAL_CONFIG[modalMeal].label}`}
         style={{
           position: 'fixed', inset: 0, zIndex: 100,
           background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)',
           display: 'flex', alignItems: 'flex-end',
-          opacity: modalOpen ? 1 : 0, pointerEvents: modalOpen ? 'all' : 'none',
           transition: 'opacity 0.22s ease',
         }}
       >
@@ -980,7 +982,7 @@ export default function FoodClient({
             borderRadius: '26px 26px 0 0',
             maxHeight: 'min(88dvh, 720px)',
             display: 'flex', flexDirection: 'column',
-            transform: modalOpen ? 'translateY(0)' : 'translateY(100%)',
+            transform: 'translateY(0)',
             transition: 'transform 0.3s cubic-bezier(.32,.72,0,1)',
             overflow: 'hidden',
           }}
@@ -1447,6 +1449,7 @@ export default function FoodClient({
 
         </div>
       </div>
+      )}
 
       {/* CSS animations */}
       <style>{`

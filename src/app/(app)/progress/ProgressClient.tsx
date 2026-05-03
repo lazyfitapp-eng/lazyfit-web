@@ -673,6 +673,7 @@ export default function ProgressClient({
   const cutoff = days ? dateStr(addDays(today, -days)) : '0000-00-00'
   const filteredSessions = trainingDates.filter((d) => d >= cutoff)
   const periodSessions = filteredSessions.length
+  const periodLabel = period === 'all' ? 'All time' : period.toUpperCase()
 
   // Recent PRs in period
   const recentPRCount = allTimePRs.filter((pr) => pr.date >= cutoff).length
@@ -817,12 +818,12 @@ export default function ProgressClient({
           }}>
             <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.8px', lineHeight: 1 }}>{periodSessions}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Sessions</div>
+              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>{periodLabel} sessions</div>
             </div>
             <div style={{ background: '#1a1a1a', width: 1 }} />
             <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: currentStreakWeeks >= 1 ? '#3ecf8e' : '#b8b8b8', letterSpacing: '-0.8px', lineHeight: 1 }}>{currentStreakWeeks >= 1 ? '🔥 ' : ''}{currentStreakWeeks}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Wk Streak</div>
+              <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#2e2e2e' }}>Current streak</div>
               <div style={{ display: 'flex', gap: 6, fontSize: 9, color: '#2e2e2e', fontWeight: 500 }}>
                 <span>Best: <span style={{ color: '#b8b8b8' }}>{bestStreakWeeks} wk{bestStreakWeeks !== 1 ? 's' : ''}</span></span>
               </div>

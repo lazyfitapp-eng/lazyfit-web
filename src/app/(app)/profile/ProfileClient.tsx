@@ -47,6 +47,7 @@ interface ProfileData {
 interface Props {
   user: { id: string; email?: string | undefined }
   profile: ProfileData | null
+  weightEntryCount: number
 }
 
 // ─── Goals config ─────────────────────────────────────────────────────────────
@@ -154,7 +155,7 @@ const KEYFRAMES = `
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ProfileClient({ user, profile }: Props) {
+export default function ProfileClient({ user, profile, weightEntryCount }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const initialDob = profile?.date_of_birth ?? (profile?.age ? isoDateForAge(profile.age) : '')
@@ -206,8 +207,8 @@ export default function ProfileClient({ user, profile }: Props) {
     kcalAnimRef.current = requestAnimationFrame(step)
   }, [])
 
-  // Confidence bar: rough estimate based on whether we have real data
-  const weeksOfData = profile?.current_weight ? 12 : 0
+  // Confidence bar: rough estimate based on real weight-history entries.
+  const weeksOfData = Math.min(12, weightEntryCount)
   const confidencePct = Math.min(100, weeksOfData * 8)
   const confidenceLabel = weeksOfData >= 8
     ? `Good · ${weeksOfData} weeks of data`
