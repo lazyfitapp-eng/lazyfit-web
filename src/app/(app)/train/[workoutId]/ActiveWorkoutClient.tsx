@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { computeWarmupSets } from '@/lib/warmup'
-import { EXERCISE_TYPE, WEIGHT_INCREMENT, PRIMARY_COMPOUNDS } from '@/lib/progressionConfig'
+import { DELOAD_FACTOR, EXERCISE_TYPE, WEIGHT_INCREMENT, PRIMARY_COMPOUNDS, isBodyweightExercise } from '@/lib/progressionConfig'
 
 // ─── How To Modal ─────────────────────────────────────────────────────────────
 
@@ -185,7 +185,7 @@ function computeFallbackTargets(
   if (workingSets.length === 0) return {}
   const topSet = workingSets.reduce((best, s) => s.weight > best.weight ? s : best, workingSets[0])
 
-  const allHitMax = Object.values(lastSess).every(s => s.reps >= exercise.reps_max)
+  const allHitMax = workingSets.length >= exercise.sets_target && Object.values(lastSess).every(s => s.reps >= exercise.reps_max)
   const increment = WEIGHT_INCREMENT[EXERCISE_TYPE[exercise.exercise_name] ?? 'isolation']
   const nextWeight = allHitMax ? topSet.weight + increment : topSet.weight
 
@@ -223,7 +223,8 @@ function buildSetsForExercise(
 ): SetState[] {
   const workingSet1 = resolvedTargets[1]
   const isPrimaryCompound = PRIMARY_COMPOUNDS.includes(exercise.exercise_name)
-  const warmups = (isPrimaryCompound && workingSet1) ? computeWarmupSets(workingSet1.weight) : []
+  const shouldUseWarmups = isPrimaryCompound && !isBodyweightExercise(exercise.exercise_name)
+  const warmups = (shouldUseWarmups && workingSet1) ? computeWarmupSets(workingSet1.weight) : []
 
   const warmupStates: SetState[] = warmups.map(w => ({
     weight: String(w.weight),
@@ -237,7 +238,7 @@ function buildSetsForExercise(
   const workingStates: SetState[] = Array.from({ length: exercise.sets_target }, (_, i) => {
     const target = resolvedTargets[i + 1]
     return {
-      weight: target?.weight ? String(target.weight) : '',
+      weight: target ? String(target.weight) : '',
       reps: '',
       logged: false,
       isPR: false,
@@ -246,6 +247,39 @@ function buildSetsForExercise(
   })
 
   return [...warmupStates, ...workingStates]
+}
+
+type ParsedSetInputs =
+  | { ok: true; weight: number; reps: number }
+  | { ok: false; error: string }
+
+function parseSetInputs(
+  exercise: { exercise_name: string },
+  setData: SetState
+): ParsedSetInputs {
+  const weightText = setData.weight.trim()
+  const repsText = setData.reps.trim()
+  const weight = Number(weightText)
+  const reps = Number(repsText)
+  const bodyweight = isBodyweightExercise(exercise.exercise_name)
+
+  if (!repsText || !Number.isFinite(reps) || !Number.isInteger(reps) || reps <= 0) {
+    return { ok: false, error: 'Reps must be a positive whole number.' }
+  }
+
+  if (!weightText || !Number.isFinite(weight)) {
+    return { ok: false, error: bodyweight ? 'Added kg must be 0 or more. Use 0 for bodyweight.' : 'Weight must be a valid number.' }
+  }
+
+  if (weight < 0) {
+    return { ok: false, error: bodyweight ? 'Added kg cannot be negative.' : 'Weight cannot be negative.' }
+  }
+
+  if (!bodyweight && weight <= 0) {
+    return { ok: false, error: 'Weight must be greater than 0 kg.' }
+  }
+
+  return { ok: true, weight, reps }
 }
 
 // ─── Rest Timer ───────────────────────────────────────────────────────────────
@@ -489,6 +523,7 @@ export default function ActiveWorkoutClient({
   const [keepSameWeightFor, setKeepSameWeightFor] = useState<Set<string>>(new Set())
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editingSet, setEditingSet] = useState<Set<string>>(new Set())
+  const [setErrors, setSetErrors] = useState<Record<string, string>>({})
 
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -521,6 +556,13 @@ export default function ActiveWorkoutClient({
   }, [startTime])
 
   const updateSet = (exId: string, idx: number, field: 'weight' | 'reps', value: string) => {
+    const errorKey = `${exId}-${idx}`
+    setSetErrors(prev => {
+      if (!prev[errorKey]) return prev
+      const next = { ...prev }
+      delete next[errorKey]
+      return next
+    })
     setSets(prev => {
       const next = { ...prev, [exId]: prev[exId].map((s, i) => i === idx ? { ...s, [field]: value } : s) }
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
@@ -542,13 +584,19 @@ export default function ActiveWorkoutClient({
       : exSets.slice(0, setIdx + 1).filter(s => s.setType === 'working').length
 
     // Require explicit user input; placeholders/suggestions are not saved automatically.
-    const weight = parseFloat(setData.weight)
-    const reps = parseInt(setData.reps)
-
-    if (!Number.isFinite(weight) || weight <= 0 || !Number.isFinite(reps) || reps <= 0) {
-      alert('Enter both weight and reps before logging this set.')
+    const parsed = parseSetInputs(exercise, setData)
+    if (!parsed.ok) {
+      setSetErrors(prev => ({ ...prev, [`${exercise.id}-${setIdx}`]: parsed.error }))
       return
     }
+    setSetErrors(prev => {
+      const next = { ...prev }
+      delete next[`${exercise.id}-${setIdx}`]
+      return next
+    })
+
+    const weight = parsed.weight
+    const reps = parsed.reps
 
     const { error } = await supabase.from('workout_sets').upsert({
       workout_id: workoutId,
@@ -601,9 +649,19 @@ export default function ActiveWorkoutClient({
       ? exSets.slice(0, setIdx + 1).filter(s => s.setType === 'warmup').length
       : exSets.slice(0, setIdx + 1).filter(s => s.setType === 'working').length
 
-    const weight = parseFloat(setData.weight) || 0
-    const reps   = parseInt(setData.reps)    || 0
-    if (weight === 0 || reps === 0) return
+    const parsed = parseSetInputs(exercise, setData)
+    if (!parsed.ok) {
+      setSetErrors(prev => ({ ...prev, [`${exercise.id}-${setIdx}`]: parsed.error }))
+      return
+    }
+    setSetErrors(prev => {
+      const next = { ...prev }
+      delete next[`${exercise.id}-${setIdx}`]
+      return next
+    })
+
+    const weight = parsed.weight
+    const reps = parsed.reps
 
     const { error } = await supabase.from('workout_sets').upsert({
       workout_id:     workoutId,
@@ -699,6 +757,11 @@ export default function ActiveWorkoutClient({
       ...prev,
       [exId]: prev[exId].filter((_, i) => i !== idx),
     }))
+    setSetErrors(prev => {
+      const next = { ...prev }
+      delete next[`${exId}-${idx}`]
+      return next
+    })
   }
 
   const toggleSetType = (exId: string, idx: number) => {
@@ -712,6 +775,13 @@ export default function ActiveWorkoutClient({
 
   const removeExercise = (exId: string) => {
     setExercises(prev => prev.filter(e => e.id !== exId))
+    setSetErrors(prev => {
+      const next = { ...prev }
+      for (const key of Object.keys(next)) {
+        if (key.startsWith(`${exId}-`)) delete next[key]
+      }
+      return next
+    })
     setSets(prev => {
       const next = { ...prev }
       delete next[exId]
@@ -771,6 +841,10 @@ export default function ActiveWorkoutClient({
     setFinishing(true)
     const durationMinutes = Math.round((Date.now() - startTime) / 60000)
     const loggedWorkingSets = Object.values(sets).flat().filter(s => s.logged && s.setType === 'working')
+    const isCompleteSession = exercises.every(exercise => {
+      const loggedForExercise = (sets[exercise.id] ?? []).filter(s => s.logged && s.setType === 'working')
+      return loggedForExercise.length >= exercise.sets_target
+    })
 
     if (loggedWorkingSets.length === 0) {
       alert('Log at least one working set before finishing the workout.')
@@ -784,14 +858,18 @@ export default function ActiveWorkoutClient({
       if (userError) throw userError
       if (!user) throw new Error('You must be logged in to finish a workout.')
 
+      // Partial sessions still save, but they are not progression signals.
+      if (isCompleteSession) {
       for (const exercise of exercises) {
         const exerciseSets = sets[exercise.id] ?? []
         // Only consider working sets — warm-up sets excluded
         const workingSets = exerciseSets.filter(s => s.logged && s.setType === 'working')
-        if (workingSets.length === 0) continue
+        if (workingSets.length < exercise.sets_target) continue
 
-        const currentWeight = parseFloat(workingSets[0].weight) || 0
-        if (currentWeight === 0) continue
+        const currentWeight = Number(workingSets[0].weight)
+        if (!Number.isFinite(currentWeight)) continue
+        if (!isBodyweightExercise(exercise.exercise_name) && currentWeight <= 0) continue
+        if (isBodyweightExercise(exercise.exercise_name) && currentWeight < 0) continue
 
         // Read counter values from targets loaded at workout start
         const mergedTargets = suggestedTargets[exercise.exercise_name] ?? dynamicTargets[exercise.exercise_name]
@@ -799,8 +877,8 @@ export default function ActiveWorkoutClient({
         let consecFail = mergedTargets?.[1]?.consecutiveFail ?? 0
 
         // Evaluate today's performance
-        const allHitMax     = workingSets.every(s => parseInt(s.reps) >= exercise.reps_max)
-        const set1FailedMin = parseInt(workingSets[0].reps) < exercise.reps_min
+        const allHitMax     = workingSets.every(s => Number(s.reps) >= exercise.reps_max)
+        const set1FailedMin = Number(workingSets[0].reps) < exercise.reps_min
 
         if (allHitMax) {
           consecMax  += 1
@@ -819,7 +897,7 @@ export default function ActiveWorkoutClient({
         // Determine next session weight
         let nextWeight = currentWeight
         if (consecFail >= 3) {
-          nextWeight = Math.round(currentWeight * 0.85 / 2.5) * 2.5
+          nextWeight = Math.round(currentWeight * DELOAD_FACTOR / 2.5) * 2.5
           consecFail = 0
           consecMax  = 0
         } else if (consecMax >= 2) {
@@ -829,7 +907,7 @@ export default function ActiveWorkoutClient({
         }
 
         // Upsert all sets with explicit RPT back-offs
-        const totalSets = Math.max(workingSets.length, exercise.sets_target)
+        const totalSets = exercise.sets_target
         for (let i = 0; i < totalSets; i++) {
           const setWeight = i === 0 ? nextWeight
             : i === 1 ? Math.round(nextWeight * 0.90 / 2.5) * 2.5
@@ -849,6 +927,7 @@ export default function ActiveWorkoutClient({
 
           if (upsertErr) throw upsertErr
         }
+      }
       }
       const { error: completeError } = await supabase.from('workouts').update({
         completed_at: new Date().toISOString(),
@@ -970,6 +1049,7 @@ export default function ActiveWorkoutClient({
           const mergedLastSession = lastSession[exercise.exercise_name] ?? dynamicLastSession[exercise.exercise_name]
           const targets = mergedSuggestedTargets ?? (mergedLastSession && Object.keys(mergedLastSession).length > 0 ? computeFallbackTargets(exercise, mergedLastSession) : {})
           const prevSession = mergedLastSession
+          const isBodyweight = isBodyweightExercise(exercise.exercise_name)
 
           // Coach card — only for PRIMARY_COMPOUNDS
           const showCoachCard = PRIMARY_COMPOUNDS.includes(exercise.exercise_name)
@@ -1084,6 +1164,12 @@ export default function ActiveWorkoutClient({
               </div>
 
               {/* Coach card — loading state */}
+              {isBodyweight && (
+                <div style={{ margin: '-4px 16px 12px', fontSize: '12px', color: '#b8b8b8', lineHeight: 1.35, fontFamily: 'inherit' }}>
+                  Added kg only. Use 0 for bodyweight reps.
+                </div>
+              )}
+
               {fetchingTargetsFor.has(exercise.exercise_name) && (
                 <div style={{ margin: '0 16px 12px', background: '#0d1f17', border: '1px solid #1a3528', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div className="w-3.5 h-3.5 border border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
@@ -1140,7 +1226,7 @@ export default function ActiveWorkoutClient({
                 const firstUnloggedWarmupIdx = warmupSets.findIndex(({ s }) => !s.logged)
 
                 if (warmupSets.length === 0) {
-                  if (PRIMARY_COMPOUNDS.includes(exercise.exercise_name) && !fetchingTargetsFor.has(exercise.exercise_name)) {
+                  if (PRIMARY_COMPOUNDS.includes(exercise.exercise_name) && !isBodyweight && !fetchingTargetsFor.has(exercise.exercise_name)) {
                     return (
                       <div style={{ padding: '0 16px 8px' }}>
                         <p style={{ fontSize: '13px', color: '#848484', fontStyle: 'italic', margin: 0 }}>
@@ -1182,6 +1268,7 @@ export default function ActiveWorkoutClient({
                           {warmupSets.map(({ s: setData, i: idx }, warmupIdx) => {
                             const isDone = setData.logged
                             const isActive = !isDone && warmupIdx === firstUnloggedWarmupIdx
+                            const error = setErrors[`${exercise.id}-${idx}`]
                             const rowStyle: CSSProperties = isActive
                               ? { background: '#1a1200', borderRadius: '9px', borderLeft: '3px solid #FFAA00', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
                               : {}
@@ -1193,7 +1280,8 @@ export default function ActiveWorkoutClient({
                               : { background: '#141414', border: '1px solid #2a1f00', borderRadius: '7px', padding: '8px 5px', fontSize: '18px', fontWeight: 600, color: '#f0f0f0', WebkitTextFillColor: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
 
                             return (
-                              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '52px', ...rowStyle }}>
+                              <React.Fragment key={idx}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '52px', ...rowStyle }}>
                                 {/* × delete */}
                                 <button
                                   onClick={() => removeSet(exercise.id, idx)}
@@ -1253,6 +1341,12 @@ export default function ActiveWorkoutClient({
                                   />
                                 )}
                               </div>
+                              {error && (
+                                <div style={{ margin: '0 44px 6px 62px', fontSize: '12px', color: '#ff7a8a', lineHeight: 1.35, fontFamily: 'inherit' }}>
+                                  {error}
+                                </div>
+                              )}
+                              </React.Fragment>
                             )
                           })}
                         </div>
@@ -1287,7 +1381,7 @@ export default function ActiveWorkoutClient({
                     <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', padding: '0 16px 6px' }}>
                       <span /><span />
                       <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>LAST TIME</span>
-                      <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
+                      <span style={{ fontSize: isBodyweight ? '10px' : '13px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit', lineHeight: 1.1 }}>{isBodyweight ? 'ADDED KG' : 'KG'}</span>
                       <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>REPS</span>
                       <span />
                     </div>
@@ -1297,13 +1391,14 @@ export default function ActiveWorkoutClient({
                         const workingSetNum = workingIdx + 1
                         const setTarget = targets?.[workingSetNum]
                         const prevSet = prevSession?.[workingSetNum]
-                        const weightPh = setTarget?.weight ? String(setTarget.weight) : ''
+                        const weightPh = setTarget ? String(setTarget.weight) : ''
                         const repsPh = setTarget
                           ? `${setTarget.repsMin}–${setTarget.repsMax}`
                           : `${exercise.reps_min}–${exercise.reps_max}`
                         const isDone = setData.logged
                         const isActive = !isDone && workingIdx === firstUnloggedWorkingIdx
                         const isEditing = editingSet.has(`${exercise.id}-${idx}`)
+                        const error = setErrors[`${exercise.id}-${idx}`]
 
                         const rowStyle: CSSProperties = isDone && !isEditing
                           ? { opacity: 0.35 }
@@ -1385,6 +1480,11 @@ export default function ActiveWorkoutClient({
                             )}
                           </div>
                           {/* Machine increment note — non-barbell only, small weight jump */}
+                          {error && (
+                            <div style={{ margin: '0 44px 6px 62px', fontSize: '12px', color: '#ff7a8a', lineHeight: 1.35, fontFamily: 'inherit' }}>
+                              {error}
+                            </div>
+                          )}
                           {workingIdx === 0 && (() => {
                             const exType = EXERCISE_TYPE[exercise.exercise_name]
                             const isNonBarbell = exType === 'cable_machine' || exType === 'isolation'

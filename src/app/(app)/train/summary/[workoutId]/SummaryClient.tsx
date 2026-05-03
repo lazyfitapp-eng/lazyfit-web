@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { computeMuscleSplit } from '@/lib/muscleMap'
+import { isBodyweightExercise } from '@/lib/progressionConfig'
 
 interface WorkoutSet {
   exercise_name: string
@@ -26,6 +27,7 @@ interface Props {
   prevBestWeight: Record<string, number>
   sessionCount: number
   daysTraining: number
+  isPartialSession: boolean
 }
 
 // ── Helpers ────────────────────────────────────────────────
@@ -92,6 +94,7 @@ export default function SummaryClient({
   prevBestWeight,
   sessionCount,
   daysTraining,
+  isPartialSession,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -174,7 +177,10 @@ export default function SummaryClient({
   const highlightLabel = highlightExercise ?? 'This workout'
 
   const heroCopy = (() => {
-    const workoutTitle = `${routineName ?? 'Custom Workout'} Complete`
+    const workoutTitle = `${routineName ?? 'Custom Workout'} ${isPartialSession ? 'Partial Session' : 'Complete'}`
+    if (isPartialSession) {
+      return { label: 'FINISHED EARLY', title: workoutTitle, subtitle: 'Partial session saved. Targets were not advanced.' }
+    }
     if (summaryMode === 'baseline') {
       return { label: 'BASELINE CREATED', title: workoutTitle, subtitle: 'First signal logged.' }
     }
@@ -212,6 +218,7 @@ export default function SummaryClient({
   // Coach badge per exercise (next session target)
   // "Hold" is never used — replaced with "→ Build" (amber)
   function getCoachBadge(name: string): { type: 'up' | 'build'; label: string } {
+    if (isPartialSession) return { type: 'build', label: 'No change' }
     const nextTarget = targets[name]?.[1]
     if (!nextTarget) return { type: 'build', label: '→ Build' }
     const workingSets = sets.filter(s => s.exercise_name === name && s.set_type !== 'warmup')
@@ -237,6 +244,9 @@ export default function SummaryClient({
   // ── Actions ──────────────────────────────────────────────
 
   function getTargetAction(name: string): { label: 'Build' | 'Hold' | 'Repeat' | 'Increase'; reason: string; tone: 'green' | 'amber' } {
+    if (isPartialSession) {
+      return { label: 'Repeat', tone: 'amber', reason: 'Partial session. Finish all planned working sets before targets move.' }
+    }
     const nextTarget = targets[name]?.[1]
     const workingSets = sets.filter(s => s.exercise_name === name && s.set_type !== 'warmup')
     const best = todayBest[name]
@@ -260,6 +270,9 @@ export default function SummaryClient({
   }
 
   const coachMessage = (() => {
+    if (isPartialSession) {
+      return `Finished early.\n\nThis workout was saved as a partial session, so LazyFit did not advance your targets.\n\nNext time: repeat the planned working sets and let a complete session drive progression.`
+    }
     if (summaryMode === 'baseline') {
       return `Baseline created. This is your starting point for this workout.\n\nRepeat it 2-3 more times and LazyFit will know whether you're building, holding, or regressing.\n\nNext time: match today first. Clean reps before heavier weight.`
     }
@@ -279,13 +292,18 @@ export default function SummaryClient({
   const statCards = [
     {
       val: totalSets,
-      label: 'sets completed',
+      label: isPartialSession ? 'sets logged' : 'sets completed',
     },
     {
       val: totalVolumeLabel,
       label: 'total volume',
     },
-    summaryMode === 'progress'
+    isPartialSession
+      ? {
+          val: 'No change',
+          label: 'targets',
+        }
+      : summaryMode === 'progress'
       ? {
           val: prs.length > 0 ? prs.length : progressedExercises.length,
           label: prs.length > 0 ? 'new PR' : 'lift progressed',
@@ -455,15 +473,19 @@ export default function SummaryClient({
         {isToday && (
           <div className="lf-check" style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            background: T.accentBg, border: `1px solid ${T.accentBd}`,
+            background: isPartialSession ? 'rgba(255,170,0,0.1)' : T.accentBg,
+            border: `1px solid ${isPartialSession ? 'rgba(255,170,0,0.35)' : T.accentBd}`,
             borderRadius: 20, padding: '5px 11px',
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.3px', color: T.accent,
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.3px',
+            color: isPartialSession ? T.amber : T.accent,
             flexShrink: 0,
           }}>
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={T.accent} strokeWidth="2.8">
-              <polyline points="1,6 4.5,10 11,2" />
-            </svg>
-            Complete
+            {!isPartialSession && (
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={T.accent} strokeWidth="2.8">
+                <polyline points="1,6 4.5,10 11,2" />
+              </svg>
+            )}
+            {isPartialSession ? 'Partial' : 'Complete'}
           </div>
         )}
       </header>
@@ -631,6 +653,9 @@ export default function SummaryClient({
                 const nextTarget = targets[name]?.[1]
                 if (!nextTarget) return null
                 const action = getTargetAction(name)
+                const targetLoadLabel = isBodyweightExercise(name)
+                  ? `${nextTarget.weight}kg added`
+                  : `${nextTarget.weight}kg`
                 return (
                   <div key={name} style={{
                     display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', padding: '12px', gap: 10,
@@ -647,7 +672,7 @@ export default function SummaryClient({
                       </div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: T.accent, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      {nextTarget.weight}kg × {nextTarget.repsMin}–{nextTarget.repsMax}
+                      {targetLoadLabel} × {nextTarget.repsMin}–{nextTarget.repsMax}
                     </div>
                     <div style={{
                       fontSize: 10, fontWeight: 800, letterSpacing: '0.2px',
@@ -1016,13 +1041,13 @@ export default function SummaryClient({
             </svg>
           </div>
           <div className="lf-comp-title" style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-1px', color: T.text }}>
-            Session Complete
+            {isPartialSession ? 'Finished Early' : 'Session Complete'}
           </div>
           <div className="lf-comp-sub" style={{ fontSize: 14, color: T.text2, letterSpacing: '-0.2px' }}>
             {routineName ?? 'Custom Workout'}{sessionCount > 1 ? ` · ${sessionCount} sessions` : ''}
           </div>
           <div className="lf-comp-enc" style={{ fontSize: 13, color: T.accent, fontWeight: 600, letterSpacing: '-0.1px' }}>
-            Keep showing up.
+            {isPartialSession ? 'Partial session saved.' : 'Keep showing up.'}
           </div>
         </div>
       )}

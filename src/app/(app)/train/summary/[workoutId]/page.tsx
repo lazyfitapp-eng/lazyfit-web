@@ -31,6 +31,24 @@ export default async function SummaryPage({ params }: PageProps) {
 
   const workoutSets = sets ?? []
   const exerciseNames = [...new Set(workoutSets.map(s => s.exercise_name))]
+  let isPartialSession = false
+
+  if (workout.routine_id) {
+    const { data: plannedExercises } = await supabase
+      .from('routine_exercises')
+      .select('exercise_name, sets_target')
+      .eq('routine_id', workout.routine_id)
+
+    const loggedWorkingCounts = new Map<string, number>()
+    for (const s of workoutSets) {
+      if (s.set_type === 'warmup') continue
+      loggedWorkingCounts.set(s.exercise_name, (loggedWorkingCounts.get(s.exercise_name) ?? 0) + 1)
+    }
+
+    isPartialSession = (plannedExercises ?? []).some(ex =>
+      (loggedWorkingCounts.get(ex.exercise_name) ?? 0) < ex.sets_target
+    )
+  }
 
   // Fetch all-time best 1RM per exercise (excluding this workout)
   let allTimeBest: Record<string, number> = {}
@@ -141,6 +159,7 @@ export default async function SummaryPage({ params }: PageProps) {
       prevBestWeight={prevBestWeight}
       sessionCount={sessionCount}
       daysTraining={daysTraining}
+      isPartialSession={isPartialSession}
     />
   )
 }

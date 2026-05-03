@@ -1,13 +1,23 @@
 // ── Progression configuration ─────────────────────────────────────────────────
 // Single source of truth for exercise type classification, weight increments,
-// and the list of primary compound exercises that receive warm-up sets and
-// the active-workout coach card.
+// deload percentage, bodyweight semantics, and primary coach-card exercises.
 
-export const EXERCISE_TYPE: Record<string, 'barbell_compound' | 'cable_machine' | 'isolation'> = {
+export type ExerciseType = 'barbell_compound' | 'cable_machine' | 'isolation' | 'bodyweight'
+
+export const DELOAD_FACTOR = 0.85
+export const DELOAD_PERCENT_LABEL = `${Math.round(DELOAD_FACTOR * 100)}%`
+
+export const BODYWEIGHT_EXERCISES = ['Pull-Up']
+
+export function isBodyweightExercise(exerciseName: string): boolean {
+  return BODYWEIGHT_EXERCISES.includes(exerciseName)
+}
+
+export const EXERCISE_TYPE: Record<string, ExerciseType> = {
   'Barbell Bench Press':    'barbell_compound',
   'Barbell Row':            'barbell_compound',
   'Overhead Press':         'barbell_compound',
-  'Pull-Up':                'barbell_compound',
+  'Pull-Up':                'bodyweight',
   'Bulgarian Split Squat':  'barbell_compound',
   'Incline Dumbbell Press': 'barbell_compound',
   'Cable Row':              'cable_machine',
@@ -29,13 +39,15 @@ export const EXERCISE_TYPE: Record<string, 'barbell_compound' | 'cable_machine' 
   'Leg Curl':               'cable_machine',
 }
 
-export const WEIGHT_INCREMENT: Record<'barbell_compound' | 'cable_machine' | 'isolation', number> = {
+export const WEIGHT_INCREMENT: Record<ExerciseType, number> = {
   barbell_compound: 2.5,
   cable_machine:    5.0,
   isolation:        1.0,
+  bodyweight:       2.5,
 }
 
-// Exercises that receive warm-up sets and the active-workout coach card.
+// Exercises that receive the active-workout coach card.
+// Warm-up callers should skip bodyweight exercises unless a specific rule exists.
 // Exact name match — must match exercise_name values stored in the DB.
 export const PRIMARY_COMPOUNDS: string[] = [
   'Barbell Bench Press',

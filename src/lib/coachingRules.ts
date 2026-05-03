@@ -1,4 +1,6 @@
 // ── Coaching Rules ────────────────────────────────────────────────────────────
+import { DELOAD_PERCENT_LABEL } from './progressionConfig'
+
 // Config-driven, priority-sorted, condition-based coaching cards.
 // Not hardcoded in the UI — rules live here and rotate based on user state.
 
@@ -59,7 +61,7 @@ const rules: CoachingRule[] = [
       badge: 'ach',
       badgeLabel: '🏆 Achievement',
       headline: `${i.userName}, you're in a peak phase right now.`,
-      body: `<strong>${i.recentPRCount} PRs in the last 30 days.</strong> This is what progressive overload looks like in practice — not motivation, not genetics. Consistent, intelligent work appearing on the bar.${i.stalledExercise ? `<br><br>Your ${i.stalledExercise} has stalled. That's not failure — that's your nervous system asking for a <em>strategic deload</em>. Drop to 70% next session, then come back and watch it break through.` : ''}`,
+      body: `<strong>${i.recentPRCount} PRs in the last 30 days.</strong> This is what progressive overload looks like in practice — not motivation, not genetics. Consistent, intelligent work appearing on the bar.${i.stalledExercise ? `<br><br>Your ${i.stalledExercise} has stalled. That's not failure — that's your nervous system asking for a <em>strategic deload</em>. Drop to ${DELOAD_PERCENT_LABEL} next session, then come back and watch it break through.` : ''}`,
     }),
   },
 
@@ -72,7 +74,7 @@ const rules: CoachingRule[] = [
       badge: 'act',
       badgeLabel: '⚡ Action',
       headline: `${i.userName}, your ${i.stalledExercise} is asking for a break.`,
-      body: `3 weeks at the same weight is a signal, not a failure. Your central nervous system is fatigued. <strong>Take one deload session</strong> — drop to 70% on ${i.stalledExercise}, full range of motion, controlled tempo. Come back the week after and <em>watch it break through</em>.`,
+      body: `3 weeks at the same weight is a signal, not a failure. Your central nervous system is fatigued. <strong>Take one deload session</strong> — drop to ${DELOAD_PERCENT_LABEL} on ${i.stalledExercise}, full range of motion, controlled tempo. Come back the week after and <em>watch it break through</em>.`,
     }),
   },
 
