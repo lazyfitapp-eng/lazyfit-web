@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createDefaultRoutines } from '@/lib/createDefaultRoutines'
+import { getLocalDateString } from '@/lib/dateUtils'
 import {
   calcAgeFromDob,
   calcNutritionTargets,
+  normalizeDateOfBirth,
   validSex,
   type DailySteps,
   type GoalKey,
@@ -87,9 +89,18 @@ const CTA_LABELS: Record<number, string> = {
 
 // ── Helper functions ───────────────────────────────────────────────────────────
 
+const MIN_AGE = 13
+const MAX_AGE = 90
+
 function parseNumber(value: string): number | null {
   const parsed = parseFloat(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function dateForAge(age: number): string {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() - age)
+  return getLocalDateString(date)
 }
 
 function computeMacros(form: FormState): Macros {
@@ -203,6 +214,8 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
   const macros = computeMacros(form)
   const tdeeDisplay = useCountUp(step === 5 ? macros.tdee : 0, 1000, 200)
   const calsDisplay = useCountUp(step === 5 ? macros.calories : 0, 1000, 350)
+  const dobMin = dateForAge(MAX_AGE)
+  const dobMax = dateForAge(MIN_AGE)
 
   useEffect(() => {
     if (step === 5) {
@@ -225,12 +238,17 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm(prev => ({ ...prev, [key]: val }))
 
+  const setDob = (value: string) => {
+    set('dob', value)
+    if (submitError) setSubmitError(null)
+  }
+
   const validateStep = (stepToValidate: number): string | null => {
     if (stepToValidate === 1) {
       const age = calcAgeFromDob(form.dob)
       const height = parseNumber(form.heightCm)
 
-      if (age == null || !Number.isFinite(age) || age < 13 || age > 90) {
+      if (age == null || !Number.isFinite(age) || age < MIN_AGE || age > MAX_AGE) {
         return 'Enter a valid date of birth. Age must be between 13 and 90.'
       }
       if (height == null || height < 120 || height > 230) {
@@ -281,14 +299,15 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
       if (validationError) throw new Error(validationError)
 
       const bfFinal = form.bodyFatMethod === 'navy' && navyBF != null ? navyBF : form.bodyFatPct
-      const age = calcAgeFromDob(form.dob)
+      const normalizedDob = normalizeDateOfBirth(form.dob)
+      const age = calcAgeFromDob(normalizedDob)
 
       const { error } = await supabase.from('profiles').upsert({
         id: userId,
         email,
         first_name: form.firstName.trim() || null,
         sex: form.gender.toLowerCase(),
-        date_of_birth: form.dob || null,
+        date_of_birth: normalizedDob,
         age,
         height_cm: parseFloat(form.heightCm) || null,
         current_weight: parseFloat(form.weightKg) || null,
@@ -415,7 +434,10 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         style={{ ...inputStyle, marginBottom: 16, colorScheme: 'dark' }}
         type="date"
         value={form.dob}
-        onChange={e => set('dob', e.target.value)}
+        min={dobMin}
+        max={dobMax}
+        onInput={e => setDob(e.currentTarget.value)}
+        onChange={e => setDob(e.currentTarget.value)}
       />
 
       {fieldLabel('Height')}

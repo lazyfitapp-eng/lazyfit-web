@@ -1,3 +1,5 @@
+import { getLocalDateString, parseLocalDateString } from './dateUtils'
+
 export type GoalKey = 'cut' | 'recomp' | 'bulk'
 export type JobActivity = 'desk' | 'feet' | 'labor'
 export type DailySteps = 'lt5k' | '5-10k' | '10-15k' | 'gt15k'
@@ -33,10 +35,42 @@ export function validDailySteps(value: string | null | undefined): DailySteps {
   return value === 'lt5k' || value === '5-10k' || value === '10-15k' || value === 'gt15k' ? value : '5-10k'
 }
 
-export function calcAgeFromDob(dob: string | null | undefined): number | null {
+function parseDateParts(year: number, month: number, day: number): Date | null {
+  const parsed = new Date(year, month - 1, day)
+  return parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day
+    ? parsed
+    : null
+}
+
+export function normalizeDateOfBirth(dob: string | null | undefined): string | null {
   if (!dob) return null
-  const birth = new Date(`${dob}T12:00:00`)
-  if (Number.isNaN(birth.getTime())) return null
+
+  const value = dob.trim()
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/)
+  if (isoMatch) {
+    const isoDate = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`
+    return parseLocalDateString(isoDate) ? isoDate : null
+  }
+
+  const dayFirstMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (dayFirstMatch) {
+    const parsed = parseDateParts(
+      Number(dayFirstMatch[3]),
+      Number(dayFirstMatch[2]),
+      Number(dayFirstMatch[1]),
+    )
+    return parsed ? getLocalDateString(parsed) : null
+  }
+
+  return null
+}
+
+export function calcAgeFromDob(dob: string | null | undefined): number | null {
+  const normalizedDob = normalizeDateOfBirth(dob)
+  const birth = normalizedDob ? parseLocalDateString(normalizedDob) : null
+  if (!birth) return null
   const today = new Date()
   let age = today.getFullYear() - birth.getFullYear()
   const monthDelta = today.getMonth() - birth.getMonth()
