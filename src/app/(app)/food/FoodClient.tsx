@@ -980,8 +980,10 @@ export default function FoodClient({
             width: '100%', maxWidth: 430, margin: '0 auto',
             background: '#111', border: '1px solid #242424',
             borderRadius: '26px 26px 0 0',
+            height: 'min(88dvh, 720px)',
             maxHeight: 'min(88dvh, 720px)',
             display: 'flex', flexDirection: 'column',
+            minHeight: 0,
             transform: 'translateY(0)',
             transition: 'transform 0.3s cubic-bezier(.32,.72,0,1)',
             overflow: 'hidden',
@@ -1049,10 +1051,10 @@ export default function FoodClient({
           </div>
 
           {/* Scrollable body with top fade hint */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
             {/* Top fade */}
             <div style={{ content: '', pointerEvents: 'none', position: 'absolute', top: 0, left: 0, right: 0, height: 28, zIndex: 2, background: 'linear-gradient(to bottom, #111 0%, transparent 100%)' }} />
-            <div style={{ height: '100%', overflowY: 'auto', padding: '0 20px', scrollbarWidth: 'none' }}>
+            <div style={{ height: '100%', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: '0 20px', scrollbarWidth: 'none' }}>
 
               {/* ── AI items edit view ── */}
               {aiItems ? (
