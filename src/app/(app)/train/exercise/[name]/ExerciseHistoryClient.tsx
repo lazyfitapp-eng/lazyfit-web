@@ -382,7 +382,8 @@ export default function ExerciseHistoryClient({
 
   // For display purposes — how much has the user improved overall
   // If first session IS the PR, show 0 gracefully
-  const hasProgression = kgGained >= 0.5
+  const hasEnoughTrendData = sessions.length >= 3
+  const hasProgression = hasEnoughTrendData && kgGained >= 0.5
   const weeklyRate = hasProgression && weeksTraining > 0 ? kgGained / weeksTraining : 0
 
   const nextMilestone = Math.ceil((allTimePRVal + 0.001) / 5) * 5
@@ -598,7 +599,7 @@ export default function ExerciseHistoryClient({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                       <span className="lfe-crown" style={{ fontSize: 16 }}>🏆</span>
                       <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(62,207,142,0.6)' }}>
-                        Personal Record
+                        {hasEnoughTrendData ? 'Personal Record' : 'Best Logged Set'}
                       </span>
                     </div>
                     <div style={{ fontSize: 64, fontWeight: 800, color: '#3ecf8e', letterSpacing: '-3px', lineHeight: 1 }}>
@@ -617,21 +618,32 @@ export default function ExerciseHistoryClient({
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, paddingTop: 4 }}>
-                    <div style={{ position: 'relative', width: 72, height: 72 }}>
-                      <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(62,207,142,0.1)" strokeWidth="3" />
-                        <circle cx="36" cy="36" r="30" fill="none" stroke="#3ecf8e" strokeWidth="3" strokeLinecap="round" className="lfe-ring-fill" />
-                      </svg>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: '#3ecf8e', letterSpacing: '-0.5px', lineHeight: 1 }}>{ringPct}%</div>
-                        <div style={{ fontSize: 8, fontWeight: 600, color: 'rgba(62,207,142,0.45)', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
-                          to<br />{nextMilestone}kg
+                    {hasEnoughTrendData ? (
+                      <>
+                        <div style={{ position: 'relative', width: 72, height: 72 }}>
+                          <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: 'rotate(-90deg)' }}>
+                            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(62,207,142,0.1)" strokeWidth="3" />
+                            <circle cx="36" cy="36" r="30" fill="none" stroke="#3ecf8e" strokeWidth="3" strokeLinecap="round" className="lfe-ring-fill" />
+                          </svg>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#3ecf8e', letterSpacing: '-0.5px', lineHeight: 1 }}>{ringPct}%</div>
+                            <div style={{ fontSize: 8, fontWeight: 600, color: 'rgba(62,207,142,0.45)', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
+                              to<br />{nextMilestone}kg
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(62,207,142,0.5)', background: 'rgba(62,207,142,0.08)', border: '1px solid rgba(62,207,142,0.15)', borderRadius: 7, padding: '4px 9px' }}>
+                          Set {new Date(allTimePR.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ width: 86, minHeight: 72, borderRadius: 14, border: '1px solid rgba(62,207,142,0.14)', background: 'rgba(62,207,142,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, textAlign: 'center', padding: '8px' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#3ecf8e', lineHeight: 1 }}>{sessions.length}/3</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(62,207,142,0.55)', letterSpacing: '0.4px', textTransform: 'uppercase', lineHeight: 1.25 }}>
+                          sessions for trend
                         </div>
                       </div>
-                    </div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(62,207,142,0.5)', background: 'rgba(62,207,142,0.08)', border: '1px solid rgba(62,207,142,0.15)', borderRadius: 7, padding: '4px 9px' }}>
-                      Set {new Date(allTimePR.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -642,11 +654,17 @@ export default function ExerciseHistoryClient({
           <div style={{ padding: '12px 20px 0' }} className="lfe-a3">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 24 }}>
               {[
-                { label: 'Week Streak', display: `🔥 ${weekStreak}`, green: false },
-                hasProgression
-                  ? { label: 'kg gained', display: `+${kgGained.toFixed(1)}`, green: true }
-                  : { label: 'Best Ever', display: `${allTimePRVal.toFixed(1)}`, green: true },
-                { label: 'Weeks', display: String(weeksTraining), green: false },
+                hasEnoughTrendData
+                  ? { label: 'Week Streak', display: String(weekStreak), green: false }
+                  : { label: 'Sessions', display: String(sessions.length), green: false },
+                hasEnoughTrendData
+                  ? (hasProgression
+                      ? { label: 'kg gained', display: `+${kgGained.toFixed(1)}`, green: true }
+                      : { label: 'Best Ever', display: `${allTimePRVal.toFixed(1)}`, green: true })
+                  : { label: 'Best Logged', display: `${allTimePRVal.toFixed(1)}`, green: true },
+                hasEnoughTrendData
+                  ? { label: 'Weeks', display: String(weeksTraining), green: false }
+                  : { label: 'Trend Data', display: `${sessions.length}/3`, green: false },
               ].map((t, i) => (
                 <div
                   key={i}
@@ -688,6 +706,10 @@ export default function ExerciseHistoryClient({
                     <div style={{ fontSize: 11, color: '#888888' }}>{weeklyRate.toFixed(2)} kg / week avg</div>
                   )}
                 </div>
+              ) : !hasEnoughTrendData ? (
+                <div style={{ maxWidth: 150, fontSize: 12, color: '#888888', paddingBottom: 6, textAlign: 'right', lineHeight: 1.35 }}>
+                  More sessions needed to establish a trend.
+                </div>
               ) : (
                 <div style={{ fontSize: 12, color: '#888888', paddingBottom: 6 }}>
                   PR: {allTimePRVal.toFixed(1)} kg · Current: {currentEst1RM.toFixed(1)} kg
@@ -707,7 +729,11 @@ export default function ExerciseHistoryClient({
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent 0%, rgba(62,207,142,0.3) 50%, transparent 100%)' }} />
               <span style={{ fontSize: 48, lineHeight: 0.6, color: 'rgba(62,207,142,0.12)', fontFamily: 'Georgia, serif', marginBottom: 10, display: 'block' }}>"</span>
               <div style={{ fontSize: 15, fontWeight: 500, color: '#c8c8c8', lineHeight: 1.6, letterSpacing: '-0.3px', marginBottom: 16 }}>
-                {!hasProgression ? (
+                {!hasEnoughTrendData ? (
+                  <>
+                    More sessions needed to establish a trend. Keep logging this exercise with the same honest set detail, and LazyFit will start comparing progress once there are at least three sessions.
+                  </>
+                ) : !hasProgression ? (
                   <>
                     You've logged{' '}
                     <strong style={{ color: '#f0f0f0' }}>
@@ -739,23 +765,36 @@ export default function ExerciseHistoryClient({
                 )}
               </div>
               <div style={{ background: 'rgba(9,21,16,0.7)', border: '1px solid rgba(62,207,142,0.1)', borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(62,207,142,0.7)' }}>
-                    Next milestone: {nextMilestone} kg est. 1RM
-                  </span>
-                  {weeklyRate > 0 && (
-                    <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(62,207,142,0.4)' }}>
-                      ~{Math.ceil((nextMilestone - allTimePRVal) / weeklyRate)} weeks away
-                    </span>
-                  )}
-                </div>
-                <div style={{ height: 5, background: 'rgba(62,207,142,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div className="lfe-bar-fill" style={{ height: '100%', width: 0, background: 'linear-gradient(90deg, #2aaa74, #3ecf8e, #5df5aa)', borderRadius: 3 }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#3ecf8e' }}>{allTimePRVal.toFixed(1)} kg now</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(62,207,142,0.35)' }}>{nextMilestone} kg target</span>
-                </div>
+                {!hasEnoughTrendData ? (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(62,207,142,0.75)', marginBottom: 5 }}>
+                      Trend status: collecting data
+                    </div>
+                    <div style={{ fontSize: 11, color: '#b8b8b8', lineHeight: 1.45 }}>
+                      {Math.max(0, 3 - sessions.length)} more session{Math.max(0, 3 - sessions.length) === 1 ? '' : 's'} needed before trend coaching appears.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(62,207,142,0.7)' }}>
+                        Next milestone: {nextMilestone} kg est. 1RM
+                      </span>
+                      {weeklyRate > 0 && (
+                        <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(62,207,142,0.4)' }}>
+                          ~{Math.ceil((nextMilestone - allTimePRVal) / weeklyRate)} weeks away
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ height: 5, background: 'rgba(62,207,142,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div className="lfe-bar-fill" style={{ height: '100%', width: 0, background: 'linear-gradient(90deg, #2aaa74, #3ecf8e, #5df5aa)', borderRadius: 3 }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#3ecf8e' }}>{allTimePRVal.toFixed(1)} kg now</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(62,207,142,0.35)' }}>{nextMilestone} kg target</span>
+                    </div>
+                  </>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(62,207,142,0.08)' }}>
                 <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #1d3d28, #0c1c12)', border: '1px solid rgba(62,207,142,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>⚡</div>
@@ -786,7 +825,7 @@ export default function ExerciseHistoryClient({
                     isOpen={isOpen}
                     isToday={isToday}
                     dateLabel={sessionLabels[session.workoutId]}
-                    prWorkoutId={prWorkoutId}
+                    prWorkoutId={hasEnoughTrendData ? prWorkoutId : null}
                     onToggle={() =>
                       setOpenSessions(prev => {
                         const next = new Set(prev)

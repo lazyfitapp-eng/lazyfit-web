@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
+import { Check, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { computeWarmupSets } from '@/lib/warmup'
 import { DELOAD_FACTOR, EXERCISE_TYPE, WEIGHT_INCREMENT, PRIMARY_COMPOUNDS, isBodyweightExercise } from '@/lib/progressionConfig'
@@ -111,6 +112,43 @@ type SetState = {
   isPR: boolean
   setType: 'warmup' | 'working'
   warmupRestSeconds?: number  // only for warmup sets: how long to rest after this set
+}
+
+const SET_ROW_GRID = '28px 36px minmax(56px, 1fr) 68px 68px 56px'
+
+function DeleteSetButton({
+  label,
+  onClick,
+  pending = false,
+}: {
+  label: string
+  onClick: () => void
+  pending?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      style={{
+        width: '28px',
+        height: '28px',
+        borderRadius: '7px',
+        background: pending ? 'rgba(255,59,92,0.16)' : 'rgba(255,59,92,0.06)',
+        border: pending ? '1px solid rgba(255,59,92,0.55)' : '1px solid rgba(255,59,92,0.22)',
+        color: pending ? '#ff6f86' : '#c86b78',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        padding: 0,
+        fontFamily: 'inherit',
+      }}
+    >
+      <Trash2 size={14} strokeWidth={2.1} />
+    </button>
+  )
 }
 
 interface Props {
@@ -349,7 +387,13 @@ function RestTimer({
   const pct = totalSeconds > 0 ? Math.min(100, ((totalSeconds - remaining) / totalSeconds) * 100) : 100
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Rest timer"
+      style={{ zIndex: 120, background: '#050505' }}
+    >
       {/* X close button */}
       <button
         onClick={() => onDoneRef.current()}
@@ -361,7 +405,19 @@ function RestTimer({
         </svg>
       </button>
 
-      <div className="text-center px-8">
+      <div
+        className="text-center px-8"
+        style={{
+          width: '100%',
+          maxWidth: '360px',
+          paddingTop: '48px',
+          paddingBottom: '48px',
+          background: '#080808',
+          borderTop: '1px solid #123321',
+          borderBottom: '1px solid #123321',
+          boxShadow: '0 0 80px rgba(62,207,142,0.08)',
+        }}
+      >
         <p className="text-[10px] tracking-widest text-[#b8b8b8] mb-6 font-mono">REST</p>
         <p
           className="text-8xl font-bold text-primary font-mono tabular-nums"
@@ -524,6 +580,7 @@ export default function ActiveWorkoutClient({
   const [keepSameWeightFor, setKeepSameWeightFor] = useState<Set<string>>(new Set())
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editingSet, setEditingSet] = useState<Set<string>>(new Set())
+  const [confirmingDeleteSet, setConfirmingDeleteSet] = useState<string | null>(null)
   const [setErrors, setSetErrors] = useState<Record<string, string>>({})
 
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -727,12 +784,18 @@ export default function ActiveWorkoutClient({
     })
   }
 
-  const removeSet = async (exId: string, idx: number) => {
+  const removeSet = async (exId: string, idx: number, confirmed = false) => {
     const exercise = exercises.find(e => e.id === exId)
     const exSets = sets[exId] ?? []
     const setData = exSets[idx]
+    const key = `${exId}-${idx}`
 
     if (!setData) return
+
+    if (setData.logged && setData.setType === 'working' && !confirmed) {
+      setConfirmingDeleteSet(key)
+      return
+    }
 
     if (setData.logged && exercise) {
       const isWarmup = setData.setType === 'warmup'
@@ -754,15 +817,23 @@ export default function ActiveWorkoutClient({
       }
     }
 
-    setSets(prev => ({
-      ...prev,
-      [exId]: prev[exId].filter((_, i) => i !== idx),
-    }))
+    const updatedSets = {
+      ...sets,
+      [exId]: (sets[exId] ?? []).filter((_, i) => i !== idx),
+    }
+    try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: updatedSets })) } catch {}
+    setSets(updatedSets)
     setSetErrors(prev => {
       const next = { ...prev }
-      delete next[`${exId}-${idx}`]
+      delete next[key]
       return next
     })
+    setEditingSet(prev => {
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
+    setConfirmingDeleteSet(prev => prev === key ? null : prev)
   }
 
   const toggleSetType = (exId: string, idx: number) => {
@@ -1257,7 +1328,7 @@ export default function ActiveWorkoutClient({
                           <div style={{ flex: 1, height: '1px', background: '#2a1f00' }} />
                         </div>
                         {/* Column headers */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', paddingBottom: '6px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: SET_ROW_GRID, gap: '6px', paddingBottom: '6px' }}>
                           <span /><span />
                           <span style={{ fontSize: '12px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>—</span>
                           <span style={{ fontSize: '12px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit' }}>KG</span>
@@ -1282,14 +1353,12 @@ export default function ActiveWorkoutClient({
 
                             return (
                               <React.Fragment key={idx}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '52px', ...rowStyle }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: SET_ROW_GRID, gap: '6px', alignItems: 'center', minHeight: '52px', ...rowStyle }}>
                                 {/* × delete */}
-                                <button
+                                <DeleteSetButton
+                                  label={isDone ? `Delete logged warm-up set W${warmupIdx + 1}` : `Delete warm-up set W${warmupIdx + 1}`}
                                   onClick={() => removeSet(exercise.id, idx)}
-                                  style={{ background: 'none', border: 'none', color: '#888888', fontSize: '14px', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
-                                >
-                                  ×
-                                </button>
+                                />
                                 {/* Type badge */}
                                 <div style={{ fontSize: '15px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: '#f0f0f0', background: '#1a1200' }}>
                                   W{warmupIdx + 1}
@@ -1379,7 +1448,7 @@ export default function ActiveWorkoutClient({
                       </div>
                     )}
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', padding: '0 16px 6px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: SET_ROW_GRID, gap: '6px', padding: '0 16px 6px' }}>
                       <span /><span />
                       <span style={{ fontSize: '13px', color: '#b8b8b8', letterSpacing: '0.8px', fontFamily: 'inherit' }}>LAST TIME</span>
                       <span style={{ fontSize: isBodyweight ? '10px' : '13px', color: '#b8b8b8', letterSpacing: '0.8px', textAlign: 'center', fontFamily: 'inherit', lineHeight: 1.1 }}>{isBodyweight ? 'ADDED KG' : 'KG'}</span>
@@ -1398,31 +1467,40 @@ export default function ActiveWorkoutClient({
                           : `${exercise.reps_min}–${exercise.reps_max}`
                         const isDone = setData.logged
                         const isActive = !isDone && workingIdx === firstUnloggedWorkingIdx
-                        const isEditing = editingSet.has(`${exercise.id}-${idx}`)
-                        const error = setErrors[`${exercise.id}-${idx}`]
+                        const setKey = `${exercise.id}-${idx}`
+                        const isEditing = editingSet.has(setKey)
+                        const isConfirmingDelete = confirmingDeleteSet === setKey
+                        const error = setErrors[setKey]
 
-                        const rowStyle: CSSProperties = isDone && !isEditing
-                          ? { opacity: 0.35 }
-                          : isActive
-                            ? { background: '#0d1a12', borderRadius: '9px', borderLeft: '3px solid #3ecf8e', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
-                            : {}
-                        const kgStyle: CSSProperties = isActive
-                          ? { background: '#0d1f17', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#888', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                        const rowStyle: CSSProperties = isEditing
+                          ? { background: '#0d1f17', borderRadius: '9px', borderLeft: '3px solid #3ecf8e', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
+                          : isDone
+                            ? { background: '#0f1411', borderRadius: '9px', border: '1px solid #1d3a2a', margin: '3px -4px 5px', padding: '7px 7px' }
+                            : isActive
+                              ? { background: '#0d1a12', borderRadius: '9px', borderLeft: '3px solid #3ecf8e', margin: '3px -12px 5px', padding: '8px 10px 8px 9px' }
+                              : {}
+                        const kgStyle: CSSProperties = isActive || isEditing
+                          ? { background: '#0d1f17', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#f0f0f0', WebkitTextFillColor: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                          : isDone
+                            ? { background: '#101010', border: '1px solid #264534', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#f0f0f0', WebkitTextFillColor: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                            : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '20px', fontWeight: 700, color: '#888', WebkitTextFillColor: '#888', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
                         const repsStyle: CSSProperties = isActive
-                          ? { background: '#3ecf8e', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#000000', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
-                          : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none' }
+                          ? { background: '#3ecf8e', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#000000', WebkitTextFillColor: '#000000', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                          : isEditing
+                            ? { background: '#0d1f17', border: '1px solid #3ecf8e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#f0f0f0', WebkitTextFillColor: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                            : isDone
+                              ? { background: '#101010', border: '1px solid #264534', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#f0f0f0', WebkitTextFillColor: '#f0f0f0', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
+                              : { background: '#141414', border: '1px solid #1e1e1e', borderRadius: '7px', padding: '8px 5px', fontSize: '16px', fontWeight: 600, color: '#b8b8b8', WebkitTextFillColor: '#b8b8b8', textAlign: 'center', width: '100%', fontFamily: 'inherit', outline: 'none', opacity: 1 }
 
                         return (
                           <React.Fragment key={idx}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '20px 36px 1fr 68px 68px 44px', gap: '6px', alignItems: 'center', minHeight: '56px', ...rowStyle }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: SET_ROW_GRID, gap: '6px', alignItems: 'center', minHeight: '56px', ...rowStyle }}>
                             {/* × delete */}
-                            <button
+                            <DeleteSetButton
+                              label={isDone ? `Delete logged working set ${workingSetNum}` : `Delete working set ${workingSetNum}`}
                               onClick={() => removeSet(exercise.id, idx)}
-                              style={{ background: 'none', border: 'none', color: '#888888', fontSize: '14px', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
-                            >
-                              ×
-                            </button>
+                              pending={isConfirmingDelete}
+                            />
                             {/* Type badge */}
                             <div style={{ fontSize: '15px', fontWeight: 700, textAlign: 'center', borderRadius: '5px', padding: '4px 2px', color: isActive ? '#3ecf8e' : '#b8b8b8', background: isActive ? '#0d2118' : '#1e1e1e', minWidth: '28px' }}>
                               {setData.isPR ? '🏆' : workingSetNum}
@@ -1455,26 +1533,40 @@ export default function ActiveWorkoutClient({
                             {isDone ? (
                               <button
                                 onClick={() => {
-                                  const key = `${exercise.id}-${idx}`
-                                  if (editingSet.has(key)) {
+                                  if (editingSet.has(setKey)) {
                                     relogSet(exercise, idx)
                                   } else {
-                                    setEditingSet(prev => { const next = new Set(prev); next.add(key); return next })
+                                    setEditingSet(prev => { const next = new Set(prev); next.add(setKey); return next })
                                   }
                                 }}
-                                style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#3ecf8e', border: '2px solid #3ecf8e', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                aria-label={isEditing ? 'Save set' : 'Edit set'}
+                                style={{
+                                  width: '56px',
+                                  height: '34px',
+                                  borderRadius: '9px',
+                                  background: isEditing ? '#3ecf8e' : '#0d2118',
+                                  border: isEditing ? '1px solid #3ecf8e' : '1px solid #1d4b34',
+                                  color: isEditing ? '#000' : '#3ecf8e',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '10px',
+                                  fontWeight: 800,
+                                  letterSpacing: '0.04em',
+                                  fontFamily: 'inherit',
+                                }}
+                                aria-label={isEditing ? `Save corrected working set ${workingSetNum}` : `Edit working set ${workingSetNum}`}
                               >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3.5">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                                {isEditing ? <Check size={13} strokeWidth={2.4} /> : <Pencil size={12} strokeWidth={2.2} />}
+                                {isEditing ? 'SAVE' : 'EDIT'}
                               </button>
                             ) : (
                               <button
                                 onClick={() => logSet(exercise, idx)}
                                 style={isActive
-                                  ? { width: '40px', height: '40px', borderRadius: '50%', background: 'none', border: '2.5px solid #3ecf8e', cursor: 'pointer' }
-                                  : { width: '40px', height: '40px', borderRadius: '50%', background: 'none', border: '2px solid #1e1e1e', cursor: 'pointer' }
+                                  ? { width: '40px', height: '40px', borderRadius: '50%', background: 'none', border: '2.5px solid #3ecf8e', cursor: 'pointer', justifySelf: 'center' }
+                                  : { width: '40px', height: '40px', borderRadius: '50%', background: 'none', border: '2px solid #1e1e1e', cursor: 'pointer', justifySelf: 'center' }
                                 }
                                 aria-label="Log set"
                               />
@@ -1482,8 +1574,32 @@ export default function ActiveWorkoutClient({
                           </div>
                           {/* Machine increment note — non-barbell only, small weight jump */}
                           {error && (
-                            <div style={{ margin: '0 44px 6px 62px', fontSize: '12px', color: '#ff7a8a', lineHeight: 1.35, fontFamily: 'inherit' }}>
+                            <div style={{ margin: '0 56px 6px 70px', fontSize: '12px', color: '#ff7a8a', lineHeight: 1.35, fontFamily: 'inherit' }}>
                               {error}
+                            </div>
+                          )}
+                          {isDone && !isConfirmingDelete && (
+                            <div style={{ margin: '0 56px 6px 70px', fontSize: '11px', color: isEditing ? '#3ecf8e' : '#b8b8b8', lineHeight: 1.35, fontFamily: 'inherit' }}>
+                              {isEditing ? 'Editing correction. Save to update.' : 'Logged. Edit to correct.'}
+                            </div>
+                          )}
+                          {isConfirmingDelete && (
+                            <div style={{ margin: '0 0 8px 70px', padding: '8px 10px', borderRadius: '9px', border: '1px solid rgba(255,59,92,0.3)', background: 'rgba(255,59,92,0.08)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontFamily: 'inherit' }}>
+                              <span style={{ flex: 1, minWidth: '150px', fontSize: '12px', color: '#f0f0f0' }}>Delete this logged set?</span>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmingDeleteSet(null)}
+                                style={{ border: '1px solid #333', background: 'none', borderRadius: '7px', color: '#b8b8b8', padding: '6px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                Keep
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeSet(exercise.id, idx, true)}
+                                style={{ border: '1px solid rgba(255,59,92,0.55)', background: 'rgba(255,59,92,0.16)', borderRadius: '7px', color: '#ff6f86', padding: '6px 10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                Delete
+                              </button>
                             </div>
                           )}
                           {workingIdx === 0 && (() => {

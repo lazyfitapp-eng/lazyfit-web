@@ -46,6 +46,10 @@ function formatKg(value: number) {
   return `${Math.round(value).toLocaleString()} kg`
 }
 
+function plural(count: number, singular: string, pluralLabel = `${singular}s`) {
+  return count === 1 ? singular : pluralLabel
+}
+
 const ESTIMATED_RM_TOLERANCE = 0.5
 
 function bestSetByExercise(sets: WorkoutSet[]): Record<string, { weight: number; reps: number; rm: number }> {
@@ -162,14 +166,15 @@ export default function SummaryClient({
     return todayBest[name].weight < prevBestWeight[name] - 0.01
   })
   const baselineExercises = exerciseNames.filter(name => todayBest[name] && !allTimeBest[name] && !prevBestWeight[name])
-  const isLowData = sessionCount <= 1 || comparableExercises.length === 0
+  const isTinySession = totalSets <= 1
+  const isLowData = sessionCount < 3 || comparableExercises.length === 0 || isTinySession
   const showMuscleSplit =
     muscleSplit.length > 1 &&
     totalSets >= 3 &&
     !isLowData &&
     !(muscleSplit.length === 1 && muscleSplit[0].muscle === 'Other' && muscleSplit[0].pct >= 95)
   const summaryMode: 'baseline' | 'consistency' | 'progress' | 'regression' =
-    prs.length > 0 || progressedExercises.length > 0 ? 'progress'
+    !isLowData && (prs.length > 0 || progressedExercises.length > 0) ? 'progress'
     : isLowData ? 'baseline'
     : dippedExercises.length > 0 ? 'regression'
     : 'consistency'
@@ -182,7 +187,11 @@ export default function SummaryClient({
       return { label: 'FINISHED EARLY', title: workoutTitle, subtitle: 'Partial session saved. Targets were not advanced.' }
     }
     if (summaryMode === 'baseline') {
-      return { label: 'BASELINE CREATED', title: workoutTitle, subtitle: 'First signal logged.' }
+      return {
+        label: isTinySession ? 'SESSION SAVED' : 'BASELINE SAVED',
+        title: workoutTitle,
+        subtitle: isTinySession ? 'One working set logged. More data needed before coaching trends.' : 'More complete sessions will establish a trend.',
+      }
     }
     if (summaryMode === 'progress') {
       return {
@@ -199,6 +208,8 @@ export default function SummaryClient({
 
   // Per-exercise delta vs previous workout
   function getDelta(name: string): { type: 'up' | 'build' | 'down'; label: string } {
+    if (isPartialSession) return { type: 'build', label: 'Partial' }
+    if (isLowData) return { type: 'build', label: 'Baseline' }
     const prev = prevBestWeight[name]
     const best = todayBest[name]
     if (!prev || !best) return { type: 'build', label: 'Baseline' }
@@ -274,7 +285,7 @@ export default function SummaryClient({
       return `Finished early.\n\nThis workout was saved as a partial session, so LazyFit did not advance your targets.\n\nNext time: repeat the planned working sets and let a complete session drive progression.`
     }
     if (summaryMode === 'baseline') {
-      return `Baseline created. This is your starting point for this workout.\n\nRepeat it 2-3 more times and LazyFit will know whether you're building, holding, or regressing.\n\nNext time: match today first. Clean reps before heavier weight.`
+      return `More sessions needed to establish a trend.\n\nThis workout was saved, but LazyFit needs repeated complete sessions before calling progress or regression.\n\nNext time: repeat the planned work and keep the numbers honest.`
     }
     if (summaryMode === 'progress') {
       const name = highlightExercise ?? 'A key lift'
@@ -292,7 +303,7 @@ export default function SummaryClient({
   const statCards = [
     {
       val: totalSets,
-      label: isPartialSession ? 'sets logged' : 'sets completed',
+      label: isPartialSession ? plural(totalSets, 'set logged', 'sets logged') : plural(totalSets, 'set completed', 'sets completed'),
     },
     {
       val: totalVolumeLabel,
@@ -306,13 +317,13 @@ export default function SummaryClient({
       : summaryMode === 'progress'
       ? {
           val: prs.length > 0 ? prs.length : progressedExercises.length,
-          label: prs.length > 0 ? 'new PR' : 'lift progressed',
+          label: prs.length > 0 ? plural(prs.length, 'new PR') : plural(progressedExercises.length, 'lift progressed', 'lifts progressed'),
         }
       : summaryMode === 'baseline'
-        ? { val: baselineExercises.length || exerciseNames.length, label: 'baseline lift' }
+        ? { val: baselineExercises.length || exerciseNames.length, label: plural(baselineExercises.length || exerciseNames.length, 'baseline lift') }
         : summaryMode === 'regression'
-          ? { val: dippedExercises.length, label: 'lift dipped' }
-          : { val: comparableExercises.length, label: 'same target' },
+          ? { val: dippedExercises.length, label: plural(dippedExercises.length, 'lift dipped', 'lifts dipped') }
+          : { val: comparableExercises.length, label: plural(comparableExercises.length, 'same target') },
   ]
 
   const handleDone = () => {
@@ -580,7 +591,9 @@ export default function SummaryClient({
               const primaryToday = primaryName ? todayBest[primaryName]?.weight : null
               const primaryPrev  = primaryName ? prevBestWeight[primaryName] : null
               // Only show "X → Y" when there is a real difference — never show "Xkg → Xkg"
-              const hasRealProgression = sessionCount >= 2
+              const hasRealProgression = !isPartialSession
+                && !isLowData
+                && sessionCount >= 2
                 && primaryName != null
                 && primaryPrev != null
                 && primaryToday != null
@@ -593,15 +606,17 @@ export default function SummaryClient({
                   {daysTraining > 1 && (
                     <> · Training for <strong style={{ color: T.text, fontWeight: 700 }}>{daysTraining} days</strong></>
                   )}
-                  {hasRealProgression ? (
+                  {isPartialSession ? (
+                    <> · <em style={{ color: T.accent, fontStyle: 'normal', fontWeight: 700 }}>Partial session saved early.</em></>
+                  ) : hasRealProgression ? (
                     <> · Your <strong style={{ color: T.text, fontWeight: 700 }}>{primaryName}</strong>{' '}
                     went from <strong style={{ color: T.text, fontWeight: 700 }}>{primaryPrev}kg</strong>
                     {' → '}
                     <em style={{ color: T.accent, fontStyle: 'normal', fontWeight: 700 }}>{primaryToday}kg</em>
                     {' '}this session.</>
-                  ) : primaryName && primaryToday && sessionCount >= 2 ? (
+                  ) : primaryName && primaryToday && sessionCount >= 2 && !isLowData ? (
                     <> · Building consistency at <em style={{ color: T.accent, fontStyle: 'normal', fontWeight: 700 }}>{primaryToday}kg</em>.</>
-                  ) : prs.length > 0 ? (
+                  ) : prs.length > 0 && !isLowData ? (
                     <> · <em style={{ color: T.accent, fontStyle: 'normal', fontWeight: 700 }}>You're not the same person who walked in on day one.</em></>
                   ) : sessionCount >= 5 ? (
                     <> · <em style={{ color: T.accent, fontStyle: 'normal', fontWeight: 700 }}>Keep showing up.</em></>
@@ -708,7 +723,7 @@ export default function SummaryClient({
           if (workingSets.length === 0 && warmupSets.length === 0) return null
 
           const exBest = todayBest[name]
-          const isPR   = exBest && allTimeBest[name] > 0 && exBest.rm > allTimeBest[name]
+          const isPR   = !isPartialSession && !isLowData && exBest && allTimeBest[name] > 0 && exBest.rm > allTimeBest[name]
           const isBaseline = exBest && !allTimeBest[name] && !prevBestWeight[name]
           const delta  = getDelta(name)
 

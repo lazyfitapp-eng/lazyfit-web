@@ -177,7 +177,7 @@ function WorkoutCard({ workout }: { workout: HistoryWorkout }) {
   const stats: { text: string }[] = []
   if (showDuration) stats.push({ text: `${workout.durationMinutes} min` })
   if (totalVolume > 0) stats.push({ text: `↑ ${totalVolume.toLocaleString()} kg` })
-  if (workout.sets.length > 0) stats.push({ text: `${workout.sets.length} sets` })
+  if (workout.sets.length > 0) stats.push({ text: `${workout.sets.length} set${workout.sets.length !== 1 ? 's' : ''}` })
 
   return (
     <Link
