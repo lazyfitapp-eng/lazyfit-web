@@ -519,13 +519,12 @@ export default function FoodClient({
         ? { ...item, [field]: typeof value === 'string' && field !== 'name' && field !== 'confidence' ? parseFloat(value) || 0 : value }
         : item
     ) ?? null)
+    setAiError(null)
   }
 
   const removeAiItem = (id: string) => {
-    setAiItems(prev => {
-      const next = prev?.filter(i => i._id !== id) ?? null
-      return next?.length === 0 ? null : next
-    })
+    setAiItems(prev => prev?.filter(i => i._id !== id) ?? null)
+    setAiError(null)
   }
 
   // ── Log AI items ────────────────────────────────────────────────────────────
@@ -541,6 +540,18 @@ export default function FoodClient({
       const invalidItem = aiItems.find(item => parsePositiveQuantity(item.quantity_g) === null)
       if (invalidItem) {
         setAiError('Enter a valid quantity greater than 0g for every item.')
+        return
+      }
+      const unnamedItem = aiItems.find(item => !item.name.trim())
+      if (unnamedItem) {
+        setAiError('Enter a food name for every draft item.')
+        return
+      }
+      const invalidMacroItem = aiItems.find(item =>
+        [item.calories, item.protein, item.carbs, item.fat].some(value => !Number.isFinite(value) || value < 0)
+      )
+      if (invalidMacroItem) {
+        setAiError('Calories and macros must be 0 or higher for every item.')
         return
       }
       setAiError(null)
@@ -713,8 +724,13 @@ export default function FoodClient({
   }
 
   // ── CTA logic per tab ───────────────────────────────────────────────────────
+  const aiDraftEmpty = aiItems !== null && aiItems.length === 0
+  const ctaDisabled = ctaLoading || analysing || aiDraftEmpty
   const ctaLabel = (() => {
-    if (aiItems) return ctaLoading ? 'Logging…' : `Log ${aiItems.length} item${aiItems.length !== 1 ? 's' : ''} → ${modalMeal}`
+    if (aiItems !== null) {
+      if (aiDraftEmpty) return 'No items to log'
+      return ctaLoading ? 'Logging...' : `Log ${aiItems.length} item${aiItems.length !== 1 ? 's' : ''} \u2192 ${MEAL_CONFIG[modalMeal].label}`
+    }
     if (analysing) return 'Analysing…'
     if (methodTab === 'photo' || methodTab === 'voice') return 'Analyse with AI →'
     if (methodTab === 'search') return ctaLoading ? 'Logging…' : 'Add Selected Food'
@@ -726,8 +742,8 @@ export default function FoodClient({
   })()
 
   const handleCTA = () => {
-    if (ctaLoading || analysing) return
-    if (aiItems) { handleLogAiItems(); return }
+    if (ctaDisabled) return
+    if (aiItems !== null) { handleLogAiItems(); return }
     if (methodTab === 'photo' || methodTab === 'voice') { handleAnalyse(); return }
     if (methodTab === 'search') { handleLogSearchResult(); return }
     if (methodTab === 'barcode') {
@@ -1275,7 +1291,21 @@ export default function FoodClient({
                       ))}
                     </div>
                   )}
-                  {aiItems.map(item => (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.9px', textTransform: 'uppercase', color: '#3ecf8e' }}>Draft plate</div>
+                      <div style={{ fontSize: 12, color: '#b8b8b8', marginTop: 2 }}>Review each item before logging.</div>
+                    </div>
+                    <div style={{ minWidth: 54, textAlign: 'center', background: '#091510', border: '1px solid #183525', borderRadius: 10, padding: '7px 9px', color: '#3ecf8e', fontSize: 12, fontWeight: 800 }}>
+                      {aiItems.length}
+                    </div>
+                  </div>
+                  {aiDraftEmpty ? (
+                    <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: '22px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', marginBottom: 6 }}>No draft items left</div>
+                      <div style={{ fontSize: 12, color: '#b8b8b8', lineHeight: 1.45 }}>Retake or edit the meal description to try again.</div>
+                    </div>
+                  ) : aiItems.map(item => (
                     <div key={item._id} style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, padding: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
                         <input
@@ -1286,7 +1316,7 @@ export default function FoodClient({
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                           {item.confidence === 'low' && <span style={{ fontSize: 10, color: '#f5a623' }} title="Low confidence">⚠</span>}
-                          <button onClick={() => removeAiItem(item._id)} style={{ background: 'none', border: 'none', color: '#b8b8b8', cursor: 'pointer', lineHeight: 1 }}>
+                          <button aria-label={`Remove ${item.name || 'draft item'}`} title="Remove item" onClick={() => removeAiItem(item._id)} style={{ width: 30, height: 30, background: '#121212', border: '1px solid #242424', borderRadius: 9, color: '#b8b8b8', cursor: 'pointer', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
@@ -1295,15 +1325,18 @@ export default function FoodClient({
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                         {([
-                          { label: 'KCAL', field: 'calories' as keyof FoodAIItem, color: '#b8b8b8' },
-                          { label: 'P', field: 'protein' as keyof FoodAIItem, color: '#4a9eff' },
-                          { label: 'C', field: 'carbs' as keyof FoodAIItem, color: '#3ecf8e' },
-                          { label: 'F', field: 'fat' as keyof FoodAIItem, color: '#f5a623' },
+                          { label: 'CAL', field: 'calories' as keyof FoodAIItem, color: '#b8b8b8' },
+                          { label: 'PRO', field: 'protein' as keyof FoodAIItem, color: '#4a9eff' },
+                          { label: 'CARB', field: 'carbs' as keyof FoodAIItem, color: '#3ecf8e' },
+                          { label: 'FAT', field: 'fat' as keyof FoodAIItem, color: '#f5a623' },
                         ] as const).map(({ label, field, color }) => (
                           <div key={field} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <span style={{ fontSize: 9, letterSpacing: '0.8px', marginBottom: 4, color }}>{label}</span>
                             <input
                               type="number"
+                              inputMode="decimal"
+                              min={0}
+                              aria-label={`${label} for ${item.name || 'draft item'}`}
                               value={Math.round((item[field] as number) * 10) / 10}
                               onChange={e => updateAiItem(item._id, field, e.target.value)}
                               style={{ width: '100%', background: '#121212', border: '1px solid #242424', borderRadius: 8, padding: '6px 4px', fontSize: 12, color: '#f0f0f0', fontFamily: 'monospace', textAlign: 'center', outline: 'none' }}
@@ -1315,6 +1348,9 @@ export default function FoodClient({
                         <span style={{ fontSize: 10, color: '#b8b8b8', letterSpacing: '0.8px' }}>QTY</span>
                         <input
                           type="number"
+                          inputMode="decimal"
+                          min={0}
+                          aria-label={`Quantity in grams for ${item.name || 'draft item'}`}
                           value={item.quantity_g}
                           onChange={e => updateAiItem(item._id, 'quantity_g', e.target.value)}
                           style={{ width: 64, background: '#121212', border: '1px solid #242424', borderRadius: 8, padding: '5px 8px', fontSize: 12, color: '#f0f0f0', fontFamily: 'monospace', outline: 'none' }}
@@ -1644,12 +1680,12 @@ export default function FoodClient({
           <div style={{ padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px))', flexShrink: 0, background: '#111', borderTop: '1px solid #1c1c1c' }}>
             <button
               onClick={handleCTA}
-              disabled={ctaLoading || analysing}
+              disabled={ctaDisabled}
               style={{
                 width: '100%', padding: 16, background: '#3ecf8e', border: 'none', borderRadius: 14,
                 fontFamily: 'inherit', fontSize: 15, fontWeight: 800, letterSpacing: '0.2px', color: '#000',
-                cursor: ctaLoading || analysing ? 'default' : 'pointer',
-                opacity: ctaLoading || analysing ? 0.7 : 1, transition: 'opacity 0.15s',
+                cursor: ctaDisabled ? 'default' : 'pointer',
+                opacity: ctaDisabled ? 0.7 : 1, transition: 'opacity 0.15s',
               }}
             >
               {ctaLabel}
