@@ -166,6 +166,7 @@ export default async function DashboardPage() {
         avgProtein:       Math.round(weekProtTotal / 7),
         workoutsThisWeek: weekWorkouts?.length ?? 0,
         hasMeaningfulData: hasMeaningfulCheckinData,
+        activityFloorAtCheckin: profile?.daily_steps ?? null,
       }}
       chartWeightEntries={chartWeightEntries}
       chartFoodLogs={chartFoodLogs}

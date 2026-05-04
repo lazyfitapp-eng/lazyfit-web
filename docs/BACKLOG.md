@@ -4,12 +4,13 @@ CURRENT_STATE.md ACTIVE STATE is the source of truth. This backlog is secondary 
 
 ## Active / Near-Term Candidates
 
-- Steps / Smart Engine V1 - Weekly Check-In Step Average: implementation; add manual weekly average step input/persistence only. No dashboard Activity Floor card or recommendation engine unless explicitly approved.
+- Weekly Check-In Step Average - Production Deploy + Smoke: deploy the locally validated sprint and smoke production.
 - Existing-user routine data/backfill policy follow-up, if needed.
 - Onboarding regression check after future onboarding changes.
 
 ## Completed / Recently Landed
 
+- Steps / Smart Engine V1 - Weekly Check-In Step Average: implemented and locally validated. Added `public.weekly_checkins`; weekly steps are stored separately from `profiles.daily_steps`; no dashboard Activity Floor card, recommendation engine, earned calories, or calorie banking was added.
 - Steps / Smart Engine V1 - Activity Floor Baseline: implemented and locally browser-validated. Reuses `profiles.daily_steps`; no new profile column, `weekly_checkins` table, device step integration, or calorie-burn banking.
 
 ## Product/System Backlog
@@ -17,6 +18,7 @@ CURRENT_STATE.md ACTIVE STATE is the source of truth. This backlog is secondary 
 - Steps / smart engine future rules and coaching recommendations.
 - Adaptive TDEE algorithm.
 - Weekly check-in adaptive loop.
+- Dashboard Activity Floor card.
 - Profile-level lower-day switching polish.
 - Saved meals.
 - Barcode.

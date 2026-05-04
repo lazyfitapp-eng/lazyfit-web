@@ -1,42 +1,56 @@
 # LazyFit — Current State Document
-*Last updated: May 2026 - active state updated after Activity Floor production deploy and smoke*
+*Last updated: May 2026 - active state updated after Weekly Check-In Step Average local validation*
 
 ## ACTIVE STATE — MAY 2026
 
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Steps / Smart Engine V1 foundation work is underway. Activity Floor Baseline is implemented, production-deployed, and production-smoke-validated, but LazyFit is not beta-ready until Tudor explicitly approves the next release step.
+Steps / Smart Engine V1 - Weekly Check-In Step Average is implemented and locally validated. Production deployment is still pending for this sprint, and LazyFit is not beta-ready until Tudor explicitly approves the next release step.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
 - Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
-- Current likely next path: Steps / Smart Engine V1 - Weekly Check-In Step Average.
-- Recommended next sprint mode: implementation.
+- Current likely next path after commit: Weekly Check-In Step Average - Production Deploy + Smoke.
+- Recommended next sprint mode: deployment / validation.
 - Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Steps / Smart Engine Status
-Steps / Smart Engine V1 - Activity Floor Baseline is implemented, locally browser-validated, production-deployed, and production-smoke-validated.
+Steps / Smart Engine V1 - Activity Floor Baseline is production-deployed and production-smoke-validated. Steps / Smart Engine V1 - Weekly Check-In Step Average is implemented and locally validated.
 
 Implementation decisions:
 - Activity Floor reuses `profiles.daily_steps` as the stored baseline field.
 - User-facing language is now "Activity Floor."
-- No new profile column or `weekly_checkins` table was added.
+- A new `public.weekly_checkins` table was added.
+- Weekly steps are stored separately from `profiles.daily_steps`.
+- Weekly average steps do not update `profiles.daily_steps`, `job_activity`, `tdee_kcal`, target calories/macros, or `resolveNutritionTargets` behavior.
+- No dashboard Activity Floor card was added.
+- No recommendation engine was added.
+- No earned calories / calorie banking was added.
 - No Apple Health, Android Health Connect, Google Fit, or browser pedometer integration was added.
-- No calorie-burn banking or earned calories were added.
-- Activity Floor helps set the user's baseline and future coaching context. Weekly step averages and recommendation rules are deferred.
+- Activity Floor helps set the user's baseline and future coaching context. Weekly step averages are now captured in `weekly_checkins`; future recommendation rules remain deferred.
 
 Validation:
 - `npx.cmd tsc --noEmit` passed.
-- Local Playwright validation passed through `C:\dev\lazyfit-browser-check`.
-- Existing Profile showed Activity Floor and no-calorie-banking copy.
-- Activity Floor selection auto-saves on option tap.
-- Fresh onboarding with `gadea.tudor+lazyfit4@gmail.com` completed successfully.
-- Fresh onboarding showed all five options: Under 4k, 4-6k, 6-8k, 8-10k, 10k+.
-- 8-10k persisted to Profile after onboarding.
-- Train showed Upper A / Lower A / Upper B after onboarding.
+- Local build compiled, then hit known `spawn EPERM`.
+- Supabase migration was applied manually in Supabase SQL Editor.
+- REST endpoint visible.
+- RLS own select/write passed.
+- Cross-user isolation passed.
+- Constraints/upsert behavior passed.
+- `7200` path validated for `gadea.tudor+lazyfit1@gmail.com`.
+- Close/dismiss did not create a weekly row.
+- Skip path validated for `gadea.tudor+lazyfit4@gmail.com`.
+- Dashboard/Profile/Food loaded after validation.
 - No visible NaN/undefined/null.
-- Console runtime errors: 0.
+- Runtime errors: none.
+
+QA data created:
+- `weekly_checkins` current-week row for `gadea.tudor+lazyfit1@gmail.com` with `avg_daily_steps` 7200 and `steps_skipped` false.
+- `weekly_checkins` current-week row for `gadea.tudor+lazyfit4@gmail.com` with `avg_daily_steps` null and `steps_skipped` true.
+- QA `food_logs` created for `gadea.tudor+lazyfit4@gmail.com` on 2026-05-04, 2026-05-03, and 2026-05-02 to make the disposable QA account eligible.
+- Old DB/API validation row for `gadea.tudor+lazyfit4@gmail.com` at `week_start` `2099-01-05`.
+- Do not delete these unless Tudor explicitly asks for QA cleanup.
 
 Production validation:
 - Commit `32de29c` (`Reframe daily steps as Activity Floor baseline`) was deployed to production with `npx vercel --prod`.
@@ -45,11 +59,12 @@ Production validation:
 - Production Activity Floor smoke passed through the local PowerShell Playwright harness at `C:\dev\lazyfit-browser-check`.
 - Production smoke validated: `/login` loaded; login succeeded with `gadea.tudor+lazyfit4@gmail.com`; `/profile` showed Activity Floor; Profile showed "not calorie banking" copy; Profile showed selected `8–10k`; `/train` structure verified; `/dashboard` verified; no visible NaN/undefined/null; findings: none.
 - Nuance: production drawer/options check was best-effort/incomplete in the smoke script, but local fresh onboarding validation already confirmed all five Activity Floor options.
+- Weekly Check-In Step Average production deployment is still pending.
 
 Next recommended sprint:
-- Steps / Smart Engine V1 - Weekly Check-In Step Average.
-- Mode: implementation.
-- Scope: add manual weekly average step input/persistence only; no dashboard Activity Floor card and no recommendation engine unless explicitly approved.
+- Weekly Check-In Step Average - Production Deploy + Smoke.
+- Mode: deployment / validation.
+- Scope: deploy the implemented Weekly Check-In Step Average sprint and smoke the production path; keep future Steps/Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
 
 ### Production Status
 Production is current as of May 4, 2026.
@@ -65,7 +80,7 @@ Production is current as of May 4, 2026.
 - Working browser executable: `C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe`
 - Production Activity Floor smoke results: `/login` loaded; `gadea.tudor+lazyfit4@gmail.com` authenticated successfully; `/profile` showed Activity Floor, "not calorie banking" copy, and selected `8–10k`; `/train` structure verified; `/dashboard` verified; no visible NaN/undefined/null; findings: none.
 - Nuance: production drawer/options check was best-effort/incomplete in the smoke script, but local fresh onboarding validation already confirmed all five Activity Floor options.
-- This smoke does not make LazyFit beta-ready. It confirms Activity Floor Baseline production deploy and unblocks proceeding to Steps / Smart Engine V1 - Weekly Check-In Step Average.
+- This smoke does not make LazyFit beta-ready. It confirms Activity Floor Baseline production deploy; Weekly Check-In Step Average now needs production deploy + smoke after Tudor commits the sprint.
 - Nuance: existing QA/existing-user accounts may still render old routine rows if their saved `routines` / `routine_exercises` data predates the new templates. That is a data/backfill issue, not a Vercel deployment issue. Do not forcibly mutate existing routine data without a dedicated plan.
 
 ### Latest Confirmed Commits
@@ -97,7 +112,7 @@ Deferred food work:
 - Production-scale database improvements
 
 ### Training Status
-Training is the current priority.
+Training core is stable enough to pause while Steps / Smart Engine V1 moves through Weekly Check-In Step Average deploy/smoke.
 
 Confirmed:
 - Active workout coach card correctness fixed and browser-validated.
@@ -156,10 +171,10 @@ Upper B:
 - Bicep Curl
 
 ### Known Next Issue
-Next sprint should be chosen by state check.
+Next sprint should deploy and smoke the locally validated Weekly Check-In Step Average work after Tudor commits the sprint.
 
 Current likely candidates:
-- Steps / Smart Engine V1 - Weekly Check-In Step Average (implementation; manual weekly average step input/persistence only)
+- Weekly Check-In Step Average - Production Deploy + Smoke (deployment / validation)
 - Existing-user routine data/backfill decision
 - Optional onboarding regression check
 

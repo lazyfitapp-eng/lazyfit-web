@@ -50,6 +50,7 @@ interface Props {
     avgProtein: number
     workoutsThisWeek: number
     hasMeaningfulData: boolean
+    activityFloorAtCheckin: string | null
   }
   chartWeightEntries: { date: string; weight: number; trend_weight: number }[]
   chartFoodLogs: { date: string; calories: number }[]
@@ -781,6 +782,7 @@ export default function DashboardClient({
               targetFat={targets.fat}
               workoutsThisWeek={checkin.workoutsThisWeek}
               targetDaysPerWeek={targets.trainingDaysPerWeek}
+              activityFloorAtCheckin={checkin.activityFloorAtCheckin}
             />
           )}
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getLocalDateDaysAgo, getLocalDateString, getLocalDayBounds } from '@/lib/dateUtils'
+import { getLocalDateDaysAgo, getLocalDateString, getLocalDayBounds, getLocalWeekStartString } from '@/lib/dateUtils'
 
 const CHECKIN_KEY = 'lf_checkin_week'
 
@@ -19,6 +19,7 @@ interface Props {
   targetFat: number
   workoutsThisWeek: number
   targetDaysPerWeek: number
+  activityFloorAtCheckin: string | null
   onClose?: () => void
   onComplete?: () => void
 }
@@ -33,12 +34,6 @@ interface ExerciseStats {
   progressed: number
   regressed: number
   held: number
-}
-
-function getWeekNumber() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), 0, 1)
-  return Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7)
 }
 
 function formatDay(dateStr: string) {
@@ -96,6 +91,7 @@ export default function WeeklyCheckin({
   targetFat,
   workoutsThisWeek,
   targetDaysPerWeek,
+  activityFloorAtCheckin,
   onClose,
   onComplete,
 }: Props) {
@@ -106,6 +102,9 @@ export default function WeeklyCheckin({
   const [done, setDone] = useState(false)
   const [accepted, setAccepted] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [weeklyStepsInput, setWeeklyStepsInput] = useState('')
+  const [weeklyStepsSkipped, setWeeklyStepsSkipped] = useState(false)
+  const [weeklyStepsError, setWeeklyStepsError] = useState<string | null>(null)
 
   // Step 1 — exercise stats (fetched lazily)
   const [exerciseStats, setExerciseStats] = useState<ExerciseStats | null>(null)
@@ -130,6 +129,43 @@ export default function WeeklyCheckin({
       document.body.classList.remove('lazyfit-checkin-open')
     }
   }, [])
+
+  const getValidatedWeeklySteps = (): number | null => {
+    const value = weeklyStepsInput.trim()
+    if (weeklyStepsSkipped) return null
+    if (!value) {
+      setWeeklyStepsError('Enter a step average from 0 to 50,000, or choose skip.')
+      return null
+    }
+    if (!/^\d+$/.test(value)) {
+      setWeeklyStepsError('Use whole-number steps only.')
+      return null
+    }
+
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 50000) {
+      setWeeklyStepsError('Step average must be between 0 and 50,000.')
+      return null
+    }
+
+    setWeeklyStepsError(null)
+    return parsed
+  }
+
+  const continueFromWeeklySteps = () => {
+    const parsed = getValidatedWeeklySteps()
+    if (parsed === null && !weeklyStepsSkipped) return
+    setSaveError(null)
+    setStep(4)
+  }
+
+  const skipWeeklySteps = () => {
+    setWeeklyStepsInput('')
+    setWeeklyStepsSkipped(true)
+    setWeeklyStepsError(null)
+    setSaveError(null)
+    setStep(4)
+  }
 
   const weightDelta =
     currentWeight && prevWeight
@@ -301,8 +337,38 @@ export default function WeeklyCheckin({
     })()
   }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const dismiss = () => {
-    localStorage.setItem(CHECKIN_KEY, String(getWeekNumber()))
+  const completeCheckin = async () => {
+    const avgDailySteps = getValidatedWeeklySteps()
+    if (avgDailySteps === null && !weeklyStepsSkipped) {
+      setStep(3)
+      return
+    }
+
+    setSaving(true)
+    setSaveError(null)
+
+    const weekStart = getLocalWeekStartString()
+    const { error } = await supabase
+      .from('weekly_checkins')
+      .upsert(
+        {
+          user_id: userId,
+          week_start: weekStart,
+          avg_daily_steps: weeklyStepsSkipped ? null : avgDailySteps,
+          steps_skipped: weeklyStepsSkipped,
+          activity_floor_at_checkin: activityFloorAtCheckin,
+        },
+        { onConflict: 'user_id,week_start' },
+      )
+
+    if (error) {
+      setSaveError(`Could not save your weekly step check-in: ${error.message}`)
+      setSaving(false)
+      return
+    }
+
+    localStorage.setItem(CHECKIN_KEY, weekStart)
+    setSaving(false)
     setDone(true)
     onComplete?.()
     if (accepted) router.refresh()
@@ -322,17 +388,17 @@ export default function WeeklyCheckin({
     }
     setSaving(false)
     setAccepted(true)
-    setStep(5)
+    setStep(6)
   }
 
   const declineSuggestion = () => {
     setAccepted(false)
-    setStep(5)
+    setStep(6)
   }
 
   if (done) return null
 
-  const TOTAL = 6
+  const TOTAL = 7
 
   return (
     <div
@@ -358,7 +424,7 @@ export default function WeeklyCheckin({
         </div>
 
         {/* Progress pills */}
-        {step < 5 && (
+        {step < 6 && (
           <div className="flex justify-center gap-1.5 py-2 flex-shrink-0">
             {Array.from({ length: TOTAL - 1 }, (_, i) => (
               <div
@@ -582,11 +648,108 @@ export default function WeeklyCheckin({
             </div>
           )}
 
-          {/* ── Step 3: Calorie Baseline ──────────────────────────────── */}
+          {/* Step 3: Weekly Steps */}
           {step === 3 && (
             <div className="space-y-6 pt-4">
               <div>
                 <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 4 OF {TOTAL}</p>
+                <h2 className="text-2xl font-bold text-white">What was your average daily step count this week?</h2>
+                <p className="text-sm text-[#b8b8b8] mt-2 leading-relaxed">Use your phone or watch estimate. Rounded is fine.</p>
+                <p className="text-sm text-[#b8b8b8] mt-1 leading-relaxed">No step data? Skip it — LazyFit will use the other signals.</p>
+              </div>
+
+              <div className="space-y-3">
+                <div
+                  className={`rounded-xl border p-4 ${
+                    weeklyStepsSkipped
+                      ? 'border-[#2a2a2a] bg-[#151515]'
+                      : 'border-primary bg-primary/5'
+                  }`}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={weeklyStepsInput}
+                    onChange={e => {
+                      const value = e.target.value
+                      if (value === '' || /^\d+$/.test(value)) {
+                        setWeeklyStepsInput(value)
+                        setWeeklyStepsSkipped(false)
+                        setWeeklyStepsError(null)
+                        setSaveError(null)
+                      }
+                    }}
+                    placeholder="e.g. 7200"
+                    className="w-full bg-[#0d0d0d] border border-[#888888] rounded-lg px-4 py-4 text-3xl font-mono text-white placeholder:text-[#888888] focus:outline-none focus:border-primary transition-colors text-center"
+                  />
+                  <p className="text-[10px] text-[#b8b8b8] text-center mt-2 tracking-widest">STEPS / DAY</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWeeklyStepsInput('')
+                    setWeeklyStepsSkipped(true)
+                    setWeeklyStepsError(null)
+                    setSaveError(null)
+                  }}
+                  className={`w-full px-4 py-4 rounded-xl border text-left transition-all ${
+                    weeklyStepsSkipped
+                      ? 'border-primary bg-primary/5'
+                      : 'border-[#2a2a2a] bg-[#151515]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className={`text-sm font-semibold ${weeklyStepsSkipped ? 'text-primary' : 'text-white'}`}>
+                        I don&apos;t know
+                      </p>
+                      <p className="text-sm text-[#b8b8b8] mt-1">
+                        Skip step data for this check-in.
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                      weeklyStepsSkipped ? 'border-primary bg-primary' : 'border-[#b8b8b8]'
+                    }`} />
+                  </div>
+                </button>
+
+                {weeklyStepsError && (
+                  <p className="text-xs text-[#FF0040] text-center">
+                    {weeklyStepsError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep(2)}
+                  className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
+                >
+                  BACK
+                </button>
+                <button
+                  onClick={skipWeeklySteps}
+                  className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
+                >
+                  SKIP
+                </button>
+                <button
+                  onClick={continueFromWeeklySteps}
+                  className="flex-1 py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
+                >
+                  NEXT
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 4: Calorie Baseline ──────────────────────────────── */}
+          {step === 4 && (
+            <div className="space-y-6 pt-4">
+              <div>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 5 OF {TOTAL}</p>
                 <h2 className="text-2xl font-bold text-white">Calorie Baseline</h2>
                 <p className="text-sm text-[#b8b8b8] mt-2 leading-relaxed">What should we base your adjustment on?</p>
               </div>
@@ -675,13 +838,13 @@ export default function WeeklyCheckin({
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="flex-1 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-sm rounded-xl hover:border-[#b8b8b8] transition-colors"
                 >
                   BACK
                 </button>
                 <button
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(5)}
                   disabled={baselineChoice === 'custom' && !customCalories}
                   className="flex-1 py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors disabled:opacity-40"
                 >
@@ -691,11 +854,11 @@ export default function WeeklyCheckin({
             </div>
           )}
 
-          {/* ── Step 4: Program Update ────────────────────────────────── */}
-          {step === 4 && (
+          {/* ── Step 5: Program Update ────────────────────────────────── */}
+          {step === 5 && (
             <div className="space-y-6 pt-4">
               <div>
-                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 5 OF {TOTAL}</p>
+                <p className="text-xs font-semibold tracking-widest text-primary mb-2">STEP 6 OF {TOTAL}</p>
                 <h2 className="text-2xl font-bold text-white">Program Update</h2>
               </div>
 
@@ -733,7 +896,7 @@ export default function WeeklyCheckin({
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep(4)}
                   className="px-4 py-4 border border-[#333] text-[#b8b8b8] font-bold tracking-widest text-xs rounded-xl hover:border-[#b8b8b8] transition-colors flex-shrink-0"
                 >
                   BACK
@@ -760,8 +923,8 @@ export default function WeeklyCheckin({
             </div>
           )}
 
-          {/* ── Step 5: Done ──────────────────────────────────────────── */}
-          {step === 5 && (
+          {/* ── Step 6: Done ──────────────────────────────────────────── */}
+          {step === 6 && (
             <div className="space-y-5 pt-8 text-center pb-4">
               <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00FF41" strokeWidth="2.5">
@@ -783,11 +946,17 @@ export default function WeeklyCheckin({
               </div>
 
               <button
-                onClick={dismiss}
-                className="w-full py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors"
+                onClick={completeCheckin}
+                disabled={saving}
+                className="w-full py-4 bg-primary text-black font-bold tracking-widest text-sm rounded-xl hover:bg-[#00CC33] transition-colors disabled:opacity-40"
               >
-                BACK TO DASHBOARD
+                {saving ? 'SAVING...' : 'BACK TO DASHBOARD'}
               </button>
+              {saveError && (
+                <p className="text-xs text-[#FF0040] text-center">
+                  {saveError}
+                </p>
+              )}
             </div>
           )}
 
