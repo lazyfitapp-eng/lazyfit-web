@@ -9,6 +9,7 @@ When this file conflicts with older sections below, the ACTIVE STATE section win
 Training hardening after Food Logger hardening.
 
 ### Latest Confirmed Commits
+- `64c5232` Add Lower B alternate lower-day architecture
 - `e38ee20` Fix active workout coach card progression truth
 - `bf4b678` Fix workout recovery logged-set persistence
 - `032d86b` Harden training partial-session rotation truth
@@ -46,14 +47,18 @@ Confirmed:
 - Default doctrine templates aligned.
 - Fresh onboarding DOB blocker fixed.
 - Fresh onboarding generated correct training days.
+- Lower B alternate lower-day architecture implemented and browser-validated.
 
 ### Training Doctrine
 LazyFit = Kinobody simplicity + Menno-style adaptive logic + Hevy-level execution + LazyFit nutrition engine.
 
 LazyFit uses a 3-day upper-biased aesthetic program. The program contains workout days:
 1. Upper A
-2. Lower A
+2. Selected lower day
 3. Upper B
+
+Back-friendly lower = Lower A. Barbell lower = Lower B.
+Lower B is an alternate lower-day variant, not a fourth default day.
 
 These are not three unrelated routines.
 
@@ -73,6 +78,13 @@ Lower A:
 - Leg Extension
 - Calf Raise
 
+Lower B:
+- Barbell Squat
+- Romanian Deadlift
+- Leg Press
+- Seated Leg Curl
+- Calf Raise
+
 Upper B:
 - Overhead Press
 - Pull-Up
@@ -85,12 +97,13 @@ Upper B:
 Next sprint should be chosen by state check.
 
 Current likely candidates:
-- Lower B alternate architecture
 - Steps/smart engine design
 - Production QA
+- Optional onboarding regression check
+- Optional final training/food cross-app smoke
 
 ### Known Unresolved Future Architecture
-Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day.
+Future work: Profile-level lower-day switching polish if needed.
 
 ### Workflow Rules
 - One sprint at a time.
@@ -365,8 +378,9 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 **PROGRAM tab / Program surface:**
 - "START EMPTY WORKOUT" button
-- LazyFit 3-Day Aesthetic shown as one program with Workout Days: Upper A / Lower A / Upper B
-- "LOAD TEMPLATE" button → creates the 3 workout days for the program
+- LazyFit 3-Day Aesthetic shown as one program with Workout Days: Upper A / selected lower day / Upper B
+- Back-friendly lower = Lower A; barbell lower = Lower B
+- "LOAD TEMPLATE" button → creates the 3 selected workout days for the program
 - Last workout card (duration, volume, muscle split, date)
 - `is_system` boolean on routines remains internal — system workout days cannot be deleted; custom routines show a trash icon
 - Muscle color in workout-day card overridden by rank (primary muscle = full accent, secondary = dimmed)
@@ -387,9 +401,11 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 *Lower A:* Bulgarian Split Squat, Hip Thrust, Seated Leg Curl, Leg Extension, Calf Raise
 
+*Lower B:* Barbell Squat, Romanian Deadlift, Leg Press, Seated Leg Curl, Calf Raise
+
 *Upper B:* Overhead Press, Pull-Up, Machine Row, Cable Lateral Raise, Face Pull, Bicep Curl
 
-**Status:** ✅ Working.
+**Status:** ✅ Working. Lower-day variants implemented and browser-validated.
 
 ---
 
@@ -620,7 +636,7 @@ src/lib/
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
 | `auth.users` | Supabase auth | id, email |
-| `profiles` | User settings | id, target_calories, target_protein, target_carbs, target_fat, current_weight, height_cm, age, sex, goal, subscription_status |
+| `profiles` | User settings | id, target_calories, target_protein, target_carbs, target_fat, current_weight, height_cm, age, sex, goal, subscription_status, lower_day_style |
 | `food_logs` | Daily nutrition | user_id, food_id, food_name, calories, protein, carbs, fat, quantity, meal_type, logged_at |
 | `weight_entries` | Daily weigh-ins | user_id, weight, date (unique per user+date) |
 | `workouts` | Workout sessions | id, user_id, routine_id, completed_at, duration_minutes |
@@ -646,6 +662,7 @@ src/lib/
 | Dashboard | Real data, date picker, calorie ring, macro bars, weight trend |
 | Weight tracking | EMA trend, weigh-in modal, 90-day chart |
 | Training — program/workout days | Create/load program template, start workout |
+| Training — lower-day variants | 3-day program uses selected lower day: Lower A back-friendly or Lower B barbell |
 | Training — active workout | Sets, reps, warm-ups, rest timer, boxing bell, truthful coach card |
 | Training — workout recovery | Recovery banner works; DB-logged sets persist through resume/refresh; localStorage remains draft-input safety net |
 | Training — progression engine | 2 complete top-range sessions increase load; 3 fail sessions reset; partial sessions do not advance targets |
@@ -665,7 +682,6 @@ src/lib/
 | Issue | Location | Impact | Fix |
 |-------|----------|--------|-----|
 | Exercise GIFs not showing | `/api/exercise-media` | Medium — How To shows YouTube card instead | Shoot own videos for LazyFit YouTube channel (best long-term), OR pay $10 one-time ExerciseDB |
-| Lower B alternate architecture | Training templates / routine model | Medium — barbell lower should be an alternate lower-day variant, not a fourth default day | Design alternate lower-day variant without changing the default 3-day program |
 | Onboarding flow | `/onboarding` | Fixed blocker — fresh onboarding completed and generated correct training days | Keep browser-validating fresh onboarding after training changes |
 | Weekly check-in | `WeeklyCheckin.tsx` | Medium — UI exists, adaptive calorie loop not wired | Connect to `suggestCalorieTarget()` in `trendWeight.ts` |
 | Subscription / paywall | `profiles.subscription_status` | High for monetization — field exists, no enforcement | Build paywall + Stripe/payment integration |
@@ -766,8 +782,7 @@ A systematic multi-round pass was applied across all components to fix unreadabl
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Lower B alternate architecture | 🟡 Medium | Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day |
-| Onboarding regression checks | 🟡 Medium | Fresh onboarding should continue to validate DOB and generate Upper A / Lower A / Upper B |
+| Onboarding regression checks | 🟡 Medium | Fresh onboarding should continue to validate DOB and generate Upper A / selected lower day / Upper B |
 | Steps / smart engine design | 🟢 Post-launch | Decide how steps, adherence signals, and adaptive coaching should feed the engine |
 | Adaptive TDEE algorithm | 🟢 Post-launch | MacroFactor-style: logged weight + food → reverse-engineer real TDEE |
 | AI Coach chat tab | 🟢 Post-launch | Separate tab, rule-based at launch |
