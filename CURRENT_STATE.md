@@ -1,12 +1,12 @@
 # LazyFit — Current State Document
-*Last updated: May 2026 - active state updated after Activity Floor Baseline validation*
+*Last updated: May 2026 - active state updated after Activity Floor production deploy and smoke*
 
 ## ACTIVE STATE — MAY 2026
 
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Steps / Smart Engine V1 foundation work is underway. Activity Floor Baseline is implemented and locally browser-validated, but LazyFit is not beta-ready until Tudor explicitly approves the next release step.
+Steps / Smart Engine V1 foundation work is underway. Activity Floor Baseline is implemented, production-deployed, and production-smoke-validated, but LazyFit is not beta-ready until Tudor explicitly approves the next release step.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
@@ -16,7 +16,7 @@ Steps / Smart Engine V1 foundation work is underway. Activity Floor Baseline is 
 - Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Steps / Smart Engine Status
-Steps / Smart Engine V1 - Activity Floor Baseline is implemented and locally browser-validated.
+Steps / Smart Engine V1 - Activity Floor Baseline is implemented, locally browser-validated, production-deployed, and production-smoke-validated.
 
 Implementation decisions:
 - Activity Floor reuses `profiles.daily_steps` as the stored baseline field.
@@ -38,6 +38,14 @@ Validation:
 - No visible NaN/undefined/null.
 - Console runtime errors: 0.
 
+Production validation:
+- Commit `32de29c` (`Reframe daily steps as Activity Floor baseline`) was deployed to production with `npx vercel --prod`.
+- Production URL from deploy output: `https://lazyfit-pl087v2ui-tudors-projects-5fd3bb98.vercel.app`
+- Production alias: `https://lazyfit-web.vercel.app`
+- Production Activity Floor smoke passed through the local PowerShell Playwright harness at `C:\dev\lazyfit-browser-check`.
+- Production smoke validated: `/login` loaded; login succeeded with `gadea.tudor+lazyfit4@gmail.com`; `/profile` showed Activity Floor; Profile showed "not calorie banking" copy; Profile showed selected `8–10k`; `/train` structure verified; `/dashboard` verified; no visible NaN/undefined/null; findings: none.
+- Nuance: production drawer/options check was best-effort/incomplete in the smoke script, but local fresh onboarding validation already confirmed all five Activity Floor options.
+
 Next recommended sprint:
 - Steps / Smart Engine V1 - Weekly Check-In Step Average.
 - Mode: implementation.
@@ -46,24 +54,22 @@ Next recommended sprint:
 ### Production Status
 Production is current as of May 4, 2026.
 
-- Production URL: `https://lazyfit-web.vercel.app`
+- Production URL from latest deploy output: `https://lazyfit-pl087v2ui-tudors-projects-5fd3bb98.vercel.app`
+- Production alias: `https://lazyfit-web.vercel.app`
 - Vercel project: `lazyfit-web`
 - Vercel project ID: `prj_UyOsUbRkUUI9CqutLBqrUNAwxm72`
-- Production deployment: `dpl_DT3riSyzaFRPEoW952UrQsd4mTtM`
-- Deployed commit: `e2292203600c08fd1158ce10ac0730e786569320` (`docs: update state after Lower B architecture`)
-- Previous stale production deployment was `d5fc583` (`Add dashboard daily command center`); fixed by deploying clean committed source for `e229220` to production.
-- Vercel status: `READY`. Build passed, TypeScript passed, and static generation completed `20/20`.
-- Production verification passed: `/login` loads; authenticated `/train` loads; Program / Workout Days language is visible; deployed Train bundle contains `Cable Lateral Raise`, `Lower B`, `Barbell Squat`, `Romanian Deadlift`, and `Three workout days`.
+- Latest deployed commit: `32de29c` (`Reframe daily steps as Activity Floor baseline`)
+- Latest deployment command: `npx vercel --prod`
 - Production browser smoke was completed from a local PowerShell Playwright harness, not directly from Codex, because Codex direct browser launch remains blocked by `browserType.launch: spawn EPERM`.
 - Working local Playwright harness: `C:\dev\lazyfit-browser-check`
 - Working browser executable: `C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe`
-- Production smoke results: `/login` loaded; `poweruser@lazyfit.test` authenticated successfully; `/dashboard`, `/food`, `/train`, `/progress`, and `/profile` loaded on mobile `390x844`; `/train` showed Program / Workout Days language and 3-day structure signals; active workout route opened with the disposable QA writer account; active workout showed Coach, Warm-up, Working, and Finish signals; BottomNav was not detected on the active workout route; no source/package files changed.
-- `newuser@lazyfit.test` was manually validated by Tudor after the script false-positive login failure.
-- Active workout smoke likely created/resumed workout `62dc7126-c274-428f-b3bd-efe7361013fa` under the disposable QA writer account.
-- This smoke does not make LazyFit beta-ready. It only unblocks proceeding to Steps / Smart Engine audit-design.
+- Production Activity Floor smoke results: `/login` loaded; `gadea.tudor+lazyfit4@gmail.com` authenticated successfully; `/profile` showed Activity Floor, "not calorie banking" copy, and selected `8–10k`; `/train` structure verified; `/dashboard` verified; no visible NaN/undefined/null; findings: none.
+- Nuance: production drawer/options check was best-effort/incomplete in the smoke script, but local fresh onboarding validation already confirmed all five Activity Floor options.
+- This smoke does not make LazyFit beta-ready. It confirms Activity Floor Baseline production deploy and unblocks proceeding to Steps / Smart Engine V1 - Weekly Check-In Step Average.
 - Nuance: existing QA/existing-user accounts may still render old routine rows if their saved `routines` / `routine_exercises` data predates the new templates. That is a data/backfill issue, not a Vercel deployment issue. Do not forcibly mutate existing routine data without a dedicated plan.
 
 ### Latest Confirmed Commits
+- `32de29c` Reframe daily steps as Activity Floor baseline
 - `e229220` docs: update state after Lower B architecture
 - `64c5232` Add Lower B alternate lower-day architecture
 - `e38ee20` Fix active workout coach card progression truth
