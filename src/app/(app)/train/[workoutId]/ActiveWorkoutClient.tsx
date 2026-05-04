@@ -115,6 +115,22 @@ type SetState = {
   warmupRestSeconds?: number  // only for warmup sets: how long to rest after this set
 }
 
+type CurrentWorkoutSet = {
+  exercise_name: string
+  set_number: number
+  weight_kg: number
+  reps_completed: number
+  set_type: string | null
+}
+
+type WorkoutDraftSet = Partial<Pick<SetState, 'weight' | 'reps' | 'logged' | 'isPR' | 'setType'>>
+
+type WorkoutDraft = {
+  workoutId: string
+  savedAt: number
+  sets: Record<string, WorkoutDraftSet[]>
+}
+
 const SET_ROW_GRID = '28px 36px minmax(56px, 1fr) 68px 68px 56px'
 
 function DeleteSetButton({
@@ -158,6 +174,7 @@ interface Props {
   initialExercises: WorkoutExercise[]
   suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>>
   lastSession: Record<string, Record<number, { weight: number; reps: number }>>
+  currentWorkoutSets: CurrentWorkoutSet[]
 }
 
 // ─── Sound synthesis ──────────────────────────────────────────────────────────
@@ -286,6 +303,82 @@ function buildSetsForExercise(
   })
 
   return [...warmupStates, ...workingStates]
+}
+
+function normalizeSavedSetType(setType: string | null): 'warmup' | 'working' {
+  return setType === 'warmup' ? 'warmup' : 'working'
+}
+
+function blankSet(type: 'warmup' | 'working'): SetState {
+  return {
+    weight: '',
+    reps: '',
+    logged: false,
+    isPR: false,
+    setType: type,
+  }
+}
+
+function applyCurrentWorkoutSets(
+  baseSets: SetState[],
+  exerciseName: string,
+  currentWorkoutSets: CurrentWorkoutSet[]
+): SetState[] {
+  let warmupSets = baseSets.filter(set => set.setType === 'warmup')
+  let workingSets = baseSets.filter(set => set.setType === 'working')
+
+  const exerciseSets = currentWorkoutSets
+    .filter(set => set.exercise_name === exerciseName)
+    .filter(set => Number.isFinite(set.set_number) && set.set_number > 0)
+    .sort((a, b) => a.set_number - b.set_number)
+
+  for (const savedSet of exerciseSets) {
+    const setType = normalizeSavedSetType(savedSet.set_type)
+    const index = savedSet.set_number - 1
+    const targetSets = setType === 'warmup' ? [...warmupSets] : [...workingSets]
+
+    while (targetSets.length <= index) {
+      targetSets.push(blankSet(setType))
+    }
+
+    targetSets[index] = {
+      ...targetSets[index],
+      weight: String(savedSet.weight_kg),
+      reps: String(savedSet.reps_completed),
+      logged: true,
+      isPR: false,
+      setType,
+    }
+
+    if (setType === 'warmup') {
+      warmupSets = targetSets
+    } else {
+      workingSets = targetSets
+    }
+  }
+
+  return [...warmupSets, ...workingSets]
+}
+
+function draftKey(workoutId: string) {
+  return `lazyfit_workout_draft_${workoutId}`
+}
+
+function buildWorkoutDraft(workoutId: string, nextSets: Record<string, SetState[]>): WorkoutDraft {
+  return {
+    workoutId,
+    savedAt: Date.now(),
+    sets: Object.fromEntries(
+      Object.entries(nextSets).map(([exerciseId, exerciseSets]) => [
+        exerciseId,
+        exerciseSets.map(set => ({
+          weight: set.logged ? '' : set.weight,
+          reps: set.logged ? '' : set.reps,
+          setType: set.setType,
+        })),
+      ])
+    ),
+  }
 }
 
 type ParsedSetInputs =
@@ -551,6 +644,7 @@ export default function ActiveWorkoutClient({
   initialExercises,
   suggestedTargets,
   lastSession,
+  currentWorkoutSets,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -561,7 +655,8 @@ export default function ActiveWorkoutClient({
       const lastSess = lastSession[ex.exercise_name]
       const resolvedTargets = suggestedTargets[ex.exercise_name] ??
         (lastSess && Object.keys(lastSess).length > 0 ? computeFallbackTargets(ex, lastSess) : {})
-      return [ex.id, buildSetsForExercise(ex, resolvedTargets)]
+      const initialSets = buildSetsForExercise(ex, resolvedTargets)
+      return [ex.id, applyCurrentWorkoutSets(initialSets, ex.exercise_name, currentWorkoutSets)]
     }))
   )
   const [restTimer, setRestTimer] = useState<{ active: boolean; seconds: number }>({ active: false, seconds: 120 })
@@ -586,12 +681,32 @@ export default function ActiveWorkoutClient({
 
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Restore draft on mount — merge logged/weight/reps back into initialized sets
+  const clearPendingDraftWrite = useCallback(() => {
+    if (!draftTimerRef.current) return
+    clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = null
+  }, [])
+
+  const writeDraft = useCallback((nextSets: Record<string, SetState[]>) => {
+    try {
+      localStorage.setItem(draftKey(workoutId), JSON.stringify(buildWorkoutDraft(workoutId, nextSets)))
+    } catch {}
+  }, [workoutId])
+
+  const scheduleDraftWrite = useCallback((nextSets: Record<string, SetState[]>) => {
+    clearPendingDraftWrite()
+    draftTimerRef.current = setTimeout(() => {
+      writeDraft(nextSets)
+      draftTimerRef.current = null
+    }, 500)
+  }, [clearPendingDraftWrite, writeDraft])
+
+  // DB logged rows are left untouched; localStorage fills only unlogged input fields.
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(`lazyfit_workout_draft_${workoutId}`)
+      const raw = localStorage.getItem(draftKey(workoutId))
       if (!raw) return
-      const parsed: { sets: Record<string, SetState[]> } = JSON.parse(raw)
+      const parsed = JSON.parse(raw) as WorkoutDraft
       if (!parsed?.sets) return
       setSets(prev => {
         const merged: Record<string, SetState[]> = { ...prev }
@@ -600,7 +715,14 @@ export default function ActiveWorkoutClient({
           merged[exId] = merged[exId].map((s, i) => {
             const d = draftSets[i]
             if (!d) return s
-            return { ...s, logged: d.logged ?? s.logged, weight: d.weight || s.weight, reps: d.reps || s.reps, isPR: d.isPR ?? s.isPR }
+            if (s.logged) return s
+            if (d.setType && d.setType !== s.setType) return s
+            return {
+              ...s,
+              weight: d.weight || s.weight,
+              reps: d.reps || s.reps,
+              isPR: d.isPR ?? s.isPR,
+            }
           })
         }
         return merged
@@ -624,10 +746,7 @@ export default function ActiveWorkoutClient({
     })
     setSets(prev => {
       const next = { ...prev, [exId]: prev[exId].map((s, i) => i === idx ? { ...s, [field]: value } : s) }
-      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
-      draftTimerRef.current = setTimeout(() => {
-        try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: next })) } catch {}
-      }, 500)
+      scheduleDraftWrite(next)
       return next
     })
   }
@@ -683,7 +802,8 @@ export default function ActiveWorkoutClient({
         i === setIdx ? { ...s, logged: true, weight: String(weight), reps: String(reps), isPR } : s
       ),
     }
-    try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: updatedSets })) } catch {}
+    clearPendingDraftWrite()
+    writeDraft(updatedSets)
     setSets(updatedSets)
 
     if (isPR) {
@@ -745,7 +865,8 @@ export default function ActiveWorkoutClient({
         i === setIdx ? { ...s, weight: String(weight), reps: String(reps) } : s
       ),
     }
-    try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: updatedSets })) } catch {}
+    clearPendingDraftWrite()
+    writeDraft(updatedSets)
     setSets(updatedSets)
   }
 
@@ -822,7 +943,8 @@ export default function ActiveWorkoutClient({
       ...sets,
       [exId]: (sets[exId] ?? []).filter((_, i) => i !== idx),
     }
-    try { localStorage.setItem(`lazyfit_workout_draft_${workoutId}`, JSON.stringify({ workoutId, savedAt: Date.now(), sets: updatedSets })) } catch {}
+    clearPendingDraftWrite()
+    writeDraft(updatedSets)
     setSets(updatedSets)
     setSetErrors(prev => {
       const next = { ...prev }
@@ -1014,19 +1136,21 @@ export default function ActiveWorkoutClient({
 
       if (completeError) throw completeError
 
-      try { localStorage.removeItem(`lazyfit_workout_draft_${workoutId}`) } catch {}
+      clearPendingDraftWrite()
+      try { localStorage.removeItem(draftKey(workoutId)) } catch {}
       router.push(`/train/summary/${workoutId}`)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not finish workout. Try again.'
       alert(`Could not finish workout: ${message}`)
       setFinishing(false)
     }
-  }, [workoutId, initialExercises, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, keepSameWeightFor])
+  }, [workoutId, initialExercises, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, keepSameWeightFor, clearPendingDraftWrite])
 
   const discardWorkout = async () => {
     await supabase.from('workout_sets').delete().eq('workout_id', workoutId)
     await supabase.from('workouts').delete().eq('id', workoutId)
-    try { localStorage.removeItem(`lazyfit_workout_draft_${workoutId}`) } catch {}
+    clearPendingDraftWrite()
+    try { localStorage.removeItem(draftKey(workoutId)) } catch {}
     router.push('/train')
   }
 

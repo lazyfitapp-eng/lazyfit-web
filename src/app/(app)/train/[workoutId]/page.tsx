@@ -7,6 +7,22 @@ interface Props {
   searchParams: Promise<{ routineId?: string; empty?: string }>
 }
 
+type CurrentWorkoutSet = {
+  exercise_name: string
+  set_number: number
+  weight_kg: number
+  reps_completed: number
+  set_type: string | null
+}
+
+function normalizeSetType(setType: string | null): 'warmup' | 'working' {
+  return setType === 'warmup' ? 'warmup' : 'working'
+}
+
+function exerciseIdFromLoggedSetName(name: string) {
+  return `logged-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'exercise'}`
+}
+
 export default async function ActiveWorkoutPage({ params, searchParams }: Props) {
   const { workoutId } = await params
   const { routineId, empty } = await searchParams
@@ -28,6 +44,14 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
   const resolvedRoutineId = routineId ?? workout.routine_id ?? null
   const routineName = (workout.routines as any)?.name ?? null
 
+  const { data: currentSetRows } = await supabase
+    .from('workout_sets')
+    .select('exercise_name, set_number, weight_kg, reps_completed, set_type')
+    .eq('workout_id', workoutId)
+    .order('set_number', { ascending: true })
+
+  const currentWorkoutSets = (currentSetRows ?? []) as CurrentWorkoutSet[]
+
   // Fetch exercises — routine_exercises if routine, empty if start-empty
   type WorkoutExercise = {
     id: string
@@ -48,6 +72,28 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
       .eq('routine_id', resolvedRoutineId)
       .order('exercise_order', { ascending: true })
     exercises = (data ?? []).map(e => ({ ...e, notes: null }))
+  }
+
+  const plannedExerciseNames = new Set(exercises.map(e => e.exercise_name))
+  const loggedExerciseNames = [...new Set(currentWorkoutSets.map(set => set.exercise_name))]
+  for (const exerciseName of loggedExerciseNames) {
+    if (plannedExerciseNames.has(exerciseName)) continue
+
+    const loggedWorkingSetNumbers = currentWorkoutSets
+      .filter(set => set.exercise_name === exerciseName && normalizeSetType(set.set_type) === 'working')
+      .map(set => set.set_number)
+      .filter(setNumber => Number.isFinite(setNumber) && setNumber > 0)
+
+    exercises.push({
+      id: exerciseIdFromLoggedSetName(exerciseName),
+      exercise_name: exerciseName,
+      sets_target: Math.max(1, ...loggedWorkingSetNumbers),
+      reps_min: 8,
+      reps_max: 12,
+      rest_seconds: 120,
+      notes: null,
+    })
+    plannedExerciseNames.add(exerciseName)
   }
 
   // Fetch exercise_targets for suggestions
@@ -122,6 +168,7 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
       initialExercises={exercises}
       suggestedTargets={suggestedTargets}
       lastSession={lastSession}
+      currentWorkoutSets={currentWorkoutSets}
     />
   )
 }
