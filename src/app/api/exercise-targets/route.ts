@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
+import type { ExerciseTarget, SessionSet } from '@/lib/trainingProgression'
+
+type RecentWorkoutSet = {
+  workout_id: string
+  exercise_name: string
+  set_number: number
+  weight_kg: number
+  reps_completed: number
+  set_type: string | null
+}
+
+function normalizeSetType(setType: string | null): 'warmup' | 'working' {
+  return setType === 'warmup' ? 'warmup' : 'working'
+}
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -18,7 +33,7 @@ export async function GET(req: NextRequest) {
     .eq('user_id', user.id)
     .eq('exercise_name', name)
 
-  const targets: Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }> = {}
+  const targets: Record<number, ExerciseTarget> = {}
   for (const row of targetRows ?? []) {
     targets[row.set_number] = {
       weight:          row.target_weight_kg,
@@ -32,7 +47,7 @@ export async function GET(req: NextRequest) {
   // Query 2: last 50 completed workouts (excluding current)
   let recentQuery = supabase
     .from('workouts')
-    .select('id, completed_at')
+    .select('id, completed_at, routine_id')
     .eq('user_id', user.id)
     .not('completed_at', 'is', null)
     .order('completed_at', { ascending: false })
@@ -42,20 +57,60 @@ export async function GET(req: NextRequest) {
 
   const { data: recentWorkouts } = await recentQuery
 
-  const lastSession: Record<number, { weight: number; reps: number }> = {}
+  const lastSession: Record<number, SessionSet> = {}
 
   if ((recentWorkouts ?? []).length > 0) {
     const recentIds = recentWorkouts!.map(w => w.id)
     const completedAtById: Record<string, string> = {}
     for (const w of recentWorkouts!) completedAtById[w.id] = w.completed_at as string
 
-    // Query 3: sets for this exercise across recent workouts
-    const { data: prevSets } = await supabase
+    // Query 3: all sets across recent workouts so partial program sessions can be excluded.
+    const { data: recentSetRows } = await supabase
       .from('workout_sets')
-      .select('set_number, weight_kg, reps_completed, workout_id')
+      .select('workout_id, exercise_name, set_number, weight_kg, reps_completed, set_type')
       .in('workout_id', recentIds)
-      .eq('exercise_name', name)
-      .or('set_type.is.null,set_type.eq.working')
+
+    const recentSets = (recentSetRows ?? []) as RecentWorkoutSet[]
+    const routineIds = [
+      ...new Set((recentWorkouts ?? []).map(w => w.routine_id).filter((id): id is string => Boolean(id))),
+    ]
+    let plannedExercisesByRoutine: Record<string, { exercise_name: string; sets_target: number }[]> = {}
+
+    if (routineIds.length > 0) {
+      const { data: plannedExercises } = await supabase
+        .from('routine_exercises')
+        .select('routine_id, exercise_name, sets_target')
+        .in('routine_id', routineIds)
+
+      plannedExercisesByRoutine = (plannedExercises ?? []).reduce((acc, exercise) => {
+        acc[exercise.routine_id] = [...(acc[exercise.routine_id] ?? []), {
+          exercise_name: exercise.exercise_name,
+          sets_target: exercise.sets_target,
+        }]
+        return acc
+      }, {} as Record<string, { exercise_name: string; sets_target: number }[]>)
+    }
+
+    const setsByWorkout = recentSets.reduce((acc, set) => {
+      acc[set.workout_id] = [...(acc[set.workout_id] ?? []), set]
+      return acc
+    }, {} as Record<string, RecentWorkoutSet[]>)
+
+    const completeProgramWorkoutIds = new Set<string>()
+    for (const workout of recentWorkouts ?? []) {
+      const plannedExercises = workout.routine_id ? (plannedExercisesByRoutine[workout.routine_id] ?? []) : []
+      const workoutSets = setsByWorkout[workout.id] ?? []
+      const status = getWorkoutCompletionStatus(plannedExercises, workoutSets)
+      if (workout.routine_id && status.isComplete) {
+        completeProgramWorkoutIds.add(workout.id)
+      }
+    }
+
+    const prevSets = recentSets.filter(set =>
+      completeProgramWorkoutIds.has(set.workout_id) &&
+      set.exercise_name === name &&
+      normalizeSetType(set.set_type) === 'working'
+    )
 
     // Find the most recent workout that contained this exercise
     let latestWorkoutId: string | null = null

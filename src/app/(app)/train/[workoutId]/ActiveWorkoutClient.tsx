@@ -6,8 +6,16 @@ import { useRouter } from 'next/navigation'
 import { Check, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { computeWarmupSets } from '@/lib/warmup'
-import { DELOAD_FACTOR, EXERCISE_TYPE, WEIGHT_INCREMENT, PRIMARY_COMPOUNDS, isBodyweightExercise } from '@/lib/progressionConfig'
+import { EXERCISE_TYPE, PRIMARY_COMPOUNDS, isBodyweightExercise } from '@/lib/progressionConfig'
 import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
+import {
+  buildProgressionSetWeights,
+  deriveActiveWorkoutCoachState,
+  deriveExerciseProgressionDecision,
+  formatExerciseLoad,
+  type ExerciseTarget,
+  type SessionSet,
+} from '@/lib/trainingProgression'
 
 // ─── How To Modal ─────────────────────────────────────────────────────────────
 
@@ -172,9 +180,10 @@ interface Props {
   workoutId: string
   routineName: string | null
   initialExercises: WorkoutExercise[]
-  suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>>
-  lastSession: Record<string, Record<number, { weight: number; reps: number }>>
+  suggestedTargets: Record<string, Record<number, ExerciseTarget>>
+  lastSession: Record<string, Record<number, SessionSet>>
   currentWorkoutSets: CurrentWorkoutSet[]
+  lastCompletedWorkoutWasPartial: boolean
 }
 
 // ─── Sound synthesis ──────────────────────────────────────────────────────────
@@ -235,24 +244,24 @@ function prevSessionBest1RM(sessionSets: Record<number, { weight: number; reps: 
 
 function computeFallbackTargets(
   exercise: { sets_target: number; reps_min: number; reps_max: number; exercise_name: string },
-  lastSess: Record<number, { weight: number; reps: number }>
-): Record<number, { weight: number; repsMin: number; repsMax: number }> {
+  lastSess: Record<number, SessionSet>
+): Record<number, ExerciseTarget> {
   const workingSets = Object.values(lastSess)
   if (workingSets.length === 0) return {}
   const topSet = workingSets.reduce((best, s) => s.weight > best.weight ? s : best, workingSets[0])
-
-  const allHitMax = workingSets.length >= exercise.sets_target && Object.values(lastSess).every(s => s.reps >= exercise.reps_max)
-  const increment = WEIGHT_INCREMENT[EXERCISE_TYPE[exercise.exercise_name] ?? 'isolation']
-  const nextWeight = allHitMax ? topSet.weight + increment : topSet.weight
+  const nextWeight = topSet.weight
 
   const totalSets = exercise.sets_target
-  const result: Record<number, { weight: number; repsMin: number; repsMax: number }> = {}
-  for (let i = 0; i < totalSets; i++) {
-    const setWeight = i === 0 ? nextWeight
-      : i === 1 ? Math.round(nextWeight * 0.90 / 2.5) * 2.5
-      :           Math.round(nextWeight * 0.80 / 2.5) * 2.5
-    result[i + 1] = { weight: setWeight, repsMin: exercise.reps_min, repsMax: exercise.reps_max }
-  }
+  const result: Record<number, ExerciseTarget> = {}
+  buildProgressionSetWeights(nextWeight, totalSets).forEach((setWeight, index) => {
+    result[index + 1] = {
+      weight: setWeight,
+      repsMin: exercise.reps_min,
+      repsMax: exercise.reps_max,
+      consecutiveMax: 0,
+      consecutiveFail: 0,
+    }
+  })
   return result
 }
 
@@ -412,6 +421,11 @@ function parseSetInputs(
   }
 
   return { ok: true, weight, reps }
+}
+
+function formatPreviousSet(exerciseName: string, set: SessionSet | undefined) {
+  if (!set) return '-'
+  return `${formatExerciseLoad(exerciseName, set.weight)} x ${set.reps}`
 }
 
 // ─── Rest Timer ───────────────────────────────────────────────────────────────
@@ -645,6 +659,7 @@ export default function ActiveWorkoutClient({
   suggestedTargets,
   lastSession,
   currentWorkoutSets,
+  lastCompletedWorkoutWasPartial,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -670,10 +685,10 @@ export default function ActiveWorkoutClient({
   const [showHowToFor, setShowHowToFor] = useState<string | null>(null)
 
   // Dynamic targets fetched client-side when exercises are added mid-workout
-  const [dynamicTargets, setDynamicTargets] = useState<Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>>>({})
-  const [dynamicLastSession, setDynamicLastSession] = useState<Record<string, Record<number, { weight: number; reps: number }>>>({})
+  const [dynamicTargets, setDynamicTargets] = useState<Record<string, Record<number, ExerciseTarget>>>({})
+  const [dynamicLastSession, setDynamicLastSession] = useState<Record<string, Record<number, SessionSet>>>({})
   const [fetchingTargetsFor, setFetchingTargetsFor] = useState<Set<string>>(new Set())
-  const [keepSameWeightFor, setKeepSameWeightFor] = useState<Set<string>>(new Set())
+  const [repeatPreviousLoadFor, setRepeatPreviousLoadFor] = useState<Set<string>>(new Set())
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editingSet, setEditingSet] = useState<Set<string>>(new Set())
   const [confirmingDeleteSet, setConfirmingDeleteSet] = useState<string | null>(null)
@@ -1006,8 +1021,8 @@ export default function ActiveWorkoutClient({
       const res = await fetch(`/api/exercise-targets?name=${encodeURIComponent(name)}&workoutId=${workoutId}`)
       if (res.ok) {
         const data: {
-          targets: Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>
-          lastSession: Record<number, { weight: number; reps: number }>
+          targets: Record<number, ExerciseTarget>
+          lastSession: Record<number, SessionSet>
         } = await res.json()
 
         if (data.targets) setDynamicTargets(prev => ({ ...prev, [name]: data.targets }))
@@ -1031,6 +1046,28 @@ export default function ActiveWorkoutClient({
       setFetchingTargetsFor(prev => { const s = new Set(prev); s.delete(name); return s })
     }
   }
+
+  const repeatPreviousLoadToday = useCallback((exercise: WorkoutExercise) => {
+    const previousSession = lastSession[exercise.exercise_name] ?? dynamicLastSession[exercise.exercise_name]
+    if (!previousSession || Object.keys(previousSession).length === 0) return
+
+    setRepeatPreviousLoadFor(prev => new Set([...prev, exercise.exercise_name]))
+    setSets(prev => {
+      const currentSets = prev[exercise.id] ?? []
+      let workingSetNumber = 0
+      const nextExerciseSets = currentSets.map(set => {
+        if (set.setType !== 'working') return set
+        workingSetNumber += 1
+        if (set.logged) return set
+        const previousSet = previousSession[workingSetNumber]
+        if (!previousSet) return set
+        return { ...set, weight: String(previousSet.weight) }
+      })
+      const next = { ...prev, [exercise.id]: nextExerciseSets }
+      scheduleDraftWrite(next)
+      return next
+    })
+  }, [dynamicLastSession, lastSession, scheduleDraftWrite])
 
   const finishWorkout = useCallback(async () => {
     setFinishing(true)
@@ -1066,62 +1103,33 @@ export default function ActiveWorkoutClient({
         const workingSets = exerciseSets.filter(s => s.logged && s.setType === 'working')
         if (workingSets.length < exercise.sets_target) continue
 
-        const currentWeight = Number(workingSets[0].weight)
-        if (!Number.isFinite(currentWeight)) continue
-        if (!isBodyweightExercise(exercise.exercise_name) && currentWeight <= 0) continue
-        if (isBodyweightExercise(exercise.exercise_name) && currentWeight < 0) continue
+        if (repeatPreviousLoadFor.has(exercise.exercise_name)) continue
 
         // Read counter values from targets loaded at workout start
         const mergedTargets = suggestedTargets[exercise.exercise_name] ?? dynamicTargets[exercise.exercise_name]
-        let consecMax  = mergedTargets?.[1]?.consecutiveMax  ?? 0
-        let consecFail = mergedTargets?.[1]?.consecutiveFail ?? 0
-
-        // Evaluate today's performance
-        const allHitMax     = workingSets.every(s => Number(s.reps) >= exercise.reps_max)
-        const set1FailedMin = Number(workingSets[0].reps) < exercise.reps_min
-
-        if (allHitMax) {
-          consecMax  += 1
-          consecFail  = 0
-        } else if (set1FailedMin) {
-          consecFail += 1
-          consecMax   = 0
-        }
-        // else: no change to either counter
-
-        // "Keep same weight" override — user tapped button in coach card
-        if (keepSameWeightFor.has(exercise.exercise_name)) {
-          consecMax = 0  // prevent bump; consecFail unchanged
-        }
-
-        // Determine next session weight
-        let nextWeight = currentWeight
-        if (consecFail >= 3) {
-          nextWeight = Math.round(currentWeight * DELOAD_FACTOR / 2.5) * 2.5
-          consecFail = 0
-          consecMax  = 0
-        } else if (consecMax >= 2) {
-          const increment = WEIGHT_INCREMENT[EXERCISE_TYPE[exercise.exercise_name] ?? 'isolation']
-          nextWeight = currentWeight + increment
-          consecMax  = 0
-        }
+        const decision = deriveExerciseProgressionDecision({
+          exerciseName: exercise.exercise_name,
+          repsMin: exercise.reps_min,
+          repsMax: exercise.reps_max,
+          workingSets,
+          previousConsecutiveMax: mergedTargets?.[1]?.consecutiveMax ?? 0,
+          previousConsecutiveFail: mergedTargets?.[1]?.consecutiveFail ?? 0,
+        })
+        if (!decision) continue
 
         // Upsert all sets with explicit RPT back-offs
         const totalSets = exercise.sets_target
+        const nextSetWeights = buildProgressionSetWeights(decision.nextWeight, totalSets)
         for (let i = 0; i < totalSets; i++) {
-          const setWeight = i === 0 ? nextWeight
-            : i === 1 ? Math.round(nextWeight * 0.90 / 2.5) * 2.5
-            :           Math.round(nextWeight * 0.80 / 2.5) * 2.5
-
           const { error: upsertErr } = await supabase.from('exercise_targets').upsert({
             user_id:                   user.id,
             exercise_name:             exercise.exercise_name,
             set_number:                i + 1,
-            target_weight_kg:          setWeight,
+            target_weight_kg:          nextSetWeights[i],
             target_reps_min:           exercise.reps_min,
             target_reps_max:           exercise.reps_max,
-            consecutive_max_sessions:  consecMax,
-            consecutive_fail_sessions: consecFail,
+            consecutive_max_sessions:  decision.consecutiveMax,
+            consecutive_fail_sessions: decision.consecutiveFail,
             updated_at:                new Date().toISOString(),
           }, { onConflict: 'user_id,exercise_name,set_number' })
 
@@ -1144,7 +1152,7 @@ export default function ActiveWorkoutClient({
       alert(`Could not finish workout: ${message}`)
       setFinishing(false)
     }
-  }, [workoutId, initialExercises, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, keepSameWeightFor, clearPendingDraftWrite])
+  }, [workoutId, initialExercises, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, repeatPreviousLoadFor, clearPendingDraftWrite])
 
   const discardWorkout = async () => {
     await supabase.from('workout_sets').delete().eq('workout_id', workoutId)
@@ -1157,8 +1165,6 @@ export default function ActiveWorkoutClient({
   const allSetsFlat = Object.values(sets).flat()
   const totalLogged = allSetsFlat.filter(s => s.logged && s.setType === 'working').length
   const totalSets = allSetsFlat.filter(s => s.setType === 'working').length
-  console.log('[workout] totalLogged:', totalLogged, 'totalSets:', totalSets)
-
   // ─── Suppress unused var warning for toggleSetType ────────────────────────
   void toggleSetType
 
@@ -1249,57 +1255,30 @@ export default function ActiveWorkoutClient({
           const exSets = sets[exercise.id] ?? []
           const mergedSuggestedTargets = suggestedTargets[exercise.exercise_name] ?? dynamicTargets[exercise.exercise_name]
           const mergedLastSession = lastSession[exercise.exercise_name] ?? dynamicLastSession[exercise.exercise_name]
-          const targets = mergedSuggestedTargets ?? (mergedLastSession && Object.keys(mergedLastSession).length > 0 ? computeFallbackTargets(exercise, mergedLastSession) : {})
+          const targets: Record<number, ExerciseTarget> = mergedSuggestedTargets ??
+            (mergedLastSession && Object.keys(mergedLastSession).length > 0 ? computeFallbackTargets(exercise, mergedLastSession) : {})
           const prevSession = mergedLastSession
           const isBodyweight = isBodyweightExercise(exercise.exercise_name)
 
           // Coach card — only for PRIMARY_COMPOUNDS
           const showCoachCard = PRIMARY_COMPOUNDS.includes(exercise.exercise_name)
 
-          // Badge + message derivation (computed here, used in JSX below)
-          const prevSet1    = prevSession?.[1]
-          const targetSet1  = targets?.[1]
-          const targetWeight = targetSet1?.weight
-          const prevWeight   = prevSet1?.weight
-          const consecMax    = (targets?.[1] as { consecutiveMax?: number } | undefined)?.consecutiveMax  ?? 0
-          const consecFail   = (targets?.[1] as { consecutiveFail?: number } | undefined)?.consecutiveFail ?? 0
-
-          type CoachBadge = 'level_up' | 'reset' | 'first' | 'lock_in'
-          let badge: CoachBadge = 'lock_in'
-          if (!prevSet1)                                              badge = 'first'
-          else if (targetWeight !== undefined && prevWeight !== undefined && targetWeight > prevWeight) badge = 'level_up'
-          else if (targetWeight !== undefined && prevWeight !== undefined && targetWeight < prevWeight) badge = 'reset'
-          else                                                        badge = 'lock_in'
-
-          const badgeLabel =
-            badge === 'first'    ? 'First Session' :
-            badge === 'level_up' ? '↑ Level Up' :
-            badge === 'reset'    ? '↓ Reset' :
-                                   '→ Lock In'
+          const coachState = deriveActiveWorkoutCoachState({
+            exerciseName: exercise.exercise_name,
+            setsTarget: exercise.sets_target,
+            repsMin: exercise.reps_min,
+            repsMax: exercise.reps_max,
+            targets,
+            lastCompleteSession: prevSession,
+            hasPartialContext: lastCompletedWorkoutWasPartial,
+          })
 
           const badgeStyle: React.CSSProperties =
-            badge === 'level_up'
+            coachState.tone === 'green'
               ? { background: 'rgba(62,207,142,0.1)', border: '1px solid rgba(62,207,142,0.3)', color: '#3ecf8e' }
-              : badge === 'reset'
+              : coachState.tone === 'red'
               ? { background: 'rgba(255,59,92,0.1)',  border: '1px solid rgba(255,59,92,0.25)',  color: '#ff3b5c' }
               : { background: '#2a1f00',              border: '1px solid rgba(255,170,0,0.3)',    color: '#FFAA00' }
-
-          let coachMessage: string
-          if (badge === 'first') {
-            coachMessage = "Pick a weight you can control for all 3 sets — this baseline is everything."
-          } else if (badge === 'level_up') {
-            coachMessage = `Two sessions at ${prevWeight}kg. ${targetWeight}kg is loaded — you earned this.`
-          } else if (badge === 'reset') {
-            coachMessage = `Resetting to ${targetWeight}kg. One sharp session here, then back to business.`
-          } else {
-            if (consecFail >= 1) {
-              coachMessage = "This weight is fighting back. Own it before you move on."
-            } else if (consecMax >= 1) {
-              coachMessage = `You hit ${prevWeight}kg last time. One more clean session and the weight goes up.`
-            } else {
-              coachMessage = "Hit all sets clean today and you'll unlock the next weight."
-            }
-          }
 
           return (
             <div key={exercise.id} style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: '12px', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}>
@@ -1368,7 +1347,7 @@ export default function ActiveWorkoutClient({
               {/* Coach card — loading state */}
               {isBodyweight && (
                 <div style={{ margin: '-4px 16px 12px', fontSize: '12px', color: '#b8b8b8', lineHeight: 1.35, fontFamily: 'inherit' }}>
-                  Added kg only. Use 0 for bodyweight reps.
+                  Added load only. Use 0 kg for bodyweight reps.
                 </div>
               )}
 
@@ -1385,24 +1364,38 @@ export default function ActiveWorkoutClient({
                   {/* Header row */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ fontSize: '10px', fontWeight: 700, color: '#3ecf8e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                      COACH — TODAY
+                      COACH - TODAY
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', ...badgeStyle }}>
-                      {badgeLabel}
+                      {coachState.badgeLabel}
                     </span>
                   </div>
-                  {/* Message */}
-                  <p style={{ fontSize: '14px', color: '#e0e0e0', lineHeight: 1.5, margin: '0 0 8px' }}>
-                    {coachMessage}
-                  </p>
-                  {/* Keep same weight — only for Level Up */}
-                  {badge === 'level_up' && (
+                  {coachState.partialContext && (
+                    <p style={{ fontSize: '12px', color: '#FFAA00', lineHeight: 1.35, margin: '0 0 8px', fontWeight: 700 }}>
+                      Last workout was partial; targets are unchanged.
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: coachState.canRepeatPreviousLoad ? '8px' : 0 }}>
+                    <p style={{ fontSize: '13px', color: '#e0e0e0', lineHeight: 1.4, margin: 0 }}>
+                      <strong style={{ color: '#f0f0f0' }}>Today:</strong> {coachState.todayTarget}
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#d4d4d4', lineHeight: 1.4, margin: 0 }}>
+                      <strong style={{ color: '#f0f0f0' }}>Why:</strong> {coachState.why}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#b8b8b8', lineHeight: 1.4, margin: 0 }}>
+                      <strong style={{ color: '#dcdcdc' }}>Rule:</strong> {coachState.successRule}
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#d4d4d4', lineHeight: 1.4, margin: 0 }}>
+                      <strong style={{ color: '#f0f0f0' }}>Next:</strong> {coachState.nextOutcome}
+                    </p>
+                  </div>
+                  {coachState.canRepeatPreviousLoad && (
                     <button
-                      onClick={() => setKeepSameWeightFor(prev => new Set([...prev, exercise.exercise_name]))}
-                      disabled={keepSameWeightFor.has(exercise.exercise_name)}
-                      style={{ background: '#141414', border: 'none', borderRadius: '5px', padding: '3px 8px', fontSize: '11px', color: keepSameWeightFor.has(exercise.exercise_name) ? '#3ecf8e' : '#b8b8b8', cursor: keepSameWeightFor.has(exercise.exercise_name) ? 'default' : 'pointer', fontFamily: 'inherit' }}
+                      onClick={() => repeatPreviousLoadToday(exercise)}
+                      disabled={repeatPreviousLoadFor.has(exercise.exercise_name)}
+                      style={{ background: '#141414', border: '1px solid #222', borderRadius: '6px', padding: '5px 9px', fontSize: '12px', color: repeatPreviousLoadFor.has(exercise.exercise_name) ? '#3ecf8e' : '#b8b8b8', cursor: repeatPreviousLoadFor.has(exercise.exercise_name) ? 'default' : 'pointer', fontFamily: 'inherit', fontWeight: 700 }}
                     >
-                      {keepSameWeightFor.has(exercise.exercise_name) ? '✓ Keeping same weight' : 'Keep same weight'}
+                      {repeatPreviousLoadFor.has(exercise.exercise_name) ? 'Repeating previous load today' : 'Repeat previous load today'}
                     </button>
                   )}
                 </div>
@@ -1637,7 +1630,7 @@ export default function ActiveWorkoutClient({
                             </div>
                             {/* Last session ghost */}
                             <span style={{ fontSize: '14px', color: '#b8b8b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
-                              {prevSet ? `${prevSet.weight} × ${prevSet.reps}` : '—'}
+                              {formatPreviousSet(exercise.exercise_name, prevSet)}
                             </span>
                             {/* KG */}
                             <input

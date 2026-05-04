@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ActiveWorkoutClient from './ActiveWorkoutClient'
+import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
+import type { ExerciseTarget, SessionSet } from '@/lib/trainingProgression'
 
 interface Props {
   params: Promise<{ workoutId: string }>
@@ -13,6 +15,10 @@ type CurrentWorkoutSet = {
   weight_kg: number
   reps_completed: number
   set_type: string | null
+}
+
+type RecentWorkoutSet = CurrentWorkoutSet & {
+  workout_id: string
 }
 
 function normalizeSetType(setType: string | null): 'warmup' | 'working' {
@@ -104,7 +110,7 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
     .eq('user_id', user.id)
     .in('exercise_name', exerciseNames.length > 0 ? exerciseNames : ['__none__'])
 
-  const suggestedTargets: Record<string, Record<number, { weight: number; repsMin: number; repsMax: number; consecutiveMax: number; consecutiveFail: number }>> = {}
+  const suggestedTargets: Record<string, Record<number, ExerciseTarget>> = {}
   for (const row of targetRows ?? []) {
     if (!suggestedTargets[row.exercise_name]) suggestedTargets[row.exercise_name] = {}
     suggestedTargets[row.exercise_name][row.set_number] = {
@@ -116,15 +122,15 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
     }
   }
 
-  // Fetch last session per exercise across ALL of the user's workouts (not just same routine)
-  // This ensures previous data shows even when the exercise was first done in an empty/different workout
-  const lastSession: Record<string, Record<number, { weight: number; reps: number }>> = {}
+  // Fetch last progression session per exercise from complete program workouts only.
+  const lastSession: Record<string, Record<number, SessionSet>> = {}
+  let lastCompletedWorkoutWasPartial = false
 
   if (exerciseNames.length > 0) {
     // Get recent completed workouts for this user (last 50 is plenty)
     const { data: recentWorkouts } = await supabase
       .from('workouts')
-      .select('id, completed_at')
+      .select('id, completed_at, routine_id')
       .eq('user_id', user.id)
       .not('completed_at', 'is', null)
       .neq('id', workoutId)
@@ -136,16 +142,63 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
     for (const w of recentWorkouts ?? []) completedAtById[w.id] = w.completed_at as string
 
     if (recentIds.length > 0) {
-      const { data: prevSets } = await supabase
+      const { data: recentSetRows } = await supabase
         .from('workout_sets')
-        .select('exercise_name, set_number, weight_kg, reps_completed, workout_id')
+        .select('workout_id, exercise_name, set_number, weight_kg, reps_completed, set_type')
         .in('workout_id', recentIds)
-        .in('exercise_name', exerciseNames)
-        .or('set_type.is.null,set_type.eq.working')
+
+      const recentSets = (recentSetRows ?? []) as RecentWorkoutSet[]
+      const routineIds = [
+        ...new Set((recentWorkouts ?? []).map(w => w.routine_id).filter((id): id is string => Boolean(id))),
+      ]
+      let plannedExercisesByRoutine: Record<string, { exercise_name: string; sets_target: number }[]> = {}
+
+      if (routineIds.length > 0) {
+        const { data: plannedExercises } = await supabase
+          .from('routine_exercises')
+          .select('routine_id, exercise_name, sets_target')
+          .in('routine_id', routineIds)
+
+        plannedExercisesByRoutine = (plannedExercises ?? []).reduce((acc, exercise) => {
+          acc[exercise.routine_id] = [...(acc[exercise.routine_id] ?? []), {
+            exercise_name: exercise.exercise_name,
+            sets_target: exercise.sets_target,
+          }]
+          return acc
+        }, {} as Record<string, { exercise_name: string; sets_target: number }[]>)
+      }
+
+      const setsByWorkout = recentSets.reduce((acc, set) => {
+        acc[set.workout_id] = [...(acc[set.workout_id] ?? []), set]
+        return acc
+      }, {} as Record<string, RecentWorkoutSet[]>)
+
+      const completeProgramWorkoutIds = new Set<string>()
+      const mostRecentWorkout = (recentWorkouts ?? [])[0]
+
+      for (const workout of recentWorkouts ?? []) {
+        const plannedExercises = workout.routine_id ? (plannedExercisesByRoutine[workout.routine_id] ?? []) : []
+        const workoutSets = setsByWorkout[workout.id] ?? []
+        const status = getWorkoutCompletionStatus(plannedExercises, workoutSets)
+
+        if (workout.id === mostRecentWorkout?.id) {
+          lastCompletedWorkoutWasPartial = status.isPartial
+        }
+
+        if (workout.routine_id && status.isComplete) {
+          completeProgramWorkoutIds.add(workout.id)
+        }
+      }
+
+      const prevSets = recentSets.filter(set =>
+        completeProgramWorkoutIds.has(set.workout_id) &&
+        exerciseNames.includes(set.exercise_name) &&
+        normalizeSetType(set.set_type) === 'working'
+      )
 
       // For each exercise, find the most recent workout that had it
-      const latestWorkoutPerExercise: Record<string, string> = {} // exercise_name → workout_id
-      for (const s of prevSets ?? []) {
+      const latestWorkoutPerExercise: Record<string, string> = {} // exercise_name -> workout_id
+      for (const s of prevSets) {
         const prev = latestWorkoutPerExercise[s.exercise_name]
         if (!prev || completedAtById[s.workout_id] > completedAtById[prev]) {
           latestWorkoutPerExercise[s.exercise_name] = s.workout_id
@@ -153,7 +206,7 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
       }
 
       // Collect sets from that most recent workout per exercise
-      for (const s of prevSets ?? []) {
+      for (const s of prevSets) {
         if (latestWorkoutPerExercise[s.exercise_name] !== s.workout_id) continue
         if (!lastSession[s.exercise_name]) lastSession[s.exercise_name] = {}
         lastSession[s.exercise_name][s.set_number] = { weight: s.weight_kg, reps: s.reps_completed }
@@ -169,6 +222,7 @@ export default async function ActiveWorkoutPage({ params, searchParams }: Props)
       suggestedTargets={suggestedTargets}
       lastSession={lastSession}
       currentWorkoutSets={currentWorkoutSets}
+      lastCompletedWorkoutWasPartial={lastCompletedWorkoutWasPartial}
     />
   )
 }
