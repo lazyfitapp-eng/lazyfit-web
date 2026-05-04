@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import SummaryClient from './SummaryClient'
+import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
 
 interface PageProps {
   params: Promise<{ workoutId: string }>
@@ -39,15 +40,7 @@ export default async function SummaryPage({ params }: PageProps) {
       .select('exercise_name, sets_target')
       .eq('routine_id', workout.routine_id)
 
-    const loggedWorkingCounts = new Map<string, number>()
-    for (const s of workoutSets) {
-      if (s.set_type === 'warmup') continue
-      loggedWorkingCounts.set(s.exercise_name, (loggedWorkingCounts.get(s.exercise_name) ?? 0) + 1)
-    }
-
-    isPartialSession = (plannedExercises ?? []).some(ex =>
-      (loggedWorkingCounts.get(ex.exercise_name) ?? 0) < ex.sets_target
-    )
+    isPartialSession = getWorkoutCompletionStatus(plannedExercises ?? [], workoutSets).isPartial
   }
 
   // Fetch all-time best 1RM per exercise (excluding this workout)

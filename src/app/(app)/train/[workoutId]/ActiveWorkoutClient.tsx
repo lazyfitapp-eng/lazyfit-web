@@ -7,6 +7,7 @@ import { Check, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { computeWarmupSets } from '@/lib/warmup'
 import { DELOAD_FACTOR, EXERCISE_TYPE, WEIGHT_INCREMENT, PRIMARY_COMPOUNDS, isBodyweightExercise } from '@/lib/progressionConfig'
+import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
 
 // ─── How To Modal ─────────────────────────────────────────────────────────────
 
@@ -912,13 +913,18 @@ export default function ActiveWorkoutClient({
   const finishWorkout = useCallback(async () => {
     setFinishing(true)
     const durationMinutes = Math.round((Date.now() - startTime) / 60000)
-    const loggedWorkingSets = Object.values(sets).flat().filter(s => s.logged && s.setType === 'working')
-    const isCompleteSession = exercises.every(exercise => {
-      const loggedForExercise = (sets[exercise.id] ?? []).filter(s => s.logged && s.setType === 'working')
-      return loggedForExercise.length >= exercise.sets_target
-    })
+    const loggedSetsForCompletion = exercises.flatMap(exercise =>
+      (sets[exercise.id] ?? [])
+        .filter(set => set.logged)
+        .map(set => ({
+          exercise_name: exercise.exercise_name,
+          set_type: set.setType,
+        }))
+    )
+    const plannedExercisesForCompletion = initialExercises.length > 0 ? initialExercises : exercises
+    const completionStatus = getWorkoutCompletionStatus(plannedExercisesForCompletion, loggedSetsForCompletion)
 
-    if (loggedWorkingSets.length === 0) {
+    if (completionStatus.loggedWorkingSets === 0) {
       alert('Log at least one working set before finishing the workout.')
       setFinishing(false)
       return
@@ -931,7 +937,7 @@ export default function ActiveWorkoutClient({
       if (!user) throw new Error('You must be logged in to finish a workout.')
 
       // Partial sessions still save, but they are not progression signals.
-      if (isCompleteSession) {
+      if (completionStatus.isComplete) {
       for (const exercise of exercises) {
         const exerciseSets = sets[exercise.id] ?? []
         // Only consider working sets — warm-up sets excluded
@@ -1015,7 +1021,7 @@ export default function ActiveWorkoutClient({
       alert(`Could not finish workout: ${message}`)
       setFinishing(false)
     }
-  }, [workoutId, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, keepSameWeightFor])
+  }, [workoutId, initialExercises, exercises, sets, startTime, supabase, router, suggestedTargets, dynamicTargets, keepSameWeightFor])
 
   const discardWorkout = async () => {
     await supabase.from('workout_sets').delete().eq('workout_id', workoutId)

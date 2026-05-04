@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getLocalDateString, parseLocalDateString } from '@/lib/dateUtils'
+import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
 
 type WorkoutSet = {
   workout_id: string
@@ -18,9 +19,15 @@ type HistoryWorkout = {
   id: string
   completedAt: string
   durationMinutes: number | null
+  routineId: string | null
   routineName: string | null
   sets: WorkoutSet[]
+  isPartialSession: boolean
+  loggedWorkingSets: number
+  plannedWorkingSets: number
 }
+
+type WorkoutDayStatus = 'complete' | 'partial'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,7 +80,7 @@ function getBestSet(sets: WorkoutSet[]): { exercise: string; weight: number; rep
 function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
   year: number
   month: number
-  workoutDays: Set<string>
+  workoutDays: Map<string, WorkoutDayStatus>
   onMonthChange: (dir: 1 | -1) => void
 }) {
   const today = new Date()
@@ -139,12 +146,14 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
       {/* Day cells */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {cells.map((cell, i) => {
-          const hasWorkout = cell.currentMonth && workoutDays.has(cell.dateStr)
+          const dayStatus = cell.currentMonth ? workoutDays.get(cell.dateStr) : undefined
+          const hasWorkout = Boolean(dayStatus)
           const isToday = cell.dateStr === todayStr
+          const workoutColor = dayStatus === 'partial' ? '#f5a623' : '#3ecf8e'
 
           const numColor = !cell.currentMonth ? '#1e1e1e'
             : isToday ? '#0a0a0a'
-            : hasWorkout ? '#3ecf8e'
+            : hasWorkout ? workoutColor
             : '#888888'
 
           const numWeight = isToday ? 700 : hasWorkout ? 600 : 400
@@ -154,7 +163,7 @@ function WorkoutCalendar({ year, month, workoutDays, onMonthChange }: {
               <span style={{ fontSize: '14px', fontWeight: numWeight, color: numColor, lineHeight: 1 }}>
                 {cell.day}
               </span>
-              <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: hasWorkout ? (isToday ? 'rgba(0,0,0,0.3)' : '#3ecf8e') : 'transparent' }} />
+              <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: hasWorkout ? (isToday ? 'rgba(0,0,0,0.3)' : workoutColor) : 'transparent' }} />
             </div>
           )
         })}
@@ -177,6 +186,9 @@ function WorkoutCard({ workout }: { workout: HistoryWorkout }) {
   const stats: { text: string }[] = []
   if (showDuration) stats.push({ text: `${workout.durationMinutes} min` })
   if (totalVolume > 0) stats.push({ text: `↑ ${totalVolume.toLocaleString()} kg` })
+  if (workout.isPartialSession && workout.plannedWorkingSets > 0) {
+    stats.push({ text: `${workout.loggedWorkingSets}/${workout.plannedWorkingSets} working sets` })
+  }
   if (workout.sets.length > 0) stats.push({ text: `${workout.sets.length} set${workout.sets.length !== 1 ? 's' : ''}` })
 
   return (
@@ -185,13 +197,20 @@ function WorkoutCard({ workout }: { workout: HistoryWorkout }) {
       style={{ display: 'flex', background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', textDecoration: 'none', fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, sans-serif' }}
     >
       {/* Left accent bar */}
-      <div style={{ width: '3px', flexShrink: 0, background: isNamed ? '#3ecf8e' : '#1e1e1e' }} />
+      <div style={{ width: '3px', flexShrink: 0, background: workout.isPartialSession ? '#f5a623' : isNamed ? '#3ecf8e' : '#1e1e1e' }} />
 
       {/* Card body */}
       <div style={{ flex: 1, padding: '13px 14px', minWidth: 0 }}>
         {/* Top row: name + date */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2px' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px' }}>{displayName}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0f0f0', letterSpacing: '-0.3px' }}>{displayName}</div>
+            {workout.isPartialSession && (
+              <span style={{ fontSize: '10px', fontWeight: 800, color: '#f5a623', background: '#1a1200', border: '1px solid rgba(245,166,35,0.35)', borderRadius: '6px', padding: '2px 6px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                Partial
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: '11px', color: '#b8b8b8', whiteSpace: 'nowrap', paddingTop: '2px', marginLeft: '8px' }}>{dateStr}</div>
         </div>
 
@@ -263,6 +282,25 @@ export default function WorkoutHistory({ userId }: { userId: string }) {
           allSets = rawSets ?? []
         }
 
+        const routineIds = [
+          ...new Set(rawWorkouts.map(w => w.routine_id).filter((id): id is string => Boolean(id))),
+        ]
+        let plannedExercisesByRoutine: Record<string, { exercise_name: string; sets_target: number }[]> = {}
+        if (routineIds.length > 0) {
+          const { data: plannedExercises } = await supabase
+            .from('routine_exercises')
+            .select('routine_id, exercise_name, sets_target')
+            .in('routine_id', routineIds)
+
+          plannedExercisesByRoutine = (plannedExercises ?? []).reduce((acc, exercise) => {
+            acc[exercise.routine_id] = [...(acc[exercise.routine_id] ?? []), {
+              exercise_name: exercise.exercise_name,
+              sets_target: exercise.sets_target,
+            }]
+            return acc
+          }, {} as Record<string, { exercise_name: string; sets_target: number }[]>)
+        }
+
         if (cancelled) return
 
         const setsByWorkout = new Map<string, WorkoutSet[]>()
@@ -271,13 +309,23 @@ export default function WorkoutHistory({ userId }: { userId: string }) {
           setsByWorkout.get(s.workout_id)!.push(s)
         }
 
-        const merged: HistoryWorkout[] = rawWorkouts.map(w => ({
-          id: w.id,
-          completedAt: w.completed_at as string,
-          durationMinutes: w.duration_minutes ?? null,
-          routineName: (w.routines as any)?.name ?? null,
-          sets: setsByWorkout.get(w.id) ?? [],
-        }))
+        const merged: HistoryWorkout[] = rawWorkouts.map(w => {
+          const workoutSets = setsByWorkout.get(w.id) ?? []
+          const plannedExercises = w.routine_id ? (plannedExercisesByRoutine[w.routine_id] ?? []) : []
+          const completionStatus = getWorkoutCompletionStatus(plannedExercises, workoutSets)
+
+          return {
+            id: w.id,
+            completedAt: w.completed_at as string,
+            durationMinutes: w.duration_minutes ?? null,
+            routineId: w.routine_id ?? null,
+            routineName: (w.routines as any)?.name ?? null,
+            sets: workoutSets,
+            isPartialSession: completionStatus.isPartial,
+            loggedWorkingSets: completionStatus.loggedWorkingSets,
+            plannedWorkingSets: completionStatus.plannedWorkingSets,
+          }
+        })
 
         setWorkouts(merged)
       } finally {
@@ -290,7 +338,15 @@ export default function WorkoutHistory({ userId }: { userId: string }) {
   }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const workoutDays = useMemo(
-    () => new Set(workouts.map(w => getLocalDateString(new Date(w.completedAt)))),
+    () => {
+      const days = new Map<string, WorkoutDayStatus>()
+      for (const workout of workouts) {
+        const date = getLocalDateString(new Date(workout.completedAt))
+        if (days.get(date) === 'complete') continue
+        days.set(date, workout.isPartialSession ? 'partial' : 'complete')
+      }
+      return days
+    },
     [workouts]
   )
 

@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_ROUTINE_DELETE_GUARD_TEMPLATES } from '@/lib/createDefaultRoutines'
+import { DEFAULT_ROUTINE_DELETE_GUARD_TEMPLATES, THREE_DAY_TEMPLATE } from '@/lib/createDefaultRoutines'
 import { redirect } from 'next/navigation'
 import TrainClient from './TrainClient'
+import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
 
 function isDefaultRoutine(name: string, exerciseNames: string[]) {
   const exerciseSet = new Set(exerciseNames)
@@ -48,40 +49,110 @@ export default async function TrainPage() {
     canDelete: !r.is_system && !isDefaultRoutine(r.name, exercisesByRoutine[r.id] ?? []),
   }))
 
-  // Fetch last completed workout
-  const { data: lastWorkoutRows } = await supabase
+  // Fetch completed workout sessions. A completed row can still be a partial planned workout.
+  const { data: completedWorkoutRows } = await supabase
     .from('workouts')
     .select('id, completed_at, duration_minutes, routine_id, routines(name)')
     .eq('user_id', user.id)
     .not('completed_at', 'is', null)
     .order('completed_at', { ascending: false })
-    .limit(1)
 
-  const lastWorkoutRow = lastWorkoutRows?.[0] ?? null
+  const completedWorkoutIds = (completedWorkoutRows ?? []).map(w => w.id)
+  const completedRoutineIds = [
+    ...new Set((completedWorkoutRows ?? []).map(w => w.routine_id).filter((id): id is string => Boolean(id))),
+  ]
 
-  // Fetch sets for last workout (volume + muscle split)
-  let lastWorkoutSets: { exercise_name: string; weight_kg: number; reps_completed: number }[] = []
-  if (lastWorkoutRow) {
+  let allWorkoutSets: {
+    workout_id: string
+    exercise_name: string
+    weight_kg: number
+    reps_completed: number
+    set_type: string | null
+  }[] = []
+  if (completedWorkoutIds.length > 0) {
     const { data: sets } = await supabase
       .from('workout_sets')
-      .select('exercise_name, weight_kg, reps_completed')
-      .eq('workout_id', lastWorkoutRow.id)
-    lastWorkoutSets = sets ?? []
+      .select('workout_id, exercise_name, weight_kg, reps_completed, set_type')
+      .in('workout_id', completedWorkoutIds)
+      .limit(5000)
+    allWorkoutSets = sets ?? []
   }
 
-  const lastWorkout = lastWorkoutRow ? {
-    id: lastWorkoutRow.id,
-    completedAt: lastWorkoutRow.completed_at as string,
-    durationMinutes: lastWorkoutRow.duration_minutes as number | null,
-    routineName: (lastWorkoutRow.routines as any)?.name ?? null,
-    sets: lastWorkoutSets,
+  let plannedExercisesByRoutine: Record<string, { exercise_name: string; sets_target: number }[]> = {}
+  if (completedRoutineIds.length > 0) {
+    const { data: plannedExercises } = await supabase
+      .from('routine_exercises')
+      .select('routine_id, exercise_name, sets_target')
+      .in('routine_id', completedRoutineIds)
+
+    plannedExercisesByRoutine = (plannedExercises ?? []).reduce((acc, exercise) => {
+      acc[exercise.routine_id] = [...(acc[exercise.routine_id] ?? []), {
+        exercise_name: exercise.exercise_name,
+        sets_target: exercise.sets_target,
+      }]
+      return acc
+    }, {} as Record<string, { exercise_name: string; sets_target: number }[]>)
+  }
+
+  const setsByWorkout = allWorkoutSets.reduce((acc, set) => {
+    acc[set.workout_id] = [...(acc[set.workout_id] ?? []), set]
+    return acc
+  }, {} as Record<string, typeof allWorkoutSets>)
+
+  const workoutsWithStatus = (completedWorkoutRows ?? []).map(workout => {
+    const workoutSets = setsByWorkout[workout.id] ?? []
+    const plannedExercises = workout.routine_id ? (plannedExercisesByRoutine[workout.routine_id] ?? []) : []
+    const completionStatus = getWorkoutCompletionStatus(plannedExercises, workoutSets)
+    return { workout, sets: workoutSets, completionStatus }
+  })
+
+  const lastWorkoutInfo = workoutsWithStatus[0] ?? null
+  const programDayNames = new Set(THREE_DAY_TEMPLATE.map(day => day.name))
+  const lastCompleteWorkoutInfo = workoutsWithStatus.find(w =>
+    w.completionStatus.isComplete && programDayNames.has((w.workout.routines as any)?.name ?? '')
+  ) ?? null
+
+  const lastWorkout = lastWorkoutInfo ? {
+    id: lastWorkoutInfo.workout.id,
+    completedAt: lastWorkoutInfo.workout.completed_at as string,
+    durationMinutes: lastWorkoutInfo.workout.duration_minutes as number | null,
+    routineName: (lastWorkoutInfo.workout.routines as any)?.name ?? null,
+    sets: lastWorkoutInfo.sets,
+    isPartialSession: lastWorkoutInfo.completionStatus.isPartial,
+    loggedWorkingSets: lastWorkoutInfo.completionStatus.loggedWorkingSets,
+    plannedWorkingSets: lastWorkoutInfo.completionStatus.plannedWorkingSets,
   } : null
+
+  const lastCompleteWorkout = lastCompleteWorkoutInfo ? {
+    id: lastCompleteWorkoutInfo.workout.id,
+    completedAt: lastCompleteWorkoutInfo.workout.completed_at as string,
+    routineName: (lastCompleteWorkoutInfo.workout.routines as any)?.name ?? null,
+  } : null
+
+  const routineStatuses: Record<string, {
+    status: 'complete' | 'partial'
+    completedAt: string
+    loggedWorkingSets: number
+    plannedWorkingSets: number
+  }> = {}
+  for (const item of workoutsWithStatus) {
+    const routineId = item.workout.routine_id
+    if (!routineId || routineStatuses[routineId]) continue
+    routineStatuses[routineId] = {
+      status: item.completionStatus.isComplete ? 'complete' : 'partial',
+      completedAt: item.workout.completed_at as string,
+      loggedWorkingSets: item.completionStatus.loggedWorkingSets,
+      plannedWorkingSets: item.completionStatus.plannedWorkingSets,
+    }
+  }
 
   return (
     <TrainClient
       userId={user.id}
       routines={routines}
       lastWorkout={lastWorkout}
+      lastCompleteWorkout={lastCompleteWorkout}
+      routineStatuses={routineStatuses}
     />
   )
 }

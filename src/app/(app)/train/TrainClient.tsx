@@ -22,6 +22,7 @@ interface WorkoutSet {
   exercise_name: string
   weight_kg: number
   reps_completed: number
+  set_type?: string | null
 }
 
 interface LastWorkout {
@@ -30,12 +31,30 @@ interface LastWorkout {
   durationMinutes: number | null
   routineName: string | null
   sets: WorkoutSet[]
+  isPartialSession: boolean
+  loggedWorkingSets: number
+  plannedWorkingSets: number
+}
+
+interface LastCompleteWorkout {
+  id: string
+  completedAt: string
+  routineName: string | null
+}
+
+interface RoutineStatus {
+  status: 'complete' | 'partial'
+  completedAt: string
+  loggedWorkingSets: number
+  plannedWorkingSets: number
 }
 
 interface Props {
   userId: string
   routines: Routine[]
   lastWorkout: LastWorkout | null
+  lastCompleteWorkout: LastCompleteWorkout | null
+  routineStatuses: Record<string, RoutineStatus>
 }
 
 function relativeDate(iso: string): string {
@@ -82,7 +101,13 @@ function findRecommendedRoutine(routines: Routine[], lastRoutineName: string | n
   return starterRoutines[0]
 }
 
-export default function TrainClient({ userId, routines: initialRoutines, lastWorkout }: Props) {
+export default function TrainClient({
+  userId,
+  routines: initialRoutines,
+  lastWorkout,
+  lastCompleteWorkout,
+  routineStatuses,
+}: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [activeTab, setActiveTab] = useState<'routines' | 'history'>('routines')
@@ -120,7 +145,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
   const totalVolume = lastWorkout
     ? Math.round(lastWorkout.sets.reduce((s, r) => s + r.weight_kg * r.reps_completed, 0))
     : 0
-  const recommendedRoutine = findRecommendedRoutine(routines, lastWorkout?.routineName ?? null)
+  const recommendedRoutine = findRecommendedRoutine(routines, lastCompleteWorkout?.routineName ?? null)
 
   const startWorkout = async (routineId?: string) => {
     const key = routineId ?? 'empty'
@@ -266,11 +291,19 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
               <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0f0f0' }}>
-                      {lastWorkout.routineName ?? 'Custom Workout'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0f0f0' }}>
+                        {lastWorkout.routineName ?? 'Custom Workout'}
+                      </div>
+                      {lastWorkout.isPartialSession && (
+                        <span style={{ fontSize: '10px', fontWeight: 800, color: '#f5a623', background: '#1a1200', border: '1px solid rgba(245,166,35,0.35)', borderRadius: '6px', padding: '3px 7px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Partial
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: '11px', color: '#b8b8b8', marginTop: '3px' }}>
                       {relativeDate(lastWorkout.completedAt)}
+                      {lastWorkout.isPartialSession && lastWorkout.plannedWorkingSets > 0 ? ` - ${lastWorkout.loggedWorkingSets}/${lastWorkout.plannedWorkingSets} working sets` : ''}
                       {lastWorkout.durationMinutes ? ` · ${lastWorkout.durationMinutes} min` : ''}
                       {totalVolume > 0 ? ` · ${totalVolume.toLocaleString()} kg total` : ''}
                     </div>
@@ -335,7 +368,9 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {routines.map(r => {
-                const isLastDone = r.name === lastWorkout?.routineName
+                const routineStatus = routineStatuses[r.id]
+                const isLastDone = routineStatus?.status === 'complete'
+                const isLastPartial = routineStatus?.status === 'partial'
                 const isRecommended = r.id === recommendedRoutine?.id
                 const tags = getRoutineTags(r.name)
                 const programDayNumber = getProgramDayNumber(r.name)
@@ -344,7 +379,7 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                     key={r.id}
                     style={{
                       background: isRecommended ? '#0d1a12' : '#141414',
-                      border: `1px solid ${isRecommended ? '#3ecf8e' : isLastDone ? '#1a3528' : '#1e1e1e'}`,
+                      border: `1px solid ${isRecommended ? '#3ecf8e' : isLastPartial ? 'rgba(245,166,35,0.35)' : isLastDone ? '#1a3528' : '#1e1e1e'}`,
                       borderRadius: '12px',
                       padding: '14px',
                       display: 'flex',
@@ -369,9 +404,15 @@ export default function TrainClient({ userId, routines: initialRoutines, lastWor
                           Recommended next
                         </div>
                       )}
-                      {isLastDone && lastWorkout && (
+                      {isLastDone && routineStatus && (
                         <div style={{ fontSize: '10px', color: '#2a6e50', marginTop: '4px', fontWeight: 500 }}>
-                          Done {relativeDate(lastWorkout.completedAt).toLowerCase()}
+                          Done {relativeDate(routineStatus.completedAt).toLowerCase()}
+                        </div>
+                      )}
+                      {isLastPartial && routineStatus && (
+                        <div style={{ fontSize: '10px', color: '#f5a623', marginTop: '4px', fontWeight: 700 }}>
+                          Partial {relativeDate(routineStatus.completedAt).toLowerCase()}
+                          {routineStatus.plannedWorkingSets > 0 ? ` - ${routineStatus.loggedWorkingSets}/${routineStatus.plannedWorkingSets}` : ''}
                         </div>
                       )}
                       {tags.length > 0 && (

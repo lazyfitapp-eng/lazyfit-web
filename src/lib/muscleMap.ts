@@ -1,4 +1,7 @@
 export const MUSCLE_MAP: { keyword: string; muscle: string; color: string }[] = [
+  { keyword: 'incline barbell press', muscle: 'Chest', color: '#4a9eff' },
+  { keyword: 'incline dumbbell press', muscle: 'Chest', color: '#4a9eff' },
+  { keyword: 'flat dumbbell press', muscle: 'Chest', color: '#4a9eff' },
   { keyword: 'bench', muscle: 'Chest', color: '#4a9eff' },
   { keyword: 'chest', muscle: 'Chest', color: '#4a9eff' },
   { keyword: 'fly', muscle: 'Chest', color: '#4a9eff' },
