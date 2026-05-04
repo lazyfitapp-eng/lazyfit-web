@@ -1,5 +1,5 @@
 # LazyFit — Current State Document
-*Last updated: May 2026 — active state repaired for post-onboarding training hardening*
+*Last updated: May 2026 — active state updated after Vercel production deployment fix*
 
 ## ACTIVE STATE — MAY 2026
 
@@ -8,7 +8,21 @@ When this file conflicts with older sections below, the ACTIVE STATE section win
 ### Current Phase
 Training hardening after Food Logger hardening.
 
+### Production Status
+Production is current as of May 4, 2026.
+
+- Production URL: `https://lazyfit-web.vercel.app`
+- Vercel project: `lazyfit-web`
+- Vercel project ID: `prj_UyOsUbRkUUI9CqutLBqrUNAwxm72`
+- Production deployment: `dpl_DT3riSyzaFRPEoW952UrQsd4mTtM`
+- Deployed commit: `e2292203600c08fd1158ce10ac0730e786569320` (`docs: update state after Lower B architecture`)
+- Previous stale production deployment was `d5fc583` (`Add dashboard daily command center`); fixed by deploying clean committed source for `e229220` to production.
+- Vercel status: `READY`. Build passed, TypeScript passed, and static generation completed `20/20`.
+- Production verification passed: `/login` loads; authenticated `/train` loads; Program / Workout Days language is visible; deployed Train bundle contains `Cable Lateral Raise`, `Lower B`, `Barbell Squat`, `Romanian Deadlift`, and `Three workout days`.
+- Nuance: existing QA/existing-user accounts may still render old routine rows if their saved `routines` / `routine_exercises` data predates the new templates. That is a data/backfill issue, not a Vercel deployment issue. Do not forcibly mutate existing routine data without a dedicated plan.
+
 ### Latest Confirmed Commits
+- `e229220` docs: update state after Lower B architecture
 - `64c5232` Add Lower B alternate lower-day architecture
 - `e38ee20` Fix active workout coach card progression truth
 - `bf4b678` Fix workout recovery logged-set persistence
@@ -97,8 +111,8 @@ Upper B:
 Next sprint should be chosen by state check.
 
 Current likely candidates:
+- Existing-user routine data/backfill decision
 - Steps/smart engine design
-- Production QA
 - Optional onboarding regression check
 - Optional final training/food cross-app smoke
 
