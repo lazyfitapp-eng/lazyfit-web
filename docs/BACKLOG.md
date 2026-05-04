@@ -1,13 +1,36 @@
 # Backlog
 
-Pending issues from CURRENT_STATE.md § 8. Deferred to after new design implementation.
+CURRENT_STATE.md ACTIVE STATE is the source of truth. This backlog is secondary and should be updated after major sprint decisions.
 
-| Priority | Issue | Impact | Notes |
-|----------|-------|--------|-------|
-| P1 | Onboarding flow | High | Build TDEE wizard — goals, body stats |
-| P1 | Subscription / paywall | High | Stripe integration, `profiles.subscription_status` |
-| P2 | Profile editing | Medium | Edit form + Supabase update |
-| P2 | Manual food search | Medium | Open Food Facts / USDA API |
-| P2 | Weekly check-in | Medium | Wire `WeeklyCheckin.tsx` → `suggestCalorieTarget()` |
-| P2 | Exercise GIFs | Medium | Shoot own YouTube videos OR pay ExerciseDB $10 |
-| P3 | Rate limiting on API routes | Low | Add middleware to all `/api/*` routes |
+## Active / Near-Term Candidates
+
+- Production visual/browser smoke.
+- Existing-user routine data/backfill policy follow-up, if needed.
+- Onboarding regression check.
+- Steps / smart engine design.
+
+## Product/System Backlog
+
+- Steps / smart engine.
+- Adaptive TDEE algorithm.
+- Weekly check-in adaptive loop.
+- Profile-level lower-day switching polish.
+- Saved meals.
+- Barcode.
+- Deeper food database/ranking improvements.
+- Backdated weight entry.
+- Waist logging / body measurement improvements.
+- AI coach chat tab.
+- Paywall / Stripe.
+- Rate limiting.
+
+## Media/Content Backlog
+
+- Exercise GIFs / LazyFit exercise demo videos.
+
+## Explicitly Not Current Blockers
+
+- Food Logger core loop is paused/good enough for now.
+- Training core hardening is mostly complete.
+- Existing users should not be silently routine-backfilled.
+- Friends beta only when Tudor explicitly asks.

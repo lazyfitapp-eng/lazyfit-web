@@ -8,7 +8,96 @@ Do not patch visible symptoms without tracing the source of truth first. If a va
 
 Private beta users should feel that LazyFit is calm, consistent, and trustworthy. A fast-looking fix that leaves inconsistent logic behind is not acceptable.
 
-## 2. Source-of-Truth Rules
+## 2. LazyFit Sprint Operating Protocol
+
+### State Check First
+
+Before writing a Codex prompt or starting a sprint, state:
+
+- Current phase.
+- Latest pushed commit / repo state.
+- Known product decisions.
+- Known test accounts or environment constraints.
+- Current blocker or opportunity.
+- Why this sprint is next.
+- What is explicitly not being done.
+
+### Source-of-Truth Hierarchy
+
+Use this order:
+
+1. `CURRENT_STATE.md` ACTIVE STATE.
+2. `docs/LAZYFIT_ENGINEERING_RULES.md`.
+3. Committed repo code.
+4. Committed docs.
+5. Current Codex report / chat context.
+6. Untracked docs only if explicitly referenced.
+
+Chat memory and Codex reports are not canonical until written into committed docs or code. `docs/QA_FINDINGS.md` is untracked unless explicitly staged and committed.
+
+### Sprint Flow
+
+For major product work, use this sequence:
+
+1. Research / inspect references.
+2. Audit current app/code.
+3. Product decision.
+4. Implementation sprint.
+5. Browser validation.
+6. Report.
+7. Human commit/push.
+8. Update `CURRENT_STATE.md` if project state changed.
+
+### Codex Task Modes
+
+Each prompt must declare one mode:
+
+- Audit/design only.
+- Implementation.
+- Validation/smoke.
+- Deployment.
+- Docs-only.
+
+Codex must not silently switch modes.
+
+### Browser Validation Rule
+
+Any UI change requires browser validation. If Codex cannot run the browser or dev server, try the existing localhost target, then pause and ask Tudor. Do not call UI work safe to commit on typecheck alone.
+
+### Production/Data Safety
+
+- Do not delete production or QA rows without explicit action-time confirmation.
+- For created test rows, report IDs/counts before cleanup.
+- Do not mutate real user data.
+- Do not change env vars, DNS, Supabase settings, or Vercel settings unless the task explicitly asks.
+
+### Commit Rules
+
+- Codex does not commit or push.
+- Report files changed, validation, risks, and suggested commit message.
+- Tudor commits manually.
+- Keep one commit per sprint.
+
+### Research Rule
+
+For major feature/design decisions, use external research before implementation when relevant. Use official docs first, competitor references when useful, and summarize principles before code.
+
+Examples:
+
+- Steps/smart engine.
+- Food logger major changes.
+- Training architecture.
+- Native/PWA capabilities.
+
+### Anti-Drift Rules
+
+- No friends beta unless Tudor explicitly asks.
+- No broad "while here" fixes.
+- No new feature during audit.
+- No implementation before product decision for major systems.
+- No stale-doc assumptions.
+
+## 3. Source-of-Truth Rules
 
 ### Nutrition Targets
 
@@ -65,7 +154,7 @@ Private beta users should feel that LazyFit is calm, consistent, and trustworthy
 - Changing selected date must affect displayed totals for that date only.
 - Logging food for a selected historical date must not update today's totals.
 
-## 3. Bug-Fix Protocol
+## 4. Bug-Fix Protocol
 
 For any bug involving shared values, inspect every part of the data path before coding:
 
@@ -81,7 +170,7 @@ Before implementing, explain the root cause in plain English. If the root cause 
 
 After fixing, verify the original screen and at least one other dependent screen that uses the same value.
 
-## 4. UI Polish Protocol
+## 5. UI Polish Protocol
 
 For UI, layout, and readability tasks:
 
@@ -93,7 +182,7 @@ For UI, layout, and readability tasks:
 - Mobile readability comes first for beta readiness.
 - If a UI issue appears to be caused by data or state, stop and trace the data path before styling around it.
 
-## 5. High-Risk Domains
+## 6. High-Risk Domains
 
 Treat these areas as high-risk and inspect source-of-truth behavior before editing:
 
@@ -107,7 +196,7 @@ Treat these areas as high-risk and inspect source-of-truth behavior before editi
 - Routine creation.
 - Workout completion.
 
-## 6. Codex Reporting Requirements
+## 7. Codex Reporting Requirements
 
 Every fix should report:
 
@@ -123,7 +212,7 @@ If typecheck was not run, say so clearly and explain why.
 
 If a fix touches a high-risk domain, include before/after behavior using real examples whenever possible.
 
-## 7. Current LazyFit Nutrition Law
+## 8. Current LazyFit Nutrition Law
 
 All user-facing calorie and macro target displays must use `src/lib/nutritionTargets.ts` and `resolveNutritionTargets(profile)`.
 

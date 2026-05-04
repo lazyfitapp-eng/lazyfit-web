@@ -6,7 +6,13 @@
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Training hardening after Food Logger hardening.
+Post-hardening product confidence and production validation before new major features.
+
+### Current Operating Mode / Workflow Protocol
+- `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
+- Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
+- Current likely next path: product confidence / production visual smoke plus the existing-user routine-data decision before major new features.
+- Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Production Status
 Production is current as of May 4, 2026.
