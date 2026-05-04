@@ -6,12 +6,13 @@
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Post-hardening product confidence and production validation before new major features.
+Post-hardening product confidence after production visual/browser smoke. The smoke result unblocks proceeding to Steps / Smart Engine audit-design, but does not make LazyFit beta-ready.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
 - Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
-- Current likely next path: product confidence / production visual smoke plus the existing-user routine-data decision before major new features.
+- Current likely next path: Steps / Smart Engine Research + Product Spec.
+- Recommended next sprint mode: audit/design only.
 - Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Production Status
@@ -25,6 +26,13 @@ Production is current as of May 4, 2026.
 - Previous stale production deployment was `d5fc583` (`Add dashboard daily command center`); fixed by deploying clean committed source for `e229220` to production.
 - Vercel status: `READY`. Build passed, TypeScript passed, and static generation completed `20/20`.
 - Production verification passed: `/login` loads; authenticated `/train` loads; Program / Workout Days language is visible; deployed Train bundle contains `Cable Lateral Raise`, `Lower B`, `Barbell Squat`, `Romanian Deadlift`, and `Three workout days`.
+- Production browser smoke was completed from a local PowerShell Playwright harness, not directly from Codex, because Codex direct browser launch remains blocked by `browserType.launch: spawn EPERM`.
+- Working local Playwright harness: `C:\dev\lazyfit-browser-check`
+- Working browser executable: `C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe`
+- Production smoke results: `/login` loaded; `poweruser@lazyfit.test` authenticated successfully; `/dashboard`, `/food`, `/train`, `/progress`, and `/profile` loaded on mobile `390x844`; `/train` showed Program / Workout Days language and 3-day structure signals; active workout route opened with the disposable QA writer account; active workout showed Coach, Warm-up, Working, and Finish signals; BottomNav was not detected on the active workout route; no source/package files changed.
+- `newuser@lazyfit.test` was manually validated by Tudor after the script false-positive login failure.
+- Active workout smoke likely created/resumed workout `62dc7126-c274-428f-b3bd-efe7361013fa` under the disposable QA writer account.
+- This smoke does not make LazyFit beta-ready. It only unblocks proceeding to Steps / Smart Engine audit-design.
 - Nuance: existing QA/existing-user accounts may still render old routine rows if their saved `routines` / `routine_exercises` data predates the new templates. That is a data/backfill issue, not a Vercel deployment issue. Do not forcibly mutate existing routine data without a dedicated plan.
 
 ### Latest Confirmed Commits
@@ -117,10 +125,9 @@ Upper B:
 Next sprint should be chosen by state check.
 
 Current likely candidates:
+- Steps / Smart Engine Research + Product Spec (audit/design only)
 - Existing-user routine data/backfill decision
-- Steps/smart engine design
 - Optional onboarding regression check
-- Optional final training/food cross-app smoke
 
 ### Known Unresolved Future Architecture
 Future work: Profile-level lower-day switching polish if needed.
