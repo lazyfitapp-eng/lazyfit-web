@@ -9,6 +9,11 @@ When this file conflicts with older sections below, the ACTIVE STATE section win
 Training hardening after Food Logger hardening.
 
 ### Latest Confirmed Commits
+- `bf4b678` Fix workout recovery logged-set persistence
+- `032d86b` Harden training partial-session rotation truth
+- `f97d5ca` Polish training logging corrections and low-data copy
+- `38c76c6` Polish Train program and workout day language
+- `14ff132` Repair current state handoff doc for May training phase
 - `8ddfbd8` Fix onboarding DOB validation state handling
 - `23206db` Align default training routines with LazyFit doctrine
 - `9fe1a76` Fix training progression guardrails
@@ -31,6 +36,10 @@ Deferred food work:
 Training is the current priority.
 
 Confirmed:
+- Workout recovery fixed and browser-validated.
+- Partial-session rotation truth fixed.
+- Training logging correction UX improved.
+- Program / Workout Days language polished.
 - Guardrails fixed.
 - Default doctrine templates aligned.
 - Fresh onboarding DOB blocker fixed.
@@ -71,13 +80,13 @@ Upper B:
 - Bicep Curl
 
 ### Known Next Issue
-Train UI still uses routine language:
-- Routines
-- My routines
-- New routine
-- No routines yet.
+Next sprint should be chosen by state check.
 
-Needs Program / Workout Days language polish.
+Current likely candidates:
+- Coach card rebuild
+- Lower B alternate architecture
+- Steps/smart engine design
+- Production QA
 
 ### Known Unresolved Future Architecture
 Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day.
@@ -353,13 +362,13 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 **What it shows:**
 
-**ROUTINES tab (legacy wording; needs Program / Workout Days language polish):**
+**PROGRAM tab / Program surface:**
 - "START EMPTY WORKOUT" button
-- List of saved routines (with exercise count + muscle split preview)
-- "LOAD TEMPLATE" button → creates the 3 workout days (Upper A / Lower A / Upper B)
+- LazyFit 3-Day Aesthetic shown as one program with Workout Days: Upper A / Lower A / Upper B
+- "LOAD TEMPLATE" button → creates the 3 workout days for the program
 - Last workout card (duration, volume, muscle split, date)
-- `is_system` boolean on routines — system routines cannot be deleted; custom routines show a trash icon
-- Muscle color in routine card overridden by rank (primary muscle = full accent, secondary = dimmed)
+- `is_system` boolean on routines remains internal — system workout days cannot be deleted; custom routines show a trash icon
+- Muscle color in workout-day card overridden by rank (primary muscle = full accent, secondary = dimmed)
 - "How to" pill button visible inline next to each exercise name (not hidden in `···` menu)
 
 **HISTORY tab** (`WorkoutHistory.tsx` — fully rebuilt with inline styles):
@@ -442,6 +451,7 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 - Currently: GIF API returns null (free tier limitation) → shows YouTube card
 
 **Status:** ✅ Functional. Rest timer has boxing bell sound. Warm-ups auto-generate. Progression engine works. UI fully rebuilt.
+Workout recovery is browser-validated. Active workout hydrates DB-persisted `workout_sets`; DB logged sets remain the source of truth through `/train` resume and active-route refresh; localStorage only restores unsaved draft inputs.
 Readability fixes complete — all text colors updated, font sizes increased throughout (column headers, set labels, inputs, buttons). Completed warmup rows (W2, W3) display reps as plain `<div>` elements (not disabled inputs) to avoid browser UA dimming.
 ⚠️ Exercise GIFs not showing (ExerciseDB paid tier required — plan: shoot own YouTube demos)
 
@@ -629,8 +639,9 @@ src/lib/
 | Food AI logging | Claude Haiku, image + text, macro estimation |
 | Dashboard | Real data, date picker, calorie ring, macro bars, weight trend |
 | Weight tracking | EMA trend, weigh-in modal, 90-day chart |
-| Training — routines | Create, load template, start workout |
+| Training — program/workout days | Create/load program template, start workout |
 | Training — active workout | Sets, reps, warm-ups, rest timer, boxing bell |
+| Training — workout recovery | Recovery banner works; DB-logged sets persist through resume/refresh; localStorage remains draft-input safety net |
 | Training — progression engine | +2.5kg/+1kg when all reps hit max |
 | Training — warm-up sets | Auto-generated, science-based, editable |
 | Workout history | Calendar view, workout cards, muscle split |
@@ -648,9 +659,8 @@ src/lib/
 | Issue | Location | Impact | Fix |
 |-------|----------|--------|-----|
 | Exercise GIFs not showing | `/api/exercise-media` | Medium — How To shows YouTube card instead | Shoot own videos for LazyFit YouTube channel (best long-term), OR pay $10 one-time ExerciseDB |
-| Workout auto-save | `ActiveWorkoutClient.tsx` | High — in-progress workout lost on accidental navigation | localStorage auto-save on every set log + recovery prompt on next visit to /train |
 | Coach card rebuild | `ActiveWorkoutClient.tsx` | Medium — currently shows redundant set info; ↑/→ Hold badge triggers lack clear rules | Rewrite progression logic with explicit scientific rules; clean up coach card UI |
-| Program language polish | `TrainClient.tsx` + related train UI | Medium — UI still says routines/My routines/New routine | Rename user-facing copy to Program / Workout Days without changing data model yet |
+| Lower B alternate architecture | Training templates / routine model | Medium — barbell lower should be an alternate lower-day variant, not a fourth default day | Design alternate lower-day variant without changing the default 3-day program |
 | Onboarding flow | `/onboarding` | Fixed blocker — fresh onboarding completed and generated correct training days | Keep browser-validating fresh onboarding after training changes |
 | Weekly check-in | `WeeklyCheckin.tsx` | Medium — UI exists, adaptive calorie loop not wired | Connect to `suggestCalorieTarget()` in `trendWeight.ts` |
 | Subscription / paywall | `profiles.subscription_status` | High for monetization — field exists, no enforcement | Build paywall + Stripe/payment integration |
@@ -700,7 +710,7 @@ lazyfit-web/
 | No Redux/Zustand | Overkill for current state needs; Supabase is source of truth |
 | Tailwind v4 (PostCSS-first) | No config file — all customization via CSS variables |
 | Monospace font everywhere | Matrix aesthetic — auth/landing only; rebuilt app screens use SF Pro Display |
-| Legacy routine data model, program language next | Data model still uses `routines`, but user-facing Train copy should move to Program / Workout Days |
+| Legacy routine data model remains internally; user-facing Train UI now frames system as Program / Workout Days | Data model still uses `routines`, but visible copy treats LazyFit as one program with workout days |
 | set_type column ('warmup'/'working') | Prevents warm-up sets from corrupting progression engine |
 | exercise_targets PK on (user_id, exercise_name, set_number) | Enables upsert for per-set progression tracking |
 | RLS disabled on exercise_media | Public cache table, no user data — simplifies server writes |
@@ -715,7 +725,7 @@ Static HTML mockups used as pixel-perfect design references for rebuilt screens.
 | File | Screen | Status |
 |------|--------|--------|
 | `C:\Users\Jarvis\Desktop\lazyfit_dashboard.html` | Dashboard | Implemented ✅ |
-| `C:\Users\Jarvis\Desktop\lazyfit_train.html` | Train / Routines tab | Implemented ✅ |
+| `C:\Users\Jarvis\Desktop\lazyfit_train.html` | Train / Program tab | Implemented ✅ |
 | `C:\Users\Jarvis\Desktop\lazyfit_history.html` | Train / History tab | Implemented ✅ |
 | `C:\Users\Jarvis\Desktop\lazyfit_active_workout_final.html` | Active Workout | Implemented ✅ |
 | `lazyfit_exercise_history.html` | Exercise History | Implemented ✅ |
@@ -751,11 +761,10 @@ A systematic multi-round pass was applied across all components to fix unreadabl
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Workout auto-save | 🔴 High | localStorage save on every set; recovery prompt on /train if draft exists |
 | Coach card rebuild | 🟡 Medium | Clear ↑/→ Hold rules; remove redundant set display |
-| Program / workout-day language polish | 🟡 Medium | Train UI still says routines/My routines/New routine; doctrine is one 3-day program |
 | Lower B alternate architecture | 🟡 Medium | Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day |
 | Onboarding regression checks | 🟡 Medium | Fresh onboarding should continue to validate DOB and generate Upper A / Lower A / Upper B |
+| Steps / smart engine design | 🟢 Post-launch | Decide how steps, adherence signals, and adaptive coaching should feed the engine |
 | Adaptive TDEE algorithm | 🟢 Post-launch | MacroFactor-style: logged weight + food → reverse-engineer real TDEE |
 | AI Coach chat tab | 🟢 Post-launch | Separate tab, rule-based at launch |
 | Waist logging | 🟢 Post-launch | Required for US Navy body fat method in profile |
