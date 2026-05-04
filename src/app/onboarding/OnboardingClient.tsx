@@ -10,8 +10,10 @@ import {
 } from '@/lib/createDefaultRoutines'
 import { getLocalDateString } from '@/lib/dateUtils'
 import {
+  ACTIVITY_FLOOR_OPTIONS,
   calcAgeFromDob,
   calcNutritionTargets,
+  DEFAULT_ACTIVITY_FLOOR,
   normalizeDateOfBirth,
   validSex,
   type DailySteps,
@@ -212,7 +214,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     neckCm: '',
     waistCm: '',
     jobActivity: 'desk',
-    dailySteps: '5-10k',
+    dailySteps: DEFAULT_ACTIVITY_FLOOR,
     goal: 'recomp',
     lowerDayStyle: 'back_friendly',
   })
@@ -604,19 +606,14 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     { value: 'labor' as JobActivity, title: 'Physical labor', desc: 'Construction, warehouse, trades — physically demanding from start to finish.' },
   ]
 
-  const stepsOptions = [
-    { value: 'lt5k' as DailySteps, num: '< 5,000', lbl: 'Mostly sedentary' },
-    { value: '5-10k' as DailySteps, num: '5 – 10k', lbl: 'Lightly active' },
-    { value: '10-15k' as DailySteps, num: '10 – 15k', lbl: 'Moderately active' },
-    { value: 'gt15k' as DailySteps, num: '> 15k', lbl: 'Very active' },
-  ]
+  const stepsOptions = ACTIVITY_FLOOR_OPTIONS
 
   const step3 = (
     <div style={{ paddingBottom: 24 }}>
       {stepHero(
-        'Step 3 — Daily Life',
-        <>HOW YOU<br /><span style={{ color: 'transparent', WebkitTextStroke: `1px ${C.greenBorder}` }}>MOVE.</span></>,
-        <>Outside the gym. <strong style={{ color: C.text, fontStyle: 'normal' }}>Most people get this wrong</strong> — either overestimating or underestimating. Check your Health app for your actual step count before you answer.</>
+        'Step 3 - Activity Floor',
+        <>ACTIVITY<br /><span style={{ color: 'transparent', WebkitTextStroke: `1px ${C.greenBorder}` }}>FLOOR.</span></>,
+        <><strong style={{ color: C.text, fontStyle: 'normal' }}>Pick your normal daily movement baseline.</strong> LazyFit uses this to set your starting target and guide weekly coaching, not to give you extra calories.</>
       )}
 
       <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>Your job</div>
@@ -647,7 +644,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         </div>
       ))}
 
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 10, marginTop: 22 }}>Daily steps — outside the gym</div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 10, marginTop: 22 }}>Activity floor</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {stepsOptions.map(opt => (
           <div
@@ -660,8 +657,8 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
               cursor: 'pointer',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: form.dailySteps === opt.value ? C.green : C.text, marginBottom: 2 }}>{opt.num}</div>
-            <div style={{ fontSize: 11, color: C.text2 }}>{opt.lbl}</div>
+            <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: form.dailySteps === opt.value ? C.green : C.text, marginBottom: 2 }}>{opt.label}</div>
+            <div style={{ fontSize: 11, color: C.text2 }}>{opt.sub}</div>
           </div>
         ))}
       </div>

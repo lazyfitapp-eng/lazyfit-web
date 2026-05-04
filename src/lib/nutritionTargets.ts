@@ -2,7 +2,40 @@ import { getLocalDateString, parseLocalDateString } from './dateUtils'
 
 export type GoalKey = 'cut' | 'recomp' | 'bulk'
 export type JobActivity = 'desk' | 'feet' | 'labor'
-export type DailySteps = 'lt5k' | '5-10k' | '10-15k' | 'gt15k'
+export type ActivityFloorValue = 'under_4k' | '4_6k' | '6_8k' | '8_10k' | '10k_plus'
+export type LegacyDailySteps = 'lt5k' | '<5k' | '5-10k' | '10-15k' | 'gt15k' | '>15k'
+export type DailySteps = ActivityFloorValue | LegacyDailySteps
+
+type ActivityFloorMeta = {
+  value: ActivityFloorValue
+  label: string
+  sub: string
+  representativeSteps: number
+}
+
+export const DEFAULT_ACTIVITY_FLOOR: ActivityFloorValue = '6_8k'
+
+export const ACTIVITY_FLOOR_OPTIONS: readonly ActivityFloorMeta[] = [
+  { value: 'under_4k', label: 'Under 4k', sub: 'Quiet baseline movement', representativeSteps: 3000 },
+  { value: '4_6k', label: '4\u20136k', sub: 'Light daily movement', representativeSteps: 5000 },
+  { value: '6_8k', label: '6\u20138k', sub: 'Typical daily movement', representativeSteps: 7000 },
+  { value: '8_10k', label: '8\u201310k', sub: 'Active daily movement', representativeSteps: 9000 },
+  { value: '10k_plus', label: '10k+', sub: 'High daily movement', representativeSteps: 11000 },
+]
+
+const LEGACY_ACTIVITY_FLOOR_META: Record<LegacyDailySteps, Omit<ActivityFloorMeta, 'value'>> = {
+  lt5k: { label: '<5k', sub: 'Legacy activity floor', representativeSteps: 4000 },
+  '<5k': { label: '<5k', sub: 'Legacy activity floor', representativeSteps: 4000 },
+  '5-10k': { label: '5-10k', sub: 'Legacy activity floor', representativeSteps: 7500 },
+  '10-15k': { label: '10-15k', sub: 'Legacy activity floor', representativeSteps: 12500 },
+  gt15k: { label: '>15k', sub: 'Legacy activity floor', representativeSteps: 16000 },
+  '>15k': { label: '>15k', sub: 'Legacy activity floor', representativeSteps: 16000 },
+}
+
+const ACTIVITY_FLOOR_BY_VALUE = ACTIVITY_FLOOR_OPTIONS.reduce(
+  (acc, option) => ({ ...acc, [option.value]: option }),
+  {} as Record<ActivityFloorValue, ActivityFloorMeta>,
+)
 
 const JOB_MULTIPLIERS: Record<JobActivity, number> = {
   desk: 1.2,
@@ -11,10 +44,17 @@ const JOB_MULTIPLIERS: Record<JobActivity, number> = {
 }
 
 const STEP_ADJUSTMENTS: Record<DailySteps, number> = {
+  under_4k: 0,
+  '4_6k': 0.05,
+  '6_8k': 0.1,
+  '8_10k': 0.15,
+  '10k_plus': 0.2,
   lt5k: 0,
+  '<5k': 0,
   '5-10k': 0.1,
   '10-15k': 0.2,
   gt15k: 0.3,
+  '>15k': 0.3,
 }
 
 export function normalizeGoal(goal: string | null | undefined): GoalKey {
@@ -31,8 +71,38 @@ export function validJobActivity(value: string | null | undefined): JobActivity 
   return value === 'feet' || value === 'labor' || value === 'desk' ? value : 'desk'
 }
 
+export function isDailyStepsValue(value: string | null | undefined): value is DailySteps {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(STEP_ADJUSTMENTS, value)
+}
+
 export function validDailySteps(value: string | null | undefined): DailySteps {
-  return value === 'lt5k' || value === '5-10k' || value === '10-15k' || value === 'gt15k' ? value : '5-10k'
+  return isDailyStepsValue(value) ? value : DEFAULT_ACTIVITY_FLOOR
+}
+
+export function getCanonicalActivityFloor(value: string | null | undefined): ActivityFloorValue {
+  const normalized = validDailySteps(value)
+  if (Object.prototype.hasOwnProperty.call(ACTIVITY_FLOOR_BY_VALUE, normalized)) return normalized as ActivityFloorValue
+  if (normalized === 'lt5k' || normalized === '<5k') return 'under_4k'
+  if (normalized === '5-10k') return '6_8k'
+  return '10k_plus'
+}
+
+export function getActivityFloorLabel(value: string | null | undefined): string {
+  const normalized = validDailySteps(value)
+  if (Object.prototype.hasOwnProperty.call(ACTIVITY_FLOOR_BY_VALUE, normalized)) return ACTIVITY_FLOOR_BY_VALUE[normalized as ActivityFloorValue].label
+  return LEGACY_ACTIVITY_FLOOR_META[normalized as LegacyDailySteps].label
+}
+
+export function getActivityFloorSub(value: string | null | undefined): string {
+  const normalized = validDailySteps(value)
+  if (Object.prototype.hasOwnProperty.call(ACTIVITY_FLOOR_BY_VALUE, normalized)) return ACTIVITY_FLOOR_BY_VALUE[normalized as ActivityFloorValue].sub
+  return LEGACY_ACTIVITY_FLOOR_META[normalized as LegacyDailySteps].sub
+}
+
+export function getRepresentativeDailySteps(value: string | null | undefined): number {
+  const normalized = validDailySteps(value)
+  if (Object.prototype.hasOwnProperty.call(ACTIVITY_FLOOR_BY_VALUE, normalized)) return ACTIVITY_FLOOR_BY_VALUE[normalized as ActivityFloorValue].representativeSteps
+  return LEGACY_ACTIVITY_FLOOR_META[normalized as LegacyDailySteps].representativeSteps
 }
 
 function parseDateParts(year: number, month: number, day: number): Date | null {

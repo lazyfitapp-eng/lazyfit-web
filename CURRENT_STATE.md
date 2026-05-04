@@ -1,19 +1,47 @@
 # LazyFit — Current State Document
-*Last updated: May 2026 — active state updated after Vercel production deployment fix*
+*Last updated: May 2026 - active state updated after Activity Floor Baseline validation*
 
 ## ACTIVE STATE — MAY 2026
 
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Post-hardening product confidence after production visual/browser smoke. The smoke result unblocks proceeding to Steps / Smart Engine audit-design, but does not make LazyFit beta-ready.
+Steps / Smart Engine V1 foundation work is underway. Activity Floor Baseline is implemented and locally browser-validated, but LazyFit is not beta-ready until Tudor explicitly approves the next release step.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
 - Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
-- Current likely next path: Steps / Smart Engine Research + Product Spec.
-- Recommended next sprint mode: audit/design only.
+- Current likely next path: Steps / Smart Engine V1 - Weekly Check-In Step Average.
+- Recommended next sprint mode: implementation.
 - Do not use stale chat context or older document sections over ACTIVE STATE.
+
+### Steps / Smart Engine Status
+Steps / Smart Engine V1 - Activity Floor Baseline is implemented and locally browser-validated.
+
+Implementation decisions:
+- Activity Floor reuses `profiles.daily_steps` as the stored baseline field.
+- User-facing language is now "Activity Floor."
+- No new profile column or `weekly_checkins` table was added.
+- No Apple Health, Android Health Connect, Google Fit, or browser pedometer integration was added.
+- No calorie-burn banking or earned calories were added.
+- Activity Floor helps set the user's baseline and future coaching context. Weekly step averages and recommendation rules are deferred.
+
+Validation:
+- `npx.cmd tsc --noEmit` passed.
+- Local Playwright validation passed through `C:\dev\lazyfit-browser-check`.
+- Existing Profile showed Activity Floor and no-calorie-banking copy.
+- Activity Floor selection auto-saves on option tap.
+- Fresh onboarding with `gadea.tudor+lazyfit4@gmail.com` completed successfully.
+- Fresh onboarding showed all five options: Under 4k, 4-6k, 6-8k, 8-10k, 10k+.
+- 8-10k persisted to Profile after onboarding.
+- Train showed Upper A / Lower A / Upper B after onboarding.
+- No visible NaN/undefined/null.
+- Console runtime errors: 0.
+
+Next recommended sprint:
+- Steps / Smart Engine V1 - Weekly Check-In Step Average.
+- Mode: implementation.
+- Scope: add manual weekly average step input/persistence only; no dashboard Activity Floor card and no recommendation engine unless explicitly approved.
 
 ### Production Status
 Production is current as of May 4, 2026.
@@ -125,7 +153,7 @@ Upper B:
 Next sprint should be chosen by state check.
 
 Current likely candidates:
-- Steps / Smart Engine Research + Product Spec (audit/design only)
+- Steps / Smart Engine V1 - Weekly Check-In Step Average (implementation; manual weekly average step input/persistence only)
 - Existing-user routine data/backfill decision
 - Optional onboarding regression check
 

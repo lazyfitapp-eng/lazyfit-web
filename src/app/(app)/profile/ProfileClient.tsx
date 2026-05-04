@@ -4,10 +4,15 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
+  ACTIVITY_FLOOR_OPTIONS,
   calcAgeFromDob as sharedCalcAgeFromDob,
   calcNutritionTargets,
+  getActivityFloorLabel,
+  getCanonicalActivityFloor,
   normalizeGoal as sharedNormalizeGoal,
+  validDailySteps,
   validSex as sharedValidSex,
+  type ActivityFloorValue,
   type DailySteps,
   type GoalKey,
   type JobActivity,
@@ -106,12 +111,7 @@ const JOB_OPTIONS: { value: JobActivity; label: string; sub: string }[] = [
   { value: 'labor', label: 'Physical labor', sub: 'Manual work or demanding daily movement' },
 ]
 
-const STEP_OPTIONS: { value: DailySteps; label: string; sub: string }[] = [
-  { value: 'lt5k', label: '<5k steps', sub: 'Low daily walking' },
-  { value: '5-10k', label: '5-10k steps', sub: 'Typical daily movement' },
-  { value: '10-15k', label: '10-15k steps', sub: 'Active daily movement' },
-  { value: 'gt15k', label: '>15k steps', sub: 'Very active day-to-day' },
-]
+const STEP_OPTIONS = ACTIVITY_FLOOR_OPTIONS
 
 // ─── Macro calculation ────────────────────────────────────────────────────────
 
@@ -171,7 +171,7 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
   const [heightCm, setHeightCm] = useState(profile?.height_cm ?? 0)
   const [currentWeight, setCurrentWeight] = useState(profile?.current_weight ?? 0)
   const [jobActivity, setJobActivity] = useState<JobActivity>((profile?.job_activity as JobActivity) ?? 'desk')
-  const [dailySteps, setDailySteps] = useState<DailySteps>((profile?.daily_steps as DailySteps) ?? '5-10k')
+  const [dailySteps, setDailySteps] = useState<DailySteps>(validDailySteps(profile?.daily_steps))
   const [neckCm, setNeckCm] = useState<number | null>(profile?.neck_cm ?? null)
   const [editDrawer, setEditDrawer] = useState<EditField>(null)
   const [choiceSheet, setChoiceSheet] = useState<ChoiceField>(null)
@@ -345,13 +345,13 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
     }, 'Activity and targets saved')
   }
 
-  async function saveDailySteps(value: DailySteps) {
+  async function saveDailySteps(value: ActivityFloorValue) {
     setDailySteps(value)
     setChoiceSheet(null)
     await saveProfileUpdate({
       daily_steps: value,
       ...recommendationUpdates({ nextSteps: value }),
-    }, 'Steps and targets saved')
+    }, 'Activity floor saved.')
   }
 
   async function saveTrainingDays(days: number) {
@@ -632,18 +632,18 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
           </div>
         </div>
 
-        {/* Daily steps */}
+        {/* Activity floor */}
         <div
           onClick={() => setChoiceSheet('steps')}
           style={{ borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px' }}>
-            <div>
-              <div style={{ fontSize: 15, color: '#b8b8b8' }}>Daily steps</div>
-              <div style={{ fontSize: 11, color: '#888888', marginTop: 1 }}>Used for calorie targets</div>
+            <div style={{ flex: 1, paddingRight: 12 }}>
+              <div style={{ fontSize: 15, color: '#b8b8b8' }}>Activity floor</div>
+              <div style={{ fontSize: 11, color: '#888888', marginTop: 1 }}>Your normal daily movement baseline. Used for weekly coaching, not calorie banking.</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{STEP_OPTIONS.find(o => o.value === dailySteps)?.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{getActivityFloorLabel(dailySteps)}</span>
               <span style={{ fontSize: 18, color: '#b8b8b8' }}>›</span>
             </div>
           </div>
@@ -792,15 +792,15 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
         <div style={{ display: 'flex', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 'min(430px, 100vw)', height: '100dvh', background: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'flex-end', overflow: 'hidden' }}>
           <div style={{ background: '#0e0e0e', borderRadius: '20px 20px 0 0', padding: '20px 20px calc(28px + env(safe-area-inset-bottom, 0px))', width: '100%', maxHeight: '88dvh', overflowY: 'auto', borderTop: '1px solid #1a1a1a', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}>
             <div style={{ width: 36, height: 4, background: '#2a2a2a', borderRadius: 2, margin: '0 auto 20px' }} />
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 4 }}>{choiceSheet === 'job' ? 'Job activity' : 'Daily steps'}</div>
-            <div style={{ fontSize: 13, color: '#b8b8b8', marginBottom: 20 }}>{choiceSheet === 'job' ? 'Used to estimate daily calorie needs.' : 'Used to adjust your calorie target.'}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 4 }}>{choiceSheet === 'job' ? 'Job activity' : 'Activity floor'}</div>
+            <div style={{ fontSize: 13, color: '#b8b8b8', marginBottom: 20 }}>{choiceSheet === 'job' ? 'Used to estimate daily calorie needs.' : 'Your normal daily movement baseline. Used for weekly coaching, not calorie banking.'}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {(choiceSheet === 'job' ? JOB_OPTIONS : STEP_OPTIONS).map(opt => {
-                const active = choiceSheet === 'job' ? jobActivity === opt.value : dailySteps === opt.value
+                const active = choiceSheet === 'job' ? jobActivity === opt.value : getCanonicalActivityFloor(dailySteps) === opt.value
                 return (
                   <div
                     key={opt.value}
-                    onClick={() => choiceSheet === 'job' ? saveJobActivity(opt.value as JobActivity) : saveDailySteps(opt.value as DailySteps)}
+                    onClick={() => choiceSheet === 'job' ? saveJobActivity(opt.value as JobActivity) : saveDailySteps(opt.value as ActivityFloorValue)}
                     style={{ background: active ? '#0c1c12' : '#111', border: active ? '1.5px solid #3ecf8e' : '1px solid #1a1a1a', borderRadius: 12, padding: '14px 16px', cursor: 'pointer' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
