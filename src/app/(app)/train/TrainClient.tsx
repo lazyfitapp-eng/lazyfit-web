@@ -5,7 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { computeMuscleSplit } from '@/lib/muscleMap'
-import { THREE_DAY_TEMPLATE, createDefaultRoutines } from '@/lib/createDefaultRoutines'
+import {
+  PROGRAM_SLOT_ORDER,
+  createDefaultRoutines,
+  getActiveProgramRoutineNames,
+  getProgramDayNumber,
+  getProgramSlotForRoutineName,
+  getRoutineNameForProgramSlot,
+  type LowerDayStyle,
+} from '@/lib/createDefaultRoutines'
 import WorkoutHistory from './WorkoutHistory'
 
 const PROGRAM_NAME = 'LazyFit 3-Day Aesthetic'
@@ -52,6 +60,8 @@ interface RoutineStatus {
 interface Props {
   userId: string
   routines: Routine[]
+  lowerDayStyle: LowerDayStyle
+  activeProgramRoutineNames: string[]
   lastWorkout: LastWorkout | null
   lastCompleteWorkout: LastCompleteWorkout | null
   routineStatuses: Record<string, RoutineStatus>
@@ -75,35 +85,34 @@ function getRoutineTags(name: string): string[] {
   return []
 }
 
-function getProgramDayNumber(name: string): number | null {
-  const idx = THREE_DAY_TEMPLATE.findIndex(tpl => tpl.name === name)
-  return idx >= 0 ? idx + 1 : null
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
-function findRecommendedRoutine(routines: Routine[], lastRoutineName: string | null) {
-  const starterNames = THREE_DAY_TEMPLATE.map(tpl => tpl.name)
-  const starterRoutines = starterNames
+function findRecommendedRoutine(routines: Routine[], lastRoutineName: string | null, lowerDayStyle: LowerDayStyle) {
+  const activeNames = getActiveProgramRoutineNames(lowerDayStyle)
+  const activeProgramRoutines = activeNames
     .map(name => routines.find(r => r.name === name))
     .filter((r): r is Routine => Boolean(r))
 
-  if (starterRoutines.length === 0) return routines[0] ?? null
+  if (activeProgramRoutines.length === 0) return routines[0] ?? null
 
-  const lastStarterIdx = lastRoutineName ? starterNames.indexOf(lastRoutineName) : -1
-  if (lastStarterIdx >= 0) {
-    for (let offset = 1; offset <= starterNames.length; offset++) {
-      const nextName = starterNames[(lastStarterIdx + offset) % starterNames.length]
-      const nextRoutine = starterRoutines.find(r => r.name === nextName)
+  const lastSlot = getProgramSlotForRoutineName(lastRoutineName)
+  const lastSlotIdx = lastSlot ? PROGRAM_SLOT_ORDER.indexOf(lastSlot) : -1
+  if (lastSlotIdx >= 0) {
+    for (let offset = 1; offset <= PROGRAM_SLOT_ORDER.length; offset++) {
+      const nextSlot = PROGRAM_SLOT_ORDER[(lastSlotIdx + offset) % PROGRAM_SLOT_ORDER.length]
+      const nextName = getRoutineNameForProgramSlot(nextSlot, lowerDayStyle)
+      const nextRoutine = activeProgramRoutines.find(r => r.name === nextName)
       if (nextRoutine) return nextRoutine
     }
   }
 
-  return starterRoutines[0]
+  return activeProgramRoutines[0]
 }
 
 export default function TrainClient({
   userId,
   routines: initialRoutines,
+  lowerDayStyle,
+  activeProgramRoutineNames,
   lastWorkout,
   lastCompleteWorkout,
   routineStatuses,
@@ -145,7 +154,8 @@ export default function TrainClient({
   const totalVolume = lastWorkout
     ? Math.round(lastWorkout.sets.reduce((s, r) => s + r.weight_kg * r.reps_completed, 0))
     : 0
-  const recommendedRoutine = findRecommendedRoutine(routines, lastCompleteWorkout?.routineName ?? null)
+  const recommendedRoutine = findRecommendedRoutine(routines, lastCompleteWorkout?.routineName ?? null, lowerDayStyle)
+  const selectedLowerRoutineName = activeProgramRoutineNames[1] ?? 'Lower A'
 
   const startWorkout = async (routineId?: string) => {
     const key = routineId ?? 'empty'
@@ -162,7 +172,7 @@ export default function TrainClient({
   const loadTemplate = async () => {
     setLoadingTemplate(true)
     try {
-      await createDefaultRoutines(supabase, userId)
+      await createDefaultRoutines(supabase, userId, lowerDayStyle)
       router.refresh()
     } catch {
       alert('Could not load template. Try again.')
@@ -355,7 +365,7 @@ export default function TrainClient({
           {routines.length === 0 ? (
             <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '24px', textAlign: 'center' }}>
               <p style={{ color: '#b8b8b8', fontSize: '13px', marginBottom: '16px' }}>
-                No workout days loaded yet. Load Upper A, Lower A, and Upper B.
+                No workout days loaded yet. Load Upper A, {selectedLowerRoutineName}, and Upper B.
               </p>
               <button
                 onClick={loadTemplate}
@@ -373,7 +383,7 @@ export default function TrainClient({
                 const isLastPartial = routineStatus?.status === 'partial'
                 const isRecommended = r.id === recommendedRoutine?.id
                 const tags = getRoutineTags(r.name)
-                const programDayNumber = getProgramDayNumber(r.name)
+                const programDayNumber = getProgramDayNumber(r.name, lowerDayStyle)
                 return (
                   <div
                     key={r.id}

@@ -9,6 +9,7 @@ export const MUSCLE_MAP: { keyword: string; muscle: string; color: string }[] = 
   { keyword: 'squat', muscle: 'Quads', color: '#00FF41' },
   { keyword: 'leg press', muscle: 'Quads', color: '#00FF41' },
   { keyword: 'leg extension', muscle: 'Quads', color: '#00FF41' },
+  { keyword: 'romanian deadlift', muscle: 'Hamstrings', color: '#00CC33' },
   { keyword: 'deadlift', muscle: 'Back', color: '#ff6b4a' },
   { keyword: 'row', muscle: 'Back', color: '#ff6b4a' },
   { keyword: 'pull-up', muscle: 'Back', color: '#ff6b4a' },
@@ -41,6 +42,9 @@ export const MUSCLE_MAP: { keyword: string; muscle: string; color: string }[] = 
 
 export function getMuscle(name: string): { muscle: string; color: string } {
   const lower = name.toLowerCase()
+  const exact = MUSCLE_MAP.find(m => lower === m.keyword)
+  if (exact) return { muscle: exact.muscle, color: exact.color }
+
   for (const m of MUSCLE_MAP) {
     if (lower.includes(m.keyword)) return { muscle: m.muscle, color: m.color }
   }

@@ -12,6 +12,8 @@ function normalizeName(name: string): string {
 // Maps our exercise names → ExerciseDB search terms when the exact name doesn't match
 const EXERCISE_ALIASES: Record<string, string> = {
   'barbell row':            'barbell bent over row',
+  'barbell squat':          'barbell full squat',
+  'romanian deadlift':      'barbell romanian deadlift',
   'cable row':              'cable seated row',
   'tricep pushdown':        'cable pushdown',
   'skull crusher':          'barbell skull crusher',
@@ -27,6 +29,7 @@ const EXERCISE_ALIASES: Record<string, string> = {
   'incline barbell press':  'barbell incline bench press',
   'flat dumbbell press':    'dumbbell bench press',
   'lat pulldown':           'cable pulldown',
+  'leg press':              'sled 45 leg press',
   'cable lateral raise':    'cable lateral raise',
   'dumbbell shoulder press':'dumbbell shoulder press',
   'face pull':              'cable face pull',

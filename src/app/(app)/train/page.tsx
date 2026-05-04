@@ -1,5 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_ROUTINE_DELETE_GUARD_TEMPLATES, THREE_DAY_TEMPLATE } from '@/lib/createDefaultRoutines'
+import {
+  DEFAULT_ROUTINE_DELETE_GUARD_TEMPLATES,
+  createDefaultRoutines,
+  getActiveProgramRoutineNames,
+  getProgramDayNumber,
+  getProgramSlotForRoutineName,
+  isProgramRoutineName,
+  resolveLowerDayStyle,
+} from '@/lib/createDefaultRoutines'
 import { redirect } from 'next/navigation'
 import TrainClient from './TrainClient'
 import { getWorkoutCompletionStatus } from '@/lib/workoutCompletion'
@@ -16,12 +24,32 @@ export default async function TrainPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('lower_day_style')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const lowerDayStyle = resolveLowerDayStyle(profile?.lower_day_style)
+  const activeProgramRoutineNames = getActiveProgramRoutineNames(lowerDayStyle)
+  const activeProgramRoutineNameSet = new Set(activeProgramRoutineNames)
+
   // Fetch routines
-  const { data: routineRows } = await supabase
+  let { data: routineRows } = await supabase
     .from('routines')
     .select('id, name, is_system')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
+
+  if (lowerDayStyle === 'barbell') {
+    await createDefaultRoutines(supabase, user.id, lowerDayStyle)
+    const { data: refreshedRoutineRows } = await supabase
+      .from('routines')
+      .select('id, name, is_system')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+    routineRows = refreshedRoutineRows
+  }
 
   // Fetch exercise counts per routine
   const routineIds = (routineRows ?? []).map(r => r.id)
@@ -41,13 +69,32 @@ export default async function TrainPage() {
     return acc
   }, {} as Record<string, string[]>)
 
-  const routines = (routineRows ?? []).map(r => ({
-    id: r.id,
-    name: r.name,
-    exerciseCount: countsByRoutine[r.id] ?? 0,
-    is_system: r.is_system ?? false,
-    canDelete: !r.is_system && !isDefaultRoutine(r.name, exercisesByRoutine[r.id] ?? []),
-  }))
+  const routines = (routineRows ?? [])
+    .map(r => {
+      const isProtectedDefault = isDefaultRoutine(r.name, exercisesByRoutine[r.id] ?? [])
+      return {
+        id: r.id,
+        name: r.name,
+        exerciseCount: countsByRoutine[r.id] ?? 0,
+        is_system: r.is_system ?? false,
+        canDelete: !r.is_system && !isProtectedDefault,
+        isProtectedDefault,
+      }
+    })
+    .filter(r => {
+      const slot = getProgramSlotForRoutineName(r.name)
+      const inactiveLowerVariant = slot === 'lower' && !activeProgramRoutineNameSet.has(r.name)
+      return !(inactiveLowerVariant && (r.is_system || r.isProtectedDefault))
+    })
+    .sort((a, b) => {
+      const aDay = getProgramDayNumber(a.name, lowerDayStyle)
+      const bDay = getProgramDayNumber(b.name, lowerDayStyle)
+      if (aDay !== null && bDay !== null) return aDay - bDay
+      if (aDay !== null) return -1
+      if (bDay !== null) return 1
+      return 0
+    })
+    .map(({ isProtectedDefault, ...routine }) => routine)
 
   // Fetch completed workout sessions. A completed row can still be a partial planned workout.
   const { data: completedWorkoutRows } = await supabase
@@ -107,9 +154,8 @@ export default async function TrainPage() {
   })
 
   const lastWorkoutInfo = workoutsWithStatus[0] ?? null
-  const programDayNames = new Set(THREE_DAY_TEMPLATE.map(day => day.name))
   const lastCompleteWorkoutInfo = workoutsWithStatus.find(w =>
-    w.completionStatus.isComplete && programDayNames.has((w.workout.routines as any)?.name ?? '')
+    w.completionStatus.isComplete && isProgramRoutineName((w.workout.routines as any)?.name ?? '')
   ) ?? null
 
   const lastWorkout = lastWorkoutInfo ? {
@@ -150,6 +196,8 @@ export default async function TrainPage() {
     <TrainClient
       userId={user.id}
       routines={routines}
+      lowerDayStyle={lowerDayStyle}
+      activeProgramRoutineNames={activeProgramRoutineNames}
       lastWorkout={lastWorkout}
       lastCompleteWorkout={lastCompleteWorkout}
       routineStatuses={routineStatuses}

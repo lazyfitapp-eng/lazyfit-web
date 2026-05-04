@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { createDefaultRoutines } from '@/lib/createDefaultRoutines'
+import {
+  createDefaultRoutines,
+  getThreeDayTemplate,
+  type LowerDayStyle,
+} from '@/lib/createDefaultRoutines'
 import { getLocalDateString } from '@/lib/dateUtils'
 import {
   calcAgeFromDob,
@@ -34,6 +38,7 @@ interface FormState {
   jobActivity: JobActivity
   dailySteps: DailySteps
   goal: Goal
+  lowerDayStyle: LowerDayStyle
 }
 
 interface Macros {
@@ -209,6 +214,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
     jobActivity: 'desk',
     dailySteps: '5-10k',
     goal: 'recomp',
+    lowerDayStyle: 'back_friendly',
   })
 
   const macros = computeMacros(form)
@@ -320,12 +326,13 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
         target_protein: macros.protein,
         target_carbs: macros.carbs,
         target_fat: macros.fat,
+        lower_day_style: form.lowerDayStyle,
         onboarding_completed: false,
       })
 
       if (error) throw new Error(error.message)
 
-      await createDefaultRoutines(supabase, userId)
+      await createDefaultRoutines(supabase, userId, form.lowerDayStyle)
 
       const { error: completeError } = await supabase
         .from('profiles')
@@ -746,6 +753,30 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
 
   const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
   const ACTIVE_DAYS = ['MON', 'WED', 'FRI']
+  const LOWER_STYLE_OPTIONS = [
+    {
+      value: 'back_friendly' as LowerDayStyle,
+      title: 'Back-friendly, recommended',
+      desc: 'Split squat, hip thrust, machines',
+    },
+    {
+      value: 'barbell' as LowerDayStyle,
+      title: 'Barbell',
+      desc: 'Squat, Romanian deadlift, leg press',
+    },
+  ]
+  const selectedProgramDays = getThreeDayTemplate(form.lowerDayStyle).map(day => {
+    if (day.name === 'Upper A') {
+      return { letter: 'A', name: day.name, desc: 'Incline Press - Lat Pulldown - Dumbbell Press - Cable Row - Triceps' }
+    }
+    if (day.name === 'Lower B') {
+      return { letter: 'L', name: day.name, desc: 'Barbell Squat - Romanian Deadlift - Leg Press - Seated Leg Curl - Calves' }
+    }
+    if (day.name === 'Lower A') {
+      return { letter: 'L', name: day.name, desc: 'Bulgarian Split Squat - Hip Thrust - Seated Leg Curl - Leg Extension - Calves' }
+    }
+    return { letter: 'B', name: day.name, desc: 'OHP - Pull-Up - Machine Row - Cable Lateral Raise - Face Pull' }
+  })
 
   const step5 = (
     <div style={{ paddingBottom: 24 }}>
@@ -795,6 +826,57 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999' }}>Your program</span>
           <span style={{ fontFamily: MONO, fontSize: 11, color: C.green, background: C.greenGlow, border: `1px solid ${C.greenBorder}`, borderRadius: 6, padding: '2px 8px' }}>3× per week</span>
         </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 8 }}>
+            Lower body style:
+          </div>
+          <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.45, marginBottom: 10 }}>
+            Choose Back-friendly if you have back pain, are new to barbell squats/deadlifts, or want the safest default.
+          </div>
+          {LOWER_STYLE_OPTIONS.map(opt => {
+            const on = form.lowerDayStyle === opt.value
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set('lowerDayStyle', opt.value)}
+                style={{
+                  width: '100%',
+                  background: on ? C.greenGlow : C.surface2,
+                  border: `1.5px solid ${on ? C.green : C.border}`,
+                  borderRadius: 12,
+                  padding: '13px 14px',
+                  marginBottom: 8,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  textAlign: 'left',
+                  fontFamily: FONT,
+                }}
+              >
+                <span style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  border: `1.5px solid ${on ? C.green : C.border2}`,
+                  background: on ? C.green : 'transparent',
+                  flexShrink: 0,
+                  marginTop: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {on && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#000' }} />}
+                </span>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: on ? C.green : C.text, marginBottom: 2 }}>{opt.title}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: C.text2, lineHeight: 1.35 }}>{opt.desc}</span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
         <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
           {DAYS.map(d => {
             const active = calActive && ACTIVE_DAYS.includes(d)
@@ -812,11 +894,7 @@ export default function OnboardingClient({ userId, email }: { userId: string; em
             )
           })}
         </div>
-        {[
-          { letter: 'A', name: 'Upper A', desc: 'Incline Press · Lat Pulldown · Dumbbell Press · Cable Row · Triceps' },
-          { letter: 'L', name: 'Lower A', desc: 'Bulgarian Split Squat · Hip Thrust · Seated Leg Curl · Leg Extension · Calves' },
-          { letter: 'B', name: 'Upper B', desc: 'OHP · Pull-Up · Machine Row · Cable Lateral Raise · Face Pull' },
-        ].map(s => (
+        {selectedProgramDays.map(s => (
           <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: C.greenGlow, border: `1px solid ${C.greenBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.green, flexShrink: 0 }}>{s.letter}</div>
             <div>

@@ -57,6 +57,8 @@ export const PRIMARY_COMPOUNDS: string[] = [
   'Overhead Press',
   'Pull-Up',
   'Bulgarian Split Squat',
+  'Barbell Squat',
+  'Romanian Deadlift',
   'Barbell Row',
   'Incline Barbell Press',
 ]
