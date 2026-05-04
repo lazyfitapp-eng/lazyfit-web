@@ -9,6 +9,7 @@ When this file conflicts with older sections below, the ACTIVE STATE section win
 Training hardening after Food Logger hardening.
 
 ### Latest Confirmed Commits
+- `e38ee20` Fix active workout coach card progression truth
 - `bf4b678` Fix workout recovery logged-set persistence
 - `032d86b` Harden training partial-session rotation truth
 - `f97d5ca` Polish training logging corrections and low-data copy
@@ -36,6 +37,7 @@ Deferred food work:
 Training is the current priority.
 
 Confirmed:
+- Active workout coach card correctness fixed and browser-validated.
 - Workout recovery fixed and browser-validated.
 - Partial-session rotation truth fixed.
 - Training logging correction UX improved.
@@ -83,7 +85,6 @@ Upper B:
 Next sprint should be chosen by state check.
 
 Current likely candidates:
-- Coach card rebuild
 - Lower B alternate architecture
 - Steps/smart engine design
 - Production QA
@@ -410,7 +411,10 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 - **WARM-UP section** (amber `#FFAA00`) — header with `#2a1f00` divider line; ghost column shows `—`
   - Auto-generated W1/W2/W3 sets; delete button per set; "+ ADD WARM-UP SET"
   - Collapses to "✓ WARM-UP COMPLETE" amber chip after all logged
-- **Coach card:** bg `#0d1f17`, border `1px solid #1a3528`; label "COACH — TODAY"; horizontal target pills (max 3 shown + "+N more"); "Keep same" button renders only when `coachStatus === 'up'`
+- **Coach card:** bg `#0d1f17`, border `1px solid #1a3528`; label "COACH — TODAY"; shows today's target, success rule, why this target is loaded, and next-session outcome. Coach state derives from progression counters/rules (`first_session`, `building`, `confirm`, `level_up`, `deload`) rather than target-vs-previous weight.
+  - Partial sessions are excluded from progression-relevant last-session context and can show separate unchanged-target copy.
+  - Pull-Up/bodyweight copy is bodyweight-aware: 0kg = bodyweight, positive kg = added load.
+  - Level-up cards can offer "Repeat previous load today"; it updates only unlogged working-set targets to previous complete-session loads/backoffs and prevents that exercise from advancing progression from the override session.
 - **WORKING SETS** — 6-column CSS grid `20px 36px 1fr 68px 68px 44px`
   - Active row highlight: `background: '#0d1a12', borderLeft: '3px solid #3ecf8e', margin: '3px -12px 5px'`
   - Active set type badge: `color: '#3ecf8e', background: '#0d2118'` (green on dark teal)
@@ -441,7 +445,8 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 **Progression engine:**
 - On workout finish → for each exercise, reads working sets only (warm-ups filtered out)
-- If all sets hit reps_max → next session: +2.5kg (compound) or +1kg (isolation)
+- Targets move only after complete planned working sets; partial sessions save but do not advance targets or rotation.
+- Two complete sessions at the top of the rep range increase next-session load; three fail sessions trigger deload/reset.
 - Targets stored in `exercise_targets` table (user_id, exercise_name, set_number)
 
 **How To modal:**
@@ -452,6 +457,7 @@ Modal:    fixed inset-0 z-50 bg-black/90 backdrop-blur-sm
 
 **Status:** ✅ Functional. Rest timer has boxing bell sound. Warm-ups auto-generate. Progression engine works. UI fully rebuilt.
 Workout recovery is browser-validated. Active workout hydrates DB-persisted `workout_sets`; DB logged sets remain the source of truth through `/train` resume and active-route refresh; localStorage only restores unsaved draft inputs.
+Coach card correctness is browser-validated: partial sessions are excluded from progression-relevant "last session" context; copy explains today's target, success rule, why, and next outcome; Pull-Up/bodyweight language is bodyweight-aware.
 Readability fixes complete — all text colors updated, font sizes increased throughout (column headers, set labels, inputs, buttons). Completed warmup rows (W2, W3) display reps as plain `<div>` elements (not disabled inputs) to avoid browser UA dimming.
 ⚠️ Exercise GIFs not showing (ExerciseDB paid tier required — plan: shoot own YouTube demos)
 
@@ -640,9 +646,9 @@ src/lib/
 | Dashboard | Real data, date picker, calorie ring, macro bars, weight trend |
 | Weight tracking | EMA trend, weigh-in modal, 90-day chart |
 | Training — program/workout days | Create/load program template, start workout |
-| Training — active workout | Sets, reps, warm-ups, rest timer, boxing bell |
+| Training — active workout | Sets, reps, warm-ups, rest timer, boxing bell, truthful coach card |
 | Training — workout recovery | Recovery banner works; DB-logged sets persist through resume/refresh; localStorage remains draft-input safety net |
-| Training — progression engine | +2.5kg/+1kg when all reps hit max |
+| Training — progression engine | 2 complete top-range sessions increase load; 3 fail sessions reset; partial sessions do not advance targets |
 | Training — warm-up sets | Auto-generated, science-based, editable |
 | Workout history | Calendar view, workout cards, muscle split |
 | Workout summary | Full exercise log, PR badges, coaching targets |
@@ -659,7 +665,6 @@ src/lib/
 | Issue | Location | Impact | Fix |
 |-------|----------|--------|-----|
 | Exercise GIFs not showing | `/api/exercise-media` | Medium — How To shows YouTube card instead | Shoot own videos for LazyFit YouTube channel (best long-term), OR pay $10 one-time ExerciseDB |
-| Coach card rebuild | `ActiveWorkoutClient.tsx` | Medium — currently shows redundant set info; ↑/→ Hold badge triggers lack clear rules | Rewrite progression logic with explicit scientific rules; clean up coach card UI |
 | Lower B alternate architecture | Training templates / routine model | Medium — barbell lower should be an alternate lower-day variant, not a fourth default day | Design alternate lower-day variant without changing the default 3-day program |
 | Onboarding flow | `/onboarding` | Fixed blocker — fresh onboarding completed and generated correct training days | Keep browser-validating fresh onboarding after training changes |
 | Weekly check-in | `WeeklyCheckin.tsx` | Medium — UI exists, adaptive calorie loop not wired | Connect to `suggestCalorieTarget()` in `trendWeight.ts` |
@@ -761,7 +766,6 @@ A systematic multi-round pass was applied across all components to fix unreadabl
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Coach card rebuild | 🟡 Medium | Clear ↑/→ Hold rules; remove redundant set display |
 | Lower B alternate architecture | 🟡 Medium | Lower B / barbell lower should be an alternate lower-day variant, not a fourth default day |
 | Onboarding regression checks | 🟡 Medium | Fresh onboarding should continue to validate DOB and generate Upper A / Lower A / Upper B |
 | Steps / smart engine design | 🟢 Post-launch | Decide how steps, adherence signals, and adaptive coaching should feed the engine |
