@@ -35,6 +35,7 @@ interface FoodLog {
 interface Props {
   userId: string
   today: string
+  selectedDate: string
   initialLogs: FoodLog[]
   activityByDate: Record<string, { food: boolean; workout: boolean }>
   latestWeight: number | null
@@ -648,12 +649,12 @@ function ProgressTabContent({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DashboardClient({
-  userId, today, initialLogs, activityByDate,
+  userId, today, selectedDate: initialSelectedDate, initialLogs, activityByDate,
   latestWeight, trendWeight, weeklyDelta, daysSinceWorkout,
   recentWeights, targets, checkin, chartWeightEntries, chartFoodLogs,
 }: Props) {
   const supabase = createClient()
-  const [selectedDate, setSelectedDate] = useState(today)
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate)
   const [logs, setLogs] = useState<FoodLog[]>(initialLogs)
   const [isPending, startTransition] = useTransition()
   const [showWeighIn, setShowWeighIn] = useState(false)
@@ -687,13 +688,13 @@ export default function DashboardClient({
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date)
-    if (date !== today) {
-      fetchLogsForDate(date)
-      fetchWeightForDate(date)
-    } else {
-      setLogs(initialLogs)
+    window.history.replaceState(null, '', `/dashboard?date=${encodeURIComponent(date)}`)
+    fetchLogsForDate(date)
+    if (date === today) {
       setDisplayWeight(latestWeight)
       setDisplayTrend(trendWeight)
+    } else {
+      fetchWeightForDate(date)
     }
   }
 

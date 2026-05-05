@@ -1,19 +1,19 @@
 # LazyFit — Current State Document
-*Last updated: May 6, 2026 - active state updated after Food Search Relevance Fix local validation*
+*Last updated: May 6, 2026 - active state updated after Food/Dashboard selected-date consistency local validation*
 
 ## ACTIVE STATE — MAY 2026
 
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Steps / Smart Engine V1 - Weekly Check-In Step Average, Profile nutrition target fallback hardening, and the PWA icon asset fix are production-deployed and production-smoke-validated. Food Search Relevance Fix is implemented and locally validated, but production deployment is still pending. LazyFit is not beta-ready until Tudor explicitly approves the next release step.
+Steps / Smart Engine V1 - Weekly Check-In Step Average, Profile nutrition target fallback hardening, and the PWA icon asset fix are production-deployed and production-smoke-validated. Food Search Relevance Fix and Food/Dashboard selected-date boundary consistency are implemented and locally validated, but production deployment is still pending for both. LazyFit is not beta-ready until Tudor explicitly approves the next release step.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
 - Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
-- Current likely next path after commit: Food Search Relevance Fix - Production Deploy + Smoke.
+- Current likely next path after commit: Food Search + Date Boundary - Production Deploy + Smoke.
 - Recommended next sprint mode: deployment / validation.
-- Friday sendable MVP focus: deploy/smoke food search fix, then final P0/P1 release smoke. No broad new feature work.
+- Friday sendable MVP focus: deploy/smoke food search and selected-date boundary fixes, then final P0/P1 release smoke. No broad new feature work.
 - Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Steps / Smart Engine Status
@@ -66,9 +66,9 @@ Production validation:
 - Existing QA rows and food logs from previous validation remain. Do not delete them unless Tudor explicitly approves QA cleanup.
 
 Next recommended sprint:
-- Food Search Relevance Fix - Production Deploy + Smoke.
+- Food Search + Date Boundary - Production Deploy + Smoke.
 - Mode: deployment / validation.
-- Scope: deploy the locally validated food search relevance fix, smoke production food search/logging/dashboard totals, and keep future Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
+- Scope: deploy the locally validated food search relevance and Food/Dashboard selected-date consistency fixes, smoke production food search/logging/dashboard selected-date totals, and keep future Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
 
 ### Production Status
 Production is current as of May 5, 2026.
@@ -108,7 +108,7 @@ Production is current as of May 5, 2026.
 - `37e3ecb` Add recent food repeat logging
 
 ### Food Status
-Food Logger core is usable. Food Search Relevance Fix is implemented and locally validated; production deployment is still pending.
+Food Logger core is usable. Food Search Relevance Fix and Food/Dashboard selected-date boundary consistency are implemented and locally validated; production deployment is still pending for both.
 
 Implementation summary:
 - Added an intent-aware food search relevance helper.
@@ -143,6 +143,42 @@ QA data created:
 - `2026-05-06`
 - `food_logs` row: chicken breast via Food search, 100g, 112 kcal, 22.5P/0C/1.9F.
 - Do not delete unless Tudor explicitly approves QA cleanup.
+
+### Food/Dashboard Selected-Date Boundary Status
+Food/Dashboard selected-date boundary consistency is implemented and locally validated.
+
+Root cause:
+- Food used an explicit selected date, but Dashboard ignored selected `?date=` and seeded from runtime/server "today".
+- Existing logs near Bucharest/UTC midnight could be classified under different days across Food and Dashboard.
+
+Date contract after fix:
+- App-local timezone for MVP: `Europe/Bucharest`.
+- Food selected date comes from `?date=YYYY-MM-DD`, with fallback to app-local today.
+- Food logs selected-date items via shared `timestampForSelectedDate`.
+- Food queries logs with shared `getLocalDayBounds`.
+- Dashboard accepts/parses `?date=YYYY-MM-DD`.
+- Dashboard queries logs using the same local day bounds.
+- BottomNav preserves valid `date` between Dashboard and Food.
+
+Local validation:
+- Food/date boundary runner `.codex-temp/food-date-boundary-validation/run.ps1` passed.
+- Existing QA chicken row for `2026-05-06` was visible on Food.
+- Dashboard with selected date showed matching selected-date data.
+- Repaired validation created no duplicate QA food rows.
+- No visible NaN/undefined/null.
+- No console/runtime/network errors.
+
+QA data note:
+- Existing QA chicken row remains under `gadea.tudor+lazyfit4@gmail.com` for `2026-05-06`.
+- Do not delete unless Tudor explicitly approves cleanup.
+
+Production deployment pending:
+- Food Search Relevance Fix.
+- Food/Dashboard selected-date consistency fix.
+
+Next recommended sprint:
+- Food Search + Date Boundary - Production Deploy + Smoke.
+- Mode: deployment / validation.
 
 Food still supports AI draft review, generated item scrolling, logged-food editing, recent foods, improved USDA ranking, search loading fix, negative macro sanitization, and mobile correction polish.
 
@@ -214,10 +250,10 @@ Upper B:
 - Bicep Curl
 
 ### Known Next Issue
-Next recommended sprint is Food Search Relevance Fix - Production Deploy + Smoke. Deploy and smoke the locally validated food search fix, then run final P0/P1 release smoke.
+Next recommended sprint is Food Search + Date Boundary - Production Deploy + Smoke. Deploy and smoke the locally validated food search and selected-date boundary fixes, then run final P0/P1 release smoke.
 
 Current likely candidates:
-- Food Search Relevance Fix - Production Deploy + Smoke
+- Food Search + Date Boundary - Production Deploy + Smoke
 - Final P0/P1 release smoke
 - Existing-user routine data/backfill decision
 - Optional onboarding regression check

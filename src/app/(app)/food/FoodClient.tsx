@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { detectFoodAmbiguity, type FoodAmbiguityIssue } from '@/lib/foodAmbiguity'
-import { addLocalDays, getLocalDateString, parseLocalDateString } from '@/lib/dateUtils'
+import { addLocalDays, getLocalDateString, timestampForSelectedDate } from '@/lib/dateUtils'
 import type { USDAResult } from '@/lib/foodSearchRelevance'
 import type { FoodAIItem } from '@/app/api/food-ai/route'
 
@@ -112,13 +112,6 @@ function toBase64(file: File): Promise<string> {
     reader.onerror = rej
     reader.readAsDataURL(file)
   })
-}
-
-function timestampForSelectedDate(date: string): string {
-  const now = new Date()
-  const selected = parseLocalDateString(date) ?? now
-  selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
-  return selected.toISOString()
 }
 
 function parsePositiveQuantity(value: string | number): number | null {
@@ -334,7 +327,7 @@ export default function FoodClient({
     const next = addLocalDays(date, delta)
     setLogs([])
     setActionMenuId(null)
-    router.push(next === today ? '/food' : `/food?date=${next}`)
+    router.push(`/food?date=${next}`)
   }
 
   useEffect(() => {

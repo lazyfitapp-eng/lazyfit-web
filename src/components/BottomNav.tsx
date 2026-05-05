@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { parseLocalDateString } from '@/lib/dateUtils'
 
 const NAV_ITEMS = [
   {
@@ -51,10 +52,18 @@ const NAV_ITEMS_RIGHT = [
 
 function NavItem({ href, label, icon }: { href: string; label: string; icon: (active: boolean) => React.ReactNode }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+  const currentDate = searchParams.get('date')
+  const isDateSensitiveRoute = pathname === '/dashboard' || pathname === '/food'
+  const preservesDate = href === '/dashboard' || href === '/food'
+  const targetHref = isDateSensitiveRoute && preservesDate && currentDate && parseLocalDateString(currentDate)
+    ? `${href}?date=${currentDate}`
+    : href
+
   return (
     <Link
-      href={href}
+      href={targetHref}
       style={{
         display: 'flex',
         flexDirection: 'column',

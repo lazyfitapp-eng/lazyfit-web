@@ -1,27 +1,33 @@
 import { createClient } from '@/lib/supabase/server'
 import { resolveNutritionTargets } from '@/lib/nutritionTargets'
-import { getLocalDateDaysAgo, getLocalDateString, getLocalDayBounds, parseLocalDateString } from '@/lib/dateUtils'
+import { getLocalDateDaysAgo, getLocalDateString, getLocalDayBounds, parseDateParamSafe, parseLocalDateString } from '@/lib/dateUtils'
 import { redirect } from 'next/navigation'
 import DashboardClient from './DashboardClient'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string | string[] }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { date: rawDate } = await searchParams
   const today = getLocalDateString()
+  const selectedDate = parseDateParamSafe(typeof rawDate === 'string' ? rawDate : undefined, today)
   const twoWeeksAgo = getLocalDateDaysAgo(14)
   const sevenDaysAgo = getLocalDateDaysAgo(7)
   const thirtyDaysAgo = getLocalDateDaysAgo(30)
   const ninetyDaysAgo = getLocalDateDaysAgo(90)
-  const todayBounds = getLocalDayBounds(today)
+  const selectedDateBounds = getLocalDayBounds(selectedDate)
   const twoWeeksAgoBounds = getLocalDayBounds(twoWeeksAgo)
   const sevenDaysAgoBounds = getLocalDayBounds(sevenDaysAgo)
   const thirtyDaysAgoBounds = getLocalDayBounds(thirtyDaysAgo)
 
   const [
     { data: profile },
-    { data: todayLogs },
+    { data: selectedDateLogs },
     { data: weightEntries },
     { data: prevWeekWeightEntries },
     { data: recentFoodActivity },
@@ -36,8 +42,8 @@ export default async function DashboardPage() {
       .from('food_logs')
       .select('id, food_name, calories, protein, carbs, fat, meal_type, quantity')
       .eq('user_id', user.id)
-      .gte('logged_at', todayBounds.start)
-      .lte('logged_at', todayBounds.end),
+      .gte('logged_at', selectedDateBounds.start)
+      .lte('logged_at', selectedDateBounds.end),
     supabase
       .from('weight_entries')
       .select('weight, trend_weight, date')
@@ -151,7 +157,8 @@ export default async function DashboardPage() {
     <DashboardClient
       userId={user.id}
       today={today}
-      initialLogs={(todayLogs ?? []) as any}
+      selectedDate={selectedDate}
+      initialLogs={(selectedDateLogs ?? []) as any}
       activityByDate={activityByDate}
       latestWeight={latestWeight?.weight ?? null}
       trendWeight={latestWeight?.trend_weight ?? null}
