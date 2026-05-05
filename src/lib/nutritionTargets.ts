@@ -157,13 +157,24 @@ export function calcNutritionTargets(
   jobActivity: JobActivity,
   dailySteps: DailySteps,
 ) {
-  const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + (sex.toLowerCase() === 'male' ? 5 : -161)
-  const tdee = bmr * (JOB_MULTIPLIERS[jobActivity] + STEP_ADJUSTMENTS[dailySteps])
-  const adjusted = goal === 'cut' ? tdee - 400 : goal === 'bulk' ? tdee + 250 : tdee
-  const protein = Math.round(weightKg * (goal === 'cut' ? 1.8 : 1.6))
+  const safeGoal = normalizeGoal(goal)
+  const safeWeightKg = Number.isFinite(weightKg) && weightKg > 0 ? weightKg : 80
+  const safeHeightCm = Number.isFinite(heightCm) && heightCm > 0 ? heightCm : 0
+  const safeAge = Number.isFinite(age) && age > 0 ? age : 0
+  const safeSex = validSex(sex)
+  const safeJobActivity = validJobActivity(jobActivity)
+  const safeDailySteps = validDailySteps(dailySteps)
+  const bmr = 10 * safeWeightKg + 6.25 * safeHeightCm - 5 * safeAge + (safeSex === 'male' ? 5 : -161)
+  const tdee = bmr * (JOB_MULTIPLIERS[safeJobActivity] + STEP_ADJUSTMENTS[safeDailySteps])
+  const adjusted = safeGoal === 'cut' ? tdee - 400 : safeGoal === 'bulk' ? tdee + 250 : tdee
+  const protein = Math.round(safeWeightKg * (safeGoal === 'cut' ? 1.8 : 1.6))
   const fat = Math.round((adjusted * 0.25) / 9)
   const carbs = Math.max(0, Math.round((adjusted - protein * 4 - fat * 9) / 4))
   return { kcal: Math.max(1200, Math.round(adjusted)), protein, fat, carbs, tdee: Math.round(tdee) }
+}
+
+function safeTargetValue(value: number | null | undefined, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback
 }
 
 export interface NutritionProfile {
@@ -201,9 +212,9 @@ export function resolveNutritionTargets(
 ) {
   const computed = getComputedNutritionTargets(profile)
   return {
-    calories: computed?.kcal ?? profile?.target_calories ?? fallback.calories,
-    protein: computed?.protein ?? profile?.target_protein ?? fallback.protein,
-    carbs: computed?.carbs ?? profile?.target_carbs ?? fallback.carbs,
-    fat: computed?.fat ?? profile?.target_fat ?? fallback.fat,
+    calories: safeTargetValue(computed?.kcal, safeTargetValue(profile?.target_calories, fallback.calories)),
+    protein: safeTargetValue(computed?.protein, safeTargetValue(profile?.target_protein, fallback.protein)),
+    carbs: safeTargetValue(computed?.carbs, safeTargetValue(profile?.target_carbs, fallback.carbs)),
+    fat: safeTargetValue(computed?.fat, safeTargetValue(profile?.target_fat, fallback.fat)),
   }
 }

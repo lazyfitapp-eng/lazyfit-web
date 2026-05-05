@@ -10,7 +10,9 @@ import {
   getActivityFloorLabel,
   getCanonicalActivityFloor,
   normalizeGoal as sharedNormalizeGoal,
+  resolveNutritionTargets,
   validDailySteps,
+  validJobActivity,
   validSex as sharedValidSex,
   type ActivityFloorValue,
   type DailySteps,
@@ -159,6 +161,7 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
   const router = useRouter()
   const supabase = createClient()
   const initialDob = profile?.date_of_birth ?? (profile?.age ? isoDateForAge(profile.age) : '')
+  const initialTargets = resolveNutritionTargets(profile, { calories: 2000, protein: 150, carbs: 200, fat: 70 })
 
   // ── State ──
   const [goal, setGoal] = useState<GoalKey>(normalizeGoal(profile?.goal))
@@ -170,7 +173,7 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
   const [sex, setSex] = useState(validSex(profile?.sex ?? 'male'))
   const [heightCm, setHeightCm] = useState(profile?.height_cm ?? 0)
   const [currentWeight, setCurrentWeight] = useState(profile?.current_weight ?? 0)
-  const [jobActivity, setJobActivity] = useState<JobActivity>((profile?.job_activity as JobActivity) ?? 'desk')
+  const [jobActivity, setJobActivity] = useState<JobActivity>(validJobActivity(profile?.job_activity))
   const [dailySteps, setDailySteps] = useState<DailySteps>(validDailySteps(profile?.daily_steps))
   const [neckCm, setNeckCm] = useState<number | null>(profile?.neck_cm ?? null)
   const [editDrawer, setEditDrawer] = useState<EditField>(null)
@@ -191,7 +194,7 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
     : null
 
   // Animated kcal value
-  const [displayKcal, setDisplayKcal] = useState(macros?.kcal ?? profile?.target_calories ?? 2000)
+  const [displayKcal, setDisplayKcal] = useState(macros?.kcal ?? initialTargets.calories)
   const kcalAnimRef = useRef<number | null>(null)
 
   const animateKcal = useCallback((from: number, to: number) => {
@@ -390,10 +393,10 @@ export default function ProfileClient({ user, profile, weightEntryCount }: Props
   const activeGoal = GOALS[goal]
   const pendingGoalData = pendingGoal ? GOALS[pendingGoal] : null
   const currentMacros = macros ?? {
-    kcal: profile?.target_calories ?? 0,
-    protein: profile?.target_protein ?? 0,
-    carbs: profile?.target_carbs ?? 0,
-    fat: profile?.target_fat ?? 0,
+    kcal: initialTargets.calories,
+    protein: initialTargets.protein,
+    carbs: initialTargets.carbs,
+    fat: initialTargets.fat,
   }
 
   // ── Render ──
