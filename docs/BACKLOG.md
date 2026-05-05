@@ -4,18 +4,22 @@ CURRENT_STATE.md ACTIVE STATE is the source of truth. This backlog is secondary 
 
 ## Active / Near-Term Candidates
 
-- Weekly Check-In Step Average - Production Deploy + Smoke: deploy the locally validated sprint and smoke production.
+- Food Search Relevance Audit/Fix: audit/design first, identify the root cause, then implement only after the cause is known.
+- Final P0/P1 release smoke before Friday sendable MVP push.
 - Existing-user routine data/backfill policy follow-up, if needed.
 - Onboarding regression check after future onboarding changes.
 
 ## Completed / Recently Landed
 
-- Steps / Smart Engine V1 - Weekly Check-In Step Average: implemented and locally validated. Added `public.weekly_checkins`; weekly steps are stored separately from `profiles.daily_steps`; no dashboard Activity Floor card, recommendation engine, earned calories, or calorie banking was added.
-- Steps / Smart Engine V1 - Activity Floor Baseline: implemented and locally browser-validated. Reuses `profiles.daily_steps`; no new profile column, `weekly_checkins` table, device step integration, or calorie-burn banking.
+- Weekly Check-In Production Deploy + Smoke: production-deployed and production-smoke-validated at `ad515ab` with `.codex-temp/profile-weekly-production-smoke/run.ps1` PASS.
+- Profile nutrition target fallback hardening: production-deployed and production-smoke-validated.
+- PWA icon asset fix: production-deployed and production-smoke-validated; missing `/icon-192.png` and `/icon-512.png` were fixed by `ad515ab`.
+- Steps / Smart Engine V1 - Weekly Check-In Step Average: implemented, locally validated, production-deployed, and production-smoke-validated. Added `public.weekly_checkins`; weekly steps are stored separately from `profiles.daily_steps`; no dashboard Activity Floor card, recommendation engine, earned calories, or calorie banking was added.
+- Steps / Smart Engine V1 - Activity Floor Baseline: implemented, production-deployed, and production-smoke-validated. Reuses `profiles.daily_steps`; no new profile column, device step integration, or calorie-burn banking.
 
 ## Product/System Backlog
 
-- Steps / smart engine future rules and coaching recommendations.
+- Steps / smart engine future recommendation rules and coaching recommendations.
 - Adaptive TDEE algorithm.
 - Weekly check-in adaptive loop.
 - Dashboard Activity Floor card.

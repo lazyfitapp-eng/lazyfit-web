@@ -1,22 +1,23 @@
 # LazyFit — Current State Document
-*Last updated: May 2026 - active state updated after Weekly Check-In Step Average local validation*
+*Last updated: May 5, 2026 - active state updated after Weekly Check-In production deploy/smoke*
 
 ## ACTIVE STATE — MAY 2026
 
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Steps / Smart Engine V1 - Weekly Check-In Step Average is implemented and locally validated. Production deployment is still pending for this sprint, and LazyFit is not beta-ready until Tudor explicitly approves the next release step.
+Steps / Smart Engine V1 - Weekly Check-In Step Average, Profile nutrition target fallback hardening, and the PWA icon asset fix are production-deployed and production-smoke-validated. LazyFit is not beta-ready until Tudor explicitly approves the next release step.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
 - Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
-- Current likely next path after commit: Weekly Check-In Step Average - Production Deploy + Smoke.
-- Recommended next sprint mode: deployment / validation.
+- Current likely next path after commit: Food Search Relevance Audit/Fix.
+- Recommended next sprint mode: audit/design first, then implementation only after root cause is known.
+- Friday sendable MVP focus: food search relevance and final P0/P1 release smoke.
 - Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Steps / Smart Engine Status
-Steps / Smart Engine V1 - Activity Floor Baseline is production-deployed and production-smoke-validated. Steps / Smart Engine V1 - Weekly Check-In Step Average is implemented and locally validated.
+Steps / Smart Engine V1 - Activity Floor Baseline and Weekly Check-In Step Average are production-deployed and production-smoke-validated.
 
 Implementation decisions:
 - Activity Floor reuses `profiles.daily_steps` as the stored baseline field.
@@ -53,37 +54,43 @@ QA data created:
 - Do not delete these unless Tudor explicitly asks for QA cleanup.
 
 Production validation:
-- Commit `32de29c` (`Reframe daily steps as Activity Floor baseline`) was deployed to production with `npx vercel --prod`.
-- Production URL from deploy output: `https://lazyfit-pl087v2ui-tudors-projects-5fd3bb98.vercel.app`
+- Latest pushed/deployed commits: `9714d92` (`Add weekly check-in step average persistence`), `6081c40` (`fix: harden profile nutrition target fallbacks`), and `ad515ab` (`fix: add missing PWA icon assets`).
+- Production latest deployed commit: `ad515ab`.
+- Production deployment command: `npx vercel --prod`.
+- Production URL from deploy output: `https://lazyfit-qm5oekoji-tudors-projects-5fd3bb98.vercel.app`
 - Production alias: `https://lazyfit-web.vercel.app`
-- Production Activity Floor smoke passed through the local PowerShell Playwright harness at `C:\dev\lazyfit-browser-check`.
-- Production smoke validated: `/login` loaded; login succeeded with `gadea.tudor+lazyfit4@gmail.com`; `/profile` showed Activity Floor; Profile showed "not calorie banking" copy; Profile showed selected `8–10k`; `/train` structure verified; `/dashboard` verified; no visible NaN/undefined/null; findings: none.
-- Nuance: production drawer/options check was best-effort/incomplete in the smoke script, but local fresh onboarding validation already confirmed all five Activity Floor options.
-- Weekly Check-In Step Average production deployment is still pending.
+- Final production smoke runner: `.codex-temp/profile-weekly-production-smoke/run.ps1`.
+- Final production smoke result: PASS.
+- Production smoke validated: `weekly_checkins` REST/RLS passed; expected current-week rows were readable and owner-isolated; UI login passed; `/dashboard`, `/profile`, `/food`, and `/train` loaded; Profile target calories/macros were finite; no standalone NaN/undefined/null appeared; Activity Floor copy was present; approved "not calorie banking" copy was allowed; forbidden earned-calorie/step-calorie-budget copy was absent; existing weekly row suppression was verified; no important runtime/network failures were found.
+- Missing `/icon-192.png` and `/icon-512.png` assets were fixed by `ad515ab`.
+- Existing QA rows and food logs from previous validation remain. Do not delete them unless Tudor explicitly approves QA cleanup.
 
 Next recommended sprint:
-- Weekly Check-In Step Average - Production Deploy + Smoke.
-- Mode: deployment / validation.
-- Scope: deploy the implemented Weekly Check-In Step Average sprint and smoke the production path; keep future Steps/Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
+- Food Search Relevance Audit/Fix.
+- Mode: audit/design first, then implementation only after root cause is known.
+- Scope: trace food search relevance issues to their source of truth, then fix only the confirmed cause. Keep future Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
 
 ### Production Status
-Production is current as of May 4, 2026.
+Production is current as of May 5, 2026.
 
-- Production URL from latest deploy output: `https://lazyfit-pl087v2ui-tudors-projects-5fd3bb98.vercel.app`
+- Production URL from latest deploy output: `https://lazyfit-qm5oekoji-tudors-projects-5fd3bb98.vercel.app`
 - Production alias: `https://lazyfit-web.vercel.app`
 - Vercel project: `lazyfit-web`
 - Vercel project ID: `prj_UyOsUbRkUUI9CqutLBqrUNAwxm72`
-- Latest deployed commit: `32de29c` (`Reframe daily steps as Activity Floor baseline`)
+- Latest deployed commit: `ad515ab` (`fix: add missing PWA icon assets`)
 - Latest deployment command: `npx vercel --prod`
 - Production browser smoke was completed from a local PowerShell Playwright harness, not directly from Codex, because Codex direct browser launch remains blocked by `browserType.launch: spawn EPERM`.
-- Working local Playwright harness: `C:\dev\lazyfit-browser-check`
+- Final production smoke runner: `.codex-temp/profile-weekly-production-smoke/run.ps1`
 - Working browser executable: `C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe`
-- Production Activity Floor smoke results: `/login` loaded; `gadea.tudor+lazyfit4@gmail.com` authenticated successfully; `/profile` showed Activity Floor, "not calorie banking" copy, and selected `8–10k`; `/train` structure verified; `/dashboard` verified; no visible NaN/undefined/null; findings: none.
-- Nuance: production drawer/options check was best-effort/incomplete in the smoke script, but local fresh onboarding validation already confirmed all five Activity Floor options.
-- This smoke does not make LazyFit beta-ready. It confirms Activity Floor Baseline production deploy; Weekly Check-In Step Average now needs production deploy + smoke after Tudor commits the sprint.
+- Production smoke results: PASS. `weekly_checkins` REST/RLS passed; expected current-week rows were readable and owner-isolated; UI login passed; `/dashboard`, `/profile`, `/food`, and `/train` loaded; Profile target calories/macros were finite; no standalone NaN/undefined/null appeared; Activity Floor copy was present; approved "not calorie banking" copy was allowed; forbidden earned-calorie/step-calorie-budget copy was absent; existing weekly row suppression was verified; no important runtime/network failures were found.
+- PWA icon smoke: missing `/icon-192.png` and `/icon-512.png` assets were fixed by `ad515ab`.
+- This smoke does not make LazyFit beta-ready. It confirms Activity Floor Baseline, Weekly Check-In Step Average, Profile fallback hardening, and the PWA icon asset fix are production-deployed and production-smoke-validated.
 - Nuance: existing QA/existing-user accounts may still render old routine rows if their saved `routines` / `routine_exercises` data predates the new templates. That is a data/backfill issue, not a Vercel deployment issue. Do not forcibly mutate existing routine data without a dedicated plan.
 
 ### Latest Confirmed Commits
+- `ad515ab` fix: add missing PWA icon assets
+- `6081c40` fix: harden profile nutrition target fallbacks
+- `9714d92` Add weekly check-in step average persistence
 - `32de29c` Reframe daily steps as Activity Floor baseline
 - `e229220` docs: update state after Lower B architecture
 - `64c5232` Add Lower B alternate lower-day architecture
@@ -101,18 +108,18 @@ Production is current as of May 4, 2026.
 - `37e3ecb` Add recent food repeat logging
 
 ### Food Status
-Food Logger is good enough to pause for now.
+Food Logger core is usable, but food search relevance is now the next release-critical audit/fix target.
 
 It supports AI draft review, generated item scrolling, logged-food editing, recent foods, improved USDA ranking, search loading fix, negative macro sanitization, and mobile correction polish.
 
 Deferred food work:
 - Saved meals
 - Barcode
-- Deeper USDA preference/ranking
+- Broader food database/ranking improvements after the focused relevance root cause is known
 - Production-scale database improvements
 
 ### Training Status
-Training core is stable enough to pause while Steps / Smart Engine V1 moves through Weekly Check-In Step Average deploy/smoke.
+Training core is stable enough to pause while food search relevance and final P0/P1 release smoke take priority.
 
 Confirmed:
 - Active workout coach card correctness fixed and browser-validated.
@@ -171,10 +178,11 @@ Upper B:
 - Bicep Curl
 
 ### Known Next Issue
-Next sprint should deploy and smoke the locally validated Weekly Check-In Step Average work after Tudor commits the sprint.
+Next recommended sprint is Food Search Relevance Audit/Fix. Start in audit/design mode, identify the root cause, then switch to implementation only after the cause is known and approved.
 
 Current likely candidates:
-- Weekly Check-In Step Average - Production Deploy + Smoke (deployment / validation)
+- Food Search Relevance Audit/Fix (audit/design first)
+- Final P0/P1 release smoke
 - Existing-user routine data/backfill decision
 - Optional onboarding regression check
 
