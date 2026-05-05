@@ -8,11 +8,27 @@ Do not patch visible symptoms without tracing the source of truth first. If a va
 
 Private beta users should feel that LazyFit is calm, consistent, and trustworthy. A fast-looking fix that leaves inconsistent logic behind is not acceptable.
 
-## 2. LazyFit Sprint Operating Protocol
+## 2. LazyFit Codex Operating Contract
+
+These rules are permanent repo-level workflow rules for Codex sessions. They apply before product work, validation work, deployment work, and docs-only work.
 
 ### State Check First
 
-Before writing a Codex prompt or starting a sprint, state:
+Every Codex session must start by running and reporting:
+
+- `git status --short`
+- `git branch --show-current`
+- `git log -1 --oneline`
+- `git rev-parse HEAD`
+
+Then read:
+
+- `AGENTS.md`
+- `CURRENT_STATE.md` ACTIVE STATE
+- `docs/LAZYFIT_ENGINEERING_RULES.md`
+- `docs/BACKLOG.md` when relevant
+
+Before starting a sprint, state:
 
 - Current phase.
 - Latest pushed commit / repo state.
@@ -35,6 +51,19 @@ Use this order:
 
 Chat memory and Codex reports are not canonical until written into committed docs or code. `docs/QA_FINDINGS.md` is untracked unless explicitly staged and committed.
 
+### Mode Declaration
+
+Every task must declare exactly one mode:
+
+- audit/design only
+- implementation
+- validation/smoke
+- deployment
+- docs-only
+- validation-runner creation only
+
+Codex must not silently switch modes. If a task needs a different mode, report the boundary and wait for the next explicit instruction.
+
 ### Sprint Flow
 
 For major product work, use this sequence:
@@ -48,35 +77,132 @@ For major product work, use this sequence:
 7. Human commit/push.
 8. Update `CURRENT_STATE.md` if project state changed.
 
-### Codex Task Modes
+### Autonomous Loop Rule
 
-Each prompt must declare one mode:
+For implementation and validation tasks, Codex should not stop at the first minor blocker. Codex should autonomously loop through:
 
-- Audit/design only.
-- Implementation.
-- Validation/smoke.
-- Deployment.
-- Docs-only.
+- Code inspection.
+- Command failures.
+- TypeScript/build errors.
+- Validation-script repair.
+- DB/API checks.
+- Safe test-data investigation.
 
-Codex must not silently switch modes.
+Keep looping for roughly 20-30 minutes unless:
+
+- Destructive approval is required.
+- Secrets are missing.
+- Real product or data risk is discovered.
+- A capability boundary is hit.
+- The task is complete.
+
+### No Giant Manual Script Rule
+
+Codex must not make Tudor paste giant browser or PowerShell scripts.
+
+For browser/UI validation, Codex should create temporary runners under:
+
+```text
+.codex-temp/<sprint-name>/
+```
+
+Then Tudor should run one short command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\.codex-temp\<sprint-name>\run.ps1
+```
+
+### Temporary Runner Rule
+
+Temporary runners must:
+
+- Live under `.codex-temp/`.
+- Be deleted before commit unless explicitly kept.
+- Never modify app source or package files.
+- Output Markdown and JSON reports.
+- Save screenshots and artifacts under the same temp folder.
+- Clearly report any QA data created or mutated.
+
+Use temporary runners only for validation support or explicitly requested validation-runner creation. They are not a backdoor for product changes.
 
 ### Browser Validation Rule
 
-Any UI change requires browser validation. If Codex cannot run the browser or dev server, try the existing localhost target, then pause and ask Tudor. Do not call UI work safe to commit on typecheck alone.
+Any UI change requires browser validation. Do not call UI work safe to commit on typecheck alone.
 
-### Production/Data Safety
+Codex direct Brave/Playwright launch has repeatedly failed with `browserType.launch: spawn EPERM`. Therefore:
 
+- Codex should not waste time retrying direct browser launch repeatedly.
+- Codex may create local Playwright runners.
+- Tudor runs the local runner from normal PowerShell.
+- Browser validation is not complete until the local runner passes or the blocker is explicitly reported.
+
+### Data Safety Rule
+
+- Do not mutate real user data.
+- QA data belongs only under disposable QA accounts.
 - Do not delete production or QA rows without explicit action-time confirmation.
 - For created test rows, report IDs/counts before cleanup.
-- Do not mutate real user data.
+- Report every QA row created or mutated.
 - Do not change env vars, DNS, Supabase settings, or Vercel settings unless the task explicitly asks.
 
-### Commit Rules
+Never touch production settings/env/DNS/Supabase/Vercel unless the sprint explicitly requires it.
+
+### Parallel Session Rule
+
+Parallel Codex sessions are allowed only if scopes do not overlap.
+
+Safe examples:
+
+- One implementation/deploy session.
+- One audit-only session.
+- One docs-only workflow session.
+
+Unsafe examples:
+
+- Two sessions editing the same files.
+- Two sessions editing the same feature area.
+
+If using parallel implementation, use an isolated worktree/branch and report it.
+
+### Commit Rule
 
 - Codex does not commit or push.
-- Report files changed, validation, risks, and suggested commit message.
-- Tudor commits manually.
-- Keep one commit per sprint.
+- Tudor commits manually after ChatGPT review.
+- One coherent sprint equals one coherent commit.
+
+### Report Format
+
+Every report must include:
+
+- State check.
+- Mode.
+- Files changed.
+- Validation run.
+- Data created/mutated.
+- Risks.
+- Final git status.
+- Suggested commit message.
+
+For code fixes, also include exact root cause, source of truth, all call sites checked, blast radius, manual test matrix, and typecheck result when relevant.
+
+### Sendable MVP Rule
+
+Until the Friday release push:
+
+- No broad "while here" work.
+- No new major systems after Weekly Check-In Step Average unless explicitly approved.
+- Prioritize P0/P1 trust blockers.
+- Food search relevance and training logging reliability are release-critical.
+
+### Do Not Do
+
+- Do not paste giant scripts to Tudor.
+- Do not fake browser validation.
+- Do not call typecheck enough for UI.
+- Do not modify `docs/QA_FINDINGS.md` unless asked.
+- Do not silently delete QA data.
+- Do not make calorie changes from steps.
+- Do not add dashboard cards or a recommendation engine unless the sprint asks.
 
 ### Research Rule
 
