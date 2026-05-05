@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { detectFoodAmbiguity, type FoodAmbiguityIssue } from '@/lib/foodAmbiguity'
 import { addLocalDays, getLocalDateString, parseLocalDateString } from '@/lib/dateUtils'
-import type { USDAResult } from '@/app/api/food-search/route'
+import type { USDAResult } from '@/lib/foodSearchRelevance'
 import type { FoodAIItem } from '@/app/api/food-ai/route'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,6 +46,12 @@ interface EditLogForm {
   carbs: string
   fat: string
   meal_type: MealType
+}
+
+interface SearchMeta {
+  lowConfidence: boolean
+  fallbackReason: string | null
+  intentType: string | null
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -93,6 +99,7 @@ const METHOD_TABS: { id: MethodTab; label: string; icon: React.ReactNode }[] = [
 ]
 
 const VOICE_EXAMPLE = '200g grilled chicken breast, 250g white rice cooked, 1 tablespoon olive oil, mixed salad with balsamic dressing'
+const EMPTY_SEARCH_META: SearchMeta = { lowConfidence: false, fallbackReason: null, intentType: null }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: toBase64
@@ -164,6 +171,20 @@ function formatRecentLoggedAt(loggedAt: string, today: string): string {
   if (loggedDateString === today) return 'Today'
   if (loggedDateString === addLocalDays(today, -1)) return 'Yesterday'
   return loggedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+function formatSearchServing(result: USDAResult): string {
+  if (result.servingText?.trim()) return result.servingText.trim()
+  if (typeof result.servingSize === 'number' && result.servingSizeUnit) {
+    return `${result.servingSize}${result.servingSizeUnit}`
+  }
+  return 'per 100g'
+}
+
+function formatSearchSource(result: USDAResult): string {
+  const brand = result.brandOwner || result.brandName
+  const source = result.dataType ? `USDA ${result.dataType}` : 'USDA'
+  return brand ? `${brand} - ${source}` : source
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -270,6 +291,7 @@ export default function FoodClient({
   const [selectedQty, setSelectedQty] = useState('')
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchCompletedQuery, setSearchCompletedQuery] = useState('')
+  const [searchMeta, setSearchMeta] = useState<SearchMeta>(EMPTY_SEARCH_META)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchRequestId = useRef(0)
 
@@ -377,7 +399,7 @@ export default function FoodClient({
       setVoiceText(''); setMicListening(false); setMicError(null)
       if (searchTimeout.current) { clearTimeout(searchTimeout.current); searchTimeout.current = null }
       searchRequestId.current += 1
-      setSearchQuery(''); setSearchResults([]); setSearching(false); setSearchCompletedQuery(''); setSelectedResult(null); setSelectedQty(''); setSearchError(null)
+      setSearchQuery(''); setSearchResults([]); setSearching(false); setSearchCompletedQuery(''); setSearchMeta(EMPTY_SEARCH_META); setSelectedResult(null); setSelectedQty(''); setSearchError(null)
       setScannedProduct(null); setScannedQty(''); setBarcodeError(null)
       setAiItems(null); setAiError(null); setAiWarnings([])
       setRecentLoggingId(null); setRecentError(null)
@@ -620,12 +642,14 @@ export default function FoodClient({
       setSearchResults([])
       setSearchError(null)
       setSearchCompletedQuery('')
+      setSearchMeta(EMPTY_SEARCH_META)
       setSearching(false)
       return
     }
     setSearching(true)
     setSearchError(null)
     setSearchCompletedQuery('')
+    setSearchMeta(EMPTY_SEARCH_META)
     try {
       const res = await fetch(`/api/food-search?q=${encodeURIComponent(trimmed)}`)
       if (!res.ok) {
@@ -634,6 +658,7 @@ export default function FoodClient({
         setSearchError(res.status === 401 ? 'Session expired — please refresh the page.' : (err.error ?? `Search failed (${res.status})`))
         setSearchResults([])
         setSearchCompletedQuery(trimmed)
+        setSearchMeta(EMPTY_SEARCH_META)
         return
       }
       const data = await res.json()
@@ -641,11 +666,17 @@ export default function FoodClient({
       const results = Array.isArray(data.results) ? data.results.map(sanitizeUSDAResult) : []
       setSearchResults(results)
       setSearchCompletedQuery(trimmed)
+      setSearchMeta({
+        lowConfidence: Boolean(data.lowConfidence),
+        fallbackReason: typeof data.fallbackReason === 'string' ? data.fallbackReason : null,
+        intentType: typeof data.intentType === 'string' ? data.intentType : null,
+      })
     } catch {
       if (requestId !== searchRequestId.current) return
       setSearchError('Network error — check your connection.')
       setSearchResults([])
       setSearchCompletedQuery(trimmed)
+      setSearchMeta(EMPTY_SEARCH_META)
     } finally {
       if (requestId === searchRequestId.current) setSearching(false)
     }
@@ -658,6 +689,7 @@ export default function FoodClient({
     setSearchError(null)
     setSearchCompletedQuery('')
     setSearchResults([])
+    setSearchMeta(EMPTY_SEARCH_META)
     searchRequestId.current += 1
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
     if (!trimmed) {
@@ -946,10 +978,22 @@ export default function FoodClient({
   // ── CTA logic per tab ───────────────────────────────────────────────────────
   const aiDraftActive = aiItems !== null
   const aiDraftEmpty = aiItems !== null && aiItems.length === 0
-  const ctaDisabled = ctaLoading || analysing || aiDraftEmpty || methodTab === 'recent'
+  const ctaDisabled = ctaLoading || analysing || aiDraftEmpty || methodTab === 'recent' || (methodTab === 'search' && !selectedResult)
   const showPinnedCTA = methodTab !== 'recent' || aiItems !== null || analysing
   const trimmedSearchQuery = searchQuery.trim()
-  const searchCompletedWithoutResults = Boolean(trimmedSearchQuery) && searchCompletedQuery === trimmedSearchQuery && !searching
+  const searchCompleted = Boolean(trimmedSearchQuery) && searchCompletedQuery === trimmedSearchQuery && !searching
+  const showSearchFallback = searchCompleted && searchMeta.lowConfidence
+  const searchCompletedWithoutResults = searchCompleted && searchResults.length === 0
+
+  const openAiDescribeFromSearch = () => {
+    const query = searchQuery.trim()
+    setMethodTab('voice')
+    if (query && !voiceText.trim()) setVoiceText(query)
+    setAiError(null)
+    setAiWarnings([])
+    setSelectedResult(null)
+  }
+
   const ctaLabel = (() => {
     if (aiItems !== null) {
       if (aiDraftEmpty) return 'No items to log'
@@ -1835,12 +1879,30 @@ export default function FoodClient({
                         {searching && <span style={{ fontSize: 11, color: '#b8b8b8', animation: 'pulse 1s ease-in-out infinite' }}>…</span>}
                       </div>
 
+                      {showSearchFallback && (
+                        <div style={{ background: '#1a1305', border: '1px solid rgba(245,166,35,0.35)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: '#f5a623', marginBottom: 4 }}>No strong match found.</div>
+                          <div style={{ fontSize: 12, lineHeight: 1.45, color: '#d9c39a', marginBottom: 10 }}>
+                            {searchMeta.fallbackReason ?? 'Try AI Describe, or choose a lower-confidence USDA result below if it looks right.'}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openAiDescribeFromSearch}
+                            style={{ background: '#2b2110', border: '1px solid rgba(245,166,35,0.45)', borderRadius: 10, color: '#f5a623', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, padding: '8px 10px' }}
+                          >
+                            Try AI Describe
+                          </button>
+                        </div>
+                      )}
+
                       {/* Results */}
                       {searchResults.length > 0 ? (
                         <div style={{ background: '#181818', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
                           {searchResults.map((result, idx) => {
                             const isSelected = selectedResult?.fdcId === result.fdcId
                             const firstLetter = result.name.charAt(0).toUpperCase()
+                            const sourceLabel = formatSearchSource(result)
+                            const servingLabel = formatSearchServing(result)
                             // Color letter-circle based on current meal
                             const lcColor = MEAL_CONFIG[modalMeal].color
                             return (
@@ -1865,6 +1927,12 @@ export default function FoodClient({
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 14, fontWeight: 500, color: isSelected ? '#3ecf8e' : '#f0f0f0', letterSpacing: '-0.1px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{result.name}</div>
+                                    <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2, lineHeight: 1.35 }}>{sourceLabel} - {servingLabel}</div>
+                                    {result.lowConfidence && (
+                                      <div style={{ display: 'inline-block', fontSize: 9, fontWeight: 800, color: '#f5a623', border: '1px solid rgba(245,166,35,0.35)', borderRadius: 7, padding: '2px 6px', marginTop: 5 }}>
+                                        LOWER CONFIDENCE
+                                      </div>
+                                    )}
                                     <div style={{ fontSize: 11, color: '#b8b8b8', marginTop: 2 }}>USDA · per 100g · {result.protein}g P · {result.carbs}g C · {result.fat}g F</div>
                                   </div>
                                   <div style={{ textAlign: 'right', flexShrink: 0, alignSelf: 'center' }}>
@@ -1904,8 +1972,15 @@ export default function FoodClient({
                         </div>
                       ) : searchCompletedWithoutResults ? (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                          <p style={{ fontSize: 14, color: '#b8b8b8' }}>No results for &ldquo;{searchQuery}&rdquo;</p>
-                          <p style={{ fontSize: 11, color: '#282828', marginTop: 6 }}>Try a simpler name, e.g. &ldquo;chicken breast&rdquo;</p>
+                          <p style={{ fontSize: 14, color: '#b8b8b8' }}>No strong match found.</p>
+                          <p style={{ fontSize: 11, color: '#888888', marginTop: 6 }}>Try AI Describe, or search a simpler generic name.</p>
+                          <button
+                            type="button"
+                            onClick={openAiDescribeFromSearch}
+                            style={{ marginTop: 12, background: '#1e1e1e', border: '1px solid #333', borderRadius: 10, color: '#f0f0f0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, padding: '9px 12px' }}
+                          >
+                            Try AI Describe
+                          </button>
                         </div>
                       ) : (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>

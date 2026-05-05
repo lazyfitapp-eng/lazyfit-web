@@ -1,19 +1,19 @@
 # LazyFit — Current State Document
-*Last updated: May 5, 2026 - active state updated after Weekly Check-In production deploy/smoke*
+*Last updated: May 6, 2026 - active state updated after Food Search Relevance Fix local validation*
 
 ## ACTIVE STATE — MAY 2026
 
 When this file conflicts with older sections below, the ACTIVE STATE section wins.
 
 ### Current Phase
-Steps / Smart Engine V1 - Weekly Check-In Step Average, Profile nutrition target fallback hardening, and the PWA icon asset fix are production-deployed and production-smoke-validated. LazyFit is not beta-ready until Tudor explicitly approves the next release step.
+Steps / Smart Engine V1 - Weekly Check-In Step Average, Profile nutrition target fallback hardening, and the PWA icon asset fix are production-deployed and production-smoke-validated. Food Search Relevance Fix is implemented and locally validated, but production deployment is still pending. LazyFit is not beta-ready until Tudor explicitly approves the next release step.
 
 ### Current Operating Mode / Workflow Protocol
 - `CURRENT_STATE.md` ACTIVE STATE is the live project state. When it conflicts with older sections, stale chat context, or older docs, ACTIVE STATE wins.
 - Every future Codex session must read `CURRENT_STATE.md` first, then follow `docs/LAZYFIT_ENGINEERING_RULES.md`.
-- Current likely next path after commit: Food Search Relevance Audit/Fix.
-- Recommended next sprint mode: audit/design first, then implementation only after root cause is known.
-- Friday sendable MVP focus: food search relevance and final P0/P1 release smoke.
+- Current likely next path after commit: Food Search Relevance Fix - Production Deploy + Smoke.
+- Recommended next sprint mode: deployment / validation.
+- Friday sendable MVP focus: deploy/smoke food search fix, then final P0/P1 release smoke. No broad new feature work.
 - Do not use stale chat context or older document sections over ACTIVE STATE.
 
 ### Steps / Smart Engine Status
@@ -66,9 +66,9 @@ Production validation:
 - Existing QA rows and food logs from previous validation remain. Do not delete them unless Tudor explicitly approves QA cleanup.
 
 Next recommended sprint:
-- Food Search Relevance Audit/Fix.
-- Mode: audit/design first, then implementation only after root cause is known.
-- Scope: trace food search relevance issues to their source of truth, then fix only the confirmed cause. Keep future Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
+- Food Search Relevance Fix - Production Deploy + Smoke.
+- Mode: deployment / validation.
+- Scope: deploy the locally validated food search relevance fix, smoke production food search/logging/dashboard totals, and keep future Smart Engine recommendation rules and Dashboard Activity Floor card deferred.
 
 ### Production Status
 Production is current as of May 5, 2026.
@@ -108,14 +108,50 @@ Production is current as of May 5, 2026.
 - `37e3ecb` Add recent food repeat logging
 
 ### Food Status
-Food Logger core is usable, but food search relevance is now the next release-critical audit/fix target.
+Food Logger core is usable. Food Search Relevance Fix is implemented and locally validated; production deployment is still pending.
 
-It supports AI draft review, generated item scrolling, logged-food editing, recent foods, improved USDA ranking, search loading fix, negative macro sanitization, and mobile correction polish.
+Implementation summary:
+- Added an intent-aware food search relevance helper.
+- Food search now handles protein snack/product intent better.
+- USDA source strategy now includes branded/product-style results where appropriate.
+- Food search returns richer metadata such as source/data type/brand/serving/macros.
+- Food UI now shows source/serving/macro metadata.
+- Low-confidence/honest fallback behavior was added for weak searches.
+- No barcode, OpenFoodFacts, saved meals, custom food system, or giant database import was added.
+
+Benchmark validation:
+- Critical 20 improved from 14/20 to 20/20 pass-or-honest-fallback.
+- Extended set improved from 16/35 to 35/35 pass-or-honest-fallback.
+- 0 absurd/no-fallback failures remain in the benchmark.
+
+Browser validation:
+- Local browser validation passed through `.codex-temp/food-search-relevance-fix/run-browser-validation.ps1`.
+- `/food` loaded.
+- `protein brownie` returned a usable branded high-protein brownie result.
+- `protein bar` returned usable branded protein bar results.
+- `chicken breast` and `rice` returned usable results.
+- Result cards showed source/serving/macro metadata.
+- 100g chicken breast was logged under the disposable QA account.
+- Food page totals updated.
+- Dashboard totals updated.
+- Nutrition targets remained targets.
+- No visible NaN/undefined/null.
+- No console/runtime/network events captured.
+
+QA data created:
+- `gadea.tudor+lazyfit4@gmail.com`
+- `2026-05-06`
+- `food_logs` row: chicken breast via Food search, 100g, 112 kcal, 22.5P/0C/1.9F.
+- Do not delete unless Tudor explicitly approves QA cleanup.
+
+Food still supports AI draft review, generated item scrolling, logged-food editing, recent foods, improved USDA ranking, search loading fix, negative macro sanitization, and mobile correction polish.
 
 Deferred food work:
 - Saved meals
 - Barcode
-- Broader food database/ranking improvements after the focused relevance root cause is known
+- OpenFoodFacts
+- Custom foods
+- Broader food database/ranking improvements
 - Production-scale database improvements
 
 ### Training Status
@@ -178,10 +214,10 @@ Upper B:
 - Bicep Curl
 
 ### Known Next Issue
-Next recommended sprint is Food Search Relevance Audit/Fix. Start in audit/design mode, identify the root cause, then switch to implementation only after the cause is known and approved.
+Next recommended sprint is Food Search Relevance Fix - Production Deploy + Smoke. Deploy and smoke the locally validated food search fix, then run final P0/P1 release smoke.
 
 Current likely candidates:
-- Food Search Relevance Audit/Fix (audit/design first)
+- Food Search Relevance Fix - Production Deploy + Smoke
 - Final P0/P1 release smoke
 - Existing-user routine data/backfill decision
 - Optional onboarding regression check
